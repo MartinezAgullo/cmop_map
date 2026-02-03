@@ -16,10 +16,10 @@
 //   DELETE /api/medical/:entity_id            — remove the medical record (entity stays)
 // ---------------------------------------------------------------------------
 
-const express = require('express');
-const router  = express.Router();
-const pool    = require('../config/database');
-const Entity  = require('../models/entity');
+import { Router } from 'express';
+const router  = Router();
+import { query, connect } from '../config/database';
+import { baseSelect, getById, _upsertMedical } from '../models/entity';
 
 // ---------------------------------------------------------------------------
 // Reads
@@ -31,8 +31,8 @@ const Entity  = require('../models/entity');
  */
 router.get('/casualties', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `${Entity.baseSelect()} WHERE md.entity_id IS NOT NULL ORDER BY pi.nombre`
+    const { rows } = await query(
+      `${baseSelect()} WHERE md.entity_id IS NOT NULL ORDER BY pi.nombre`
     );
     res.json({ success: true, count: rows.length, data: rows });
   } catch (err) {
@@ -45,8 +45,8 @@ router.get('/casualties', async (req, res) => {
 router.get('/triage/:color', async (req, res) => {
   try {
     const color = req.params.color.toUpperCase();
-    const { rows } = await pool.query(
-      `${Entity.baseSelect()} WHERE md.triage_color = $1::triage_color_enum ORDER BY pi.nombre`,
+    const { rows } = await query(
+      `${baseSelect()} WHERE md.triage_color = $1::triage_color_enum ORDER BY pi.nombre`,
       [color]
     );
     res.json({ success: true, count: rows.length, data: rows });
@@ -60,8 +60,8 @@ router.get('/triage/:color', async (req, res) => {
 router.get('/evac-stage/:stage', async (req, res) => {
   try {
     const stage = req.params.stage.toLowerCase();
-    const { rows } = await pool.query(
-      `${Entity.baseSelect()} WHERE md.evac_stage = $1::evac_stage_enum ORDER BY pi.nombre`,
+    const { rows } = await query(
+      `${baseSelect()} WHERE md.evac_stage = $1::evac_stage_enum ORDER BY pi.nombre`,
       [stage]
     );
     res.json({ success: true, count: rows.length, data: rows });
@@ -92,16 +92,16 @@ router.put('/:entity_id', async (req, res) => {
     }
 
     // Verify entity exists
-    const entity = await Entity.getById(id);
+    const entity = await getById(id);
     if (!entity) {
       return res.status(404).json({ success: false, message: 'Entity not found' });
     }
 
     // Delegate to the same upsert used by Entity.create / Entity.update
-    const client = await pool.connect();
+    const client = await connect();
     try {
       await client.query('BEGIN');
-      await Entity._upsertMedical(client, id, req.body);
+      await _upsertMedical(client, id, req.body);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -111,7 +111,7 @@ router.put('/:entity_id', async (req, res) => {
     }
 
     // Return full updated entity
-    const updated = await Entity.getById(id);
+    const updated = await getById(id);
     res.json({ success: true, data: updated });
   } catch (err) {
     console.error('PUT /medical/:entity_id:', err);
@@ -135,7 +135,7 @@ router.post('/:entity_id/vitals', async (req, res) => {
       return res.status(400).json({ success: false, message: 'entity_id must be an integer' });
     }
 
-    const entity = await Entity.getById(id);
+    const entity = await getById(id);
     if (!entity) {
       return res.status(404).json({ success: false, message: 'Entity not found' });
     }
@@ -149,7 +149,7 @@ router.post('/:entity_id/vitals', async (req, res) => {
 
     // Append to existing array (or create new array) using JSONB operators.
     // Also ensures a medical_details row exists (INSERT ... ON CONFLICT).
-    await pool.query(
+    await query(
       `INSERT INTO medical_details (entity_id, vital_signs)
        VALUES ($1, $2::jsonb)
        ON CONFLICT (entity_id) DO UPDATE SET
@@ -158,7 +158,7 @@ router.post('/:entity_id/vitals', async (req, res) => {
       [id, JSON.stringify([reading])]
     );
 
-    const updated = await Entity.getById(id);
+    const updated = await getById(id);
     res.json({ success: true, data: updated });
   } catch (err) {
     console.error('POST /medical/:entity_id/vitals:', err);
@@ -173,7 +173,7 @@ router.post('/:entity_id/vitals', async (req, res) => {
 router.delete('/:entity_id', async (req, res) => {
   try {
     const id = parseInt(req.params.entity_id, 10);
-    const { rowCount } = await pool.query(
+    const { rowCount } = await query(
       `DELETE FROM medical_details WHERE entity_id = $1`, [id]
     );
     if (rowCount === 0) {
@@ -186,4 +186,4 @@ router.delete('/:entity_id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
