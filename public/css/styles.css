@@ -1,0 +1,620 @@
+/* styles.css — CMOP Map */
+
+/* ====================================================================
+   Reset & layout
+   ==================================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f5f5;
+  overflow: hidden;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+
+/* ====================================================================
+   Sidebar
+   ==================================================================== */
+.sidebar {
+  width: 350px;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.sidebar-header {
+  padding: 20px;
+  background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+  color: white;
+}
+
+.sidebar-header h1 {
+  font-size: 1.8em;
+  margin-bottom: 4px;
+  letter-spacing: 2px;
+}
+
+.sidebar-header p {
+  font-size: 0.82em;
+  opacity: 0.8;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* ====================================================================
+   Scenario selector
+   ==================================================================== */
+.scenario-block {
+  background: #f0f4f8;
+  border: 1px solid #dce4ed;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.scenario-block label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.88em;
+  color: #34495e;
+  margin-bottom: 6px;
+}
+
+.scenario-row {
+  display: flex;
+  gap: 8px;
+}
+
+.scenario-row select {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #cdd5de;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+  cursor: pointer;
+}
+
+.scenario-row select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.btn-scenario {
+  padding: 8px 14px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  width: auto;                /* override the global .btn width:100% */
+}
+
+.btn-scenario:hover {
+  background: #5a6fd6;
+}
+
+/* ====================================================================
+   Stats
+   ==================================================================== */
+.stats {
+  background: #f8f9fa;
+  padding: 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.stats h3 {
+  font-size: 1em;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.stat-item:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.88em;
+}
+
+.stat-value {
+  font-weight: 700;
+  color: #667eea;
+  font-size: 0.9em;
+}
+
+/* Casualties count — highlighted when > 0 */
+.stat-casualties {
+  color: #c0392b;
+}
+
+/* ====================================================================
+   Triage pills  (used in stats row + list items + popups)
+   ==================================================================== */
+.triage-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75em;
+  font-weight: 700;
+  color: white;
+  margin-right: 4px;
+}
+
+.triage-pill.RED    { background: #e74c3c; }
+.triage-pill.YELLOW { background: #f39c12; }
+.triage-pill.GREEN  { background: #27ae60; }
+.triage-pill.BLACK  { background: #2c3e50; }
+.triage-pill.UNKNOWN{ background: #95a5a6; color: #fff; }
+
+/* ====================================================================
+   Controls & filters
+   ==================================================================== */
+.controls {
+  margin-bottom: 16px;
+}
+
+.control-group {
+  margin-bottom: 12px;
+}
+
+.control-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9em;
+}
+
+.control-group select,
+.control-group input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.control-group select:focus,
+.control-group input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* ====================================================================
+   Buttons
+   ==================================================================== */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  margin-top: 8px;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+/* ====================================================================
+   Entity list
+   ==================================================================== */
+.puntos-list {
+  margin-top: 12px;
+}
+
+.punto-item {
+  background: #f8f9fa;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 4px solid #667eea;
+}
+
+.punto-item:hover {
+  background: #e9ecef;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.punto-item.active {
+  background: #e7f0ff;
+  border-left-color: #764ba2;
+}
+
+/* Casualty items get a coloured left border based on triage */
+.punto-item.triage-RED    { border-left-color: #e74c3c; }
+.punto-item.triage-YELLOW { border-left-color: #f39c12; }
+.punto-item.triage-GREEN  { border-left-color: #27ae60; }
+.punto-item.triage-BLACK  { border-left-color: #2c3e50; }
+
+.punto-nombre {
+  font-weight: 700;
+  font-size: 1.05em;
+  color: #333;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Alliance colour dot */
+.punto-nombre .pill {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.punto-categoria {
+  display: inline-block;
+  padding: 2px 9px;
+  background: #34495e;
+  color: white;
+  border-radius: 10px;
+  font-size: 0.72em;
+  margin-bottom: 4px;
+}
+
+/* Medical badge shown below the category pill */
+.medical-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  font-size: 0.78em;
+  color: #555;
+}
+
+/* ====================================================================
+   Map
+   ==================================================================== */
+.map-container {
+  flex: 1;
+  position: relative;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* ====================================================================
+   Popups
+   ==================================================================== */
+.custom-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  padding: 0;
+  min-width: 220px;
+}
+
+.popup-content {
+  padding: 14px;
+}
+
+.popup-title {
+  font-size: 1.15em;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popup-title .pill {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.popup-categoria {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #34495e;
+  color: white;
+  border-radius: 10px;
+  font-size: 0.78em;
+  margin-bottom: 8px;
+}
+
+.popup-info {
+  color: #555;
+  line-height: 1.5;
+  font-size: 0.9em;
+}
+
+.popup-info p {
+  margin: 3px 0;
+}
+
+.popup-info strong {
+  color: #333;
+}
+
+/* Medical section inside popup */
+.popup-medical {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.popup-medical h4 {
+  font-size: 0.82em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #667eea;
+  margin-bottom: 6px;
+}
+
+.popup-medical .med-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 0.85em;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.popup-medical .med-row:last-child {
+  border-bottom: none;
+}
+
+.popup-medical .med-label {
+  color: #888;
+}
+
+.popup-medical .med-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn-danger {
+  padding: 6px 12px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82em;
+  font-weight: 600;
+  cursor: pointer;
+  width: auto;
+  transition: background 0.2s;
+}
+
+.btn-danger:hover {
+  background: #c0392b;
+}
+
+/* ====================================================================
+   Loading spinner
+   ==================================================================== */
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  display: none;
+  text-align: center;
+}
+
+.loading.show {
+  display: block;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 10px;
+}
+
+@keyframes spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ====================================================================
+   Messages
+   ==================================================================== */
+.message {
+  padding: 12px 14px;
+  margin: 12px 0;
+  border-radius: 8px;
+  font-size: 0.88em;
+  display: none;
+}
+
+.message.show   { display: block; }
+
+.message-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.message-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.message-info {
+  background: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+}
+
+/* ====================================================================
+   Modal
+   ==================================================================== */
+.form-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.form-modal.show {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  padding: 28px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.modal-header h2 {
+  color: #333;
+  font-size: 1.2em;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.6em;
+  cursor: pointer;
+  color: #999;
+  width: auto;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9em;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* ====================================================================
+   Responsive
+   ==================================================================== */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: 40vh;
+  }
+
+  .map-container {
+    height: 60vh;
+  }
+}

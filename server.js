@@ -1,4 +1,9 @@
 // server.js
+/**
+ * server.js — Express entry point for the CMOP Map service.
+ * Serves the static frontend, mounts the /api/entities and /api/medical
+ * REST routes, and exposes a /health check endpoint.
+ */
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
@@ -14,13 +19,13 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 // ---------------------------------------------------------------------------
 app.use(cors());
-app.use(express.json());                          // replaces body-parser
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
-app.use('/api/entities', entitiesRoutes);         // replaces /api/puntos
+app.use('/api/entities', entitiesRoutes);
 app.use('/api/medical',  medicalRoutes);
 
 // ---------------------------------------------------------------------------

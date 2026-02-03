@@ -1,0 +1,534 @@
+// public/js/app.js
+// ---------------------------------------------------------------------------
+// CMOP Map — frontend logic
+//
+// Responsibilities:
+//   - Scenario loading via /api/scenarios
+//   - Entity fetching, filtering, rendering (list + map markers)
+//   - Icon resolution (APP-6 + medical, with country-variant fallback)
+//   - Popup & list rendering with medical data when present
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+let map;
+let markers          = [];
+let allEntities      = [];
+let filteredEntities = [];
+let selectedId       = null;
+
+// ---------------------------------------------------------------------------
+// Icon resolution — category → candidate base filenames
+//   Medical categories map to the filenames visible in the user's icon set.
+// ---------------------------------------------------------------------------
+const CATEGORY_BASE_NAMES = {
+  // Military (unchanged)
+  missile:        ['missile'],
+  fighter:        ['fighter', 'fixed_wing'],
+  bomber:         ['bomber', 'fixed_wing'],
+  aircraft:       ['fixed_wing', 'air_and_space'],
+  helicopter:     ['helicopter', 'rotary_wing'],
+  uav:            ['uav'],
+  tank:           ['tank', 'armor_mechanized', 'ground'],
+  artillery:      ['artillery'],
+  ship:           ['ship', 'sea_surface'],
+  destroyer:      ['destroyer', 'ship'],
+  submarine:      ['submarine', 'sub_surface'],
+  ground_vehicle: ['ground', 'armor_mechanized'],
+  apc:            ['apc', 'armor_mechanized'],
+  infantry:       ['infantry', 'ground'],
+  person:         ['person'],
+  base:           ['base', 'headquarters'],
+  building:       ['infrastructure'],
+  infrastructure: ['infrastructure'],
+
+  // Medical facilities
+  medical_role_1: ['medical_role_1', 'medical_facility_role_1', 'medical_facility_default'],
+  medical_role_2: ['medical_role_2', 'medical_facility_role_2', 'medical_facility_default'],
+  medical_role_3: ['medical_role_3', 'medical_facility_role_3', 'medical_facility_default'],
+  medevac_unit:   ['medevac', 'medevac_fixedwing'],
+
+  // Casualties  →  use the person icon (triage colour shown via border / pill)
+  casualty_friendly: ['person'],
+  casualty_hostile:  ['person'],
+  casualty_civilian: ['person'],
+
+  default:        ['default']
+};
+
+const ALLIANCE_COLORS = {
+  friendly: '#00AEEF',
+  hostile:  '#FF0000',
+  neutral:  '#ADFF2F',
+  unknown:  '#A9A9A9'
+};
+
+// ---------------------------------------------------------------------------
+// Icon cache & resolution helpers  (same HEAD-based chain as original)
+// ---------------------------------------------------------------------------
+const iconCache = new Map();
+
+function normalizeCountry(country) {
+  if (!country) return '';
+  return country
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s\-_]+/g, '_')
+    .replace(/[^a-z0-9_]/g, '');
+}
+
+function buildFilenameCandidates(category, country) {
+  const bases   = CATEGORY_BASE_NAMES[category?.toLowerCase()] || CATEGORY_BASE_NAMES.default;
+  const cn      = normalizeCountry(country);
+  const tryCountry = country && country.toLowerCase() !== 'unknown' && cn;
+
+  const candidates = [];
+  for (const base of bases) {
+    if (tryCountry) candidates.push(`${base}_${cn}.svg`);
+    candidates.push(`${base}.svg`);
+  }
+  candidates.push('default.svg');
+  return candidates;
+}
+
+async function urlExists(url) {
+  try {
+    return (await fetch(url, { method: 'HEAD' })).ok;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveIconUrl(category, alliance, country) {
+  const a   = (alliance || 'unknown').toLowerCase();
+  const c   = (category || 'default').toLowerCase();
+  const key = `${a}|${c}|${normalizeCountry(country)}`;
+
+  if (iconCache.has(key)) return iconCache.get(key);
+
+  for (const filename of buildFilenameCandidates(c, country)) {
+    const url = `/icons/${a}/${filename}`;
+    if (await urlExists(url)) {          // eslint-disable-line no-await-in-loop
+      iconCache.set(key, url);
+      return url;
+    }
+  }
+
+  const fallback = `/icons/${a}/default.svg`;
+  iconCache.set(key, fallback);
+  return fallback;
+}
+
+async function makeIcon(category, alliance, country) {
+  return L.icon({
+    iconUrl:     await resolveIconUrl(category, alliance, country),
+    iconSize:    [36, 36],
+    iconAnchor:  [18, 36],
+    popupAnchor: [0, -28]
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  initScenarios();          // fetch & populate scenario selector
+  loadEntities();
+  setupEventListeners();
+});
+
+function initMap() {
+  map = L.map('map').setView([39.47, -0.38], 12);   // Valencia default
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  // Click on map → fill lat/lng in the open modal (if any)
+  map.on('click', (e) => {
+    if (document.getElementById('formModal').classList.contains('show')) {
+      document.getElementById('latitud').value  = e.latlng.lat.toFixed(6);
+      document.getElementById('longitud').value = e.latlng.lng.toFixed(6);
+    }
+  });
+}
+
+function setupEventListeners() {
+  document.getElementById('categoriaFilter').addEventListener('change', filterEntities);
+  document.getElementById('allianceFilter').addEventListener('change', filterEntities);
+  document.getElementById('buscarNombre').addEventListener('input', filterEntities);
+
+  document.getElementById('nuevoPuntoForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await crearNuevaEntidad();
+  });
+
+  document.getElementById('loadScenarioBtn').addEventListener('click', loadSelectedScenario);
+}
+
+// ---------------------------------------------------------------------------
+// Scenarios
+// ---------------------------------------------------------------------------
+
+async function initScenarios() {
+  try {
+    const res  = await fetch('/api/scenarios');
+    const data = await res.json();
+    if (!data.success) return;
+
+    const select = document.getElementById('scenarioSelect');
+    select.innerHTML = '<option value="">— Selecciona escenario —</option>';
+
+    for (const s of data.data) {
+      const opt      = document.createElement('option');
+      opt.value      = s.name;
+      opt.textContent = s.name + (s.description ? `  —  ${s.description}` : '');
+      select.appendChild(opt);
+    }
+  } catch (err) {
+    console.error('Failed to fetch scenarios:', err);
+  }
+}
+
+async function loadSelectedScenario() {
+  const name = document.getElementById('scenarioSelect').value;
+  if (!name) {
+    showMessage('Selecciona un escenario primero', 'info');
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const res  = await fetch(`/api/scenarios/load/${name}`, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.success) {
+      showMessage(`Escenario "${name}" cargado`, 'success');
+      await loadEntities();                 // refresh map + list
+    } else {
+      showMessage(data.message || 'Error cargando escenario', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showMessage('Error de conexión', 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Entity loading & filtering
+// ---------------------------------------------------------------------------
+
+async function loadEntities() {
+  try {
+    showLoading(true);
+    const res  = await fetch('/api/entities');
+    const data = await res.json();
+
+    if (data.success) {
+      allEntities      = data.data;
+      filteredEntities = [...allEntities];
+      updateStats();
+      updateCategoriaFilter();
+      renderList();
+      await renderMarkers();
+    } else {
+      showMessage('Error al cargar entidades', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showMessage('Error de conexión', 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function filterEntities() {
+  const cat      = document.getElementById('categoriaFilter').value;
+  const alliance = document.getElementById('allianceFilter').value;
+  const search   = document.getElementById('buscarNombre').value.toLowerCase();
+
+  filteredEntities = allEntities.filter(e =>
+    (!cat      || e.categoria === cat) &&
+    (!alliance || e.alliance  === alliance) &&
+    (!search   || (e.nombre || '').toLowerCase().includes(search))
+  );
+
+  renderList();
+  await renderMarkers();
+}
+
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+
+function updateStats() {
+  const casualties = allEntities.filter(e => e.categoria?.startsWith('casualty_'));
+  const redCount   = casualties.filter(e => e.medical?.triage_color === 'RED').length;
+  const yelCount   = casualties.filter(e => e.medical?.triage_color === 'YELLOW').length;
+
+  document.getElementById('totalPuntos').textContent    = allEntities.length;
+  document.getElementById('totalCategorias').textContent = [...new Set(allEntities.map(e => e.categoria))].length;
+  document.getElementById('totalCasualties').textContent = casualties.length;
+
+  document.getElementById('redYellowCount').innerHTML =
+    `<span class="triage-pill RED">${redCount}</span>` +
+    `<span class="triage-pill YELLOW">${yelCount}</span>`;
+}
+
+function updateCategoriaFilter() {
+  const select     = document.getElementById('categoriaFilter');
+  const inData     = [...new Set(allEntities.map(e => e.categoria))].sort();
+
+  select.innerHTML = '<option value="">Todas las categorías</option>';
+  for (const cat of inData) {
+    const opt      = document.createElement('option');
+    opt.value      = cat;
+    opt.textContent = cat;
+    select.appendChild(opt);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// List rendering
+// ---------------------------------------------------------------------------
+
+function renderList() {
+  const container = document.getElementById('puntosList');
+
+  if (filteredEntities.length === 0) {
+    container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">No se encontraron entidades</p>';
+    return;
+  }
+
+  container.innerHTML = filteredEntities.map(e => {
+    const allianceColor = ALLIANCE_COLORS[e.alliance || 'unknown'] || '#A9A9A9';
+    const triageClass   = e.medical?.triage_color ? ` triage-${e.medical.triage_color}` : '';
+    const activeClass   = selectedId === e.id ? ' active' : '';
+
+    // Medical badge (only for casualties)
+    let medicalBadge = '';
+    if (e.medical) {
+      medicalBadge = `
+        <div class="medical-badge">
+          <span class="triage-pill ${e.medical.triage_color || 'UNKNOWN'}">${e.medical.triage_color || '?'}</span>
+          ${e.medical.evac_priority || ''}
+          · ${e.medical.evac_stage || 'unknown'}
+        </div>`;
+    }
+
+    return `
+      <div class="punto-item${activeClass}${triageClass}" onclick="selectEntity(${e.id})">
+        <div class="punto-nombre">
+          <span class="pill" style="background:${allianceColor}"></span>
+          ${e.nombre}
+        </div>
+        <span class="punto-categoria">${e.categoria} · ${e.alliance || 'unknown'}${e.country ? ' · ' + e.country : ''}</span>
+        ${medicalBadge}
+      </div>`;
+  }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Map markers
+// ---------------------------------------------------------------------------
+
+async function renderMarkers() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  for (const e of filteredEntities) {
+    const icon   = await makeIcon(e.categoria, e.alliance, e.country); // eslint-disable-line no-await-in-loop
+    const marker = L.marker([e.latitud, e.longitud], { icon })
+      .addTo(map)
+      .bindPopup(buildPopup(e), { className: 'custom-popup' });
+
+    marker.on('click', () => selectEntity(e.id));
+    markers.push(marker);
+  }
+
+  if (markers.length > 0) {
+    map.fitBounds(new L.featureGroup(markers).getBounds().pad(0.1));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Popup
+// ---------------------------------------------------------------------------
+
+function buildPopup(e) {
+  const allianceColor = ALLIANCE_COLORS[e.alliance || 'unknown'] || '#A9A9A9';
+
+  // Medical section — rendered only when present
+  let medicalHTML = '';
+  if (e.medical) {
+    const m = e.medical;
+    medicalHTML = `
+      <div class="popup-medical">
+        <h4>🏥 Medical</h4>
+        <div class="med-row">
+          <span class="med-label">Triage</span>
+          <span class="med-value"><span class="triage-pill ${m.triage_color || 'UNKNOWN'}">${m.triage_color || '?'}</span></span>
+        </div>
+        <div class="med-row">
+          <span class="med-label">Priority</span>
+          <span class="med-value">${m.evac_priority || '—'}</span>
+        </div>
+        <div class="med-row">
+          <span class="med-label">Stage</span>
+          <span class="med-value">${m.evac_stage || '—'}</span>
+        </div>
+        ${m.injury_mechanism ? `<div class="med-row">
+          <span class="med-label">Mechanism</span>
+          <span class="med-value">${m.injury_mechanism}</span>
+        </div>` : ''}
+        ${m.primary_injury ? `<div class="med-row">
+          <span class="med-label">Injury</span>
+          <span class="med-value">${m.primary_injury}</span>
+        </div>` : ''}
+        ${m.destination_facility ? `<div class="med-row">
+          <span class="med-label">Destination</span>
+          <span class="med-value">${m.destination_facility.nombre}</span>
+        </div>` : ''}
+        ${m.prehospital_treatment ? `<div class="med-row">
+          <span class="med-label">Pre-hosp tx</span>
+          <span class="med-value">${m.prehospital_treatment}</span>
+        </div>` : ''}
+      </div>`;
+  }
+
+  return `
+    <div class="popup-content">
+      <div class="popup-title">
+        <span class="pill" style="background:${allianceColor}"></span>
+        ${e.nombre}
+      </div>
+      <span class="popup-categoria">${e.categoria} · ${e.alliance || 'unknown'}${e.country ? ' · ' + e.country : ''}</span>
+      <div class="popup-info">
+        ${e.descripcion ? `<p>${e.descripcion}</p>` : ''}
+        ${e.observaciones ? `<p><strong>Obs:</strong> ${e.observaciones}</p>` : ''}
+      </div>
+      ${medicalHTML}
+      <div class="popup-actions">
+        <button class="btn btn-danger" onclick="deleteEntity(${e.id})">🗑️ Eliminar</button>
+      </div>
+    </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Select & zoom
+// ---------------------------------------------------------------------------
+
+function selectEntity(id) {
+  selectedId = id;
+  const e = allEntities.find(x => x.id === id);
+  if (!e) return;
+
+  renderList();
+  map.setView([e.latitud, e.longitud], 14);
+
+  const marker = markers.find(m => {
+    const ll = m.getLatLng();
+    return Math.abs(ll.lat - e.latitud) < 1e-9 && Math.abs(ll.lng - e.longitud) < 1e-9;
+  });
+  if (marker) marker.openPopup();
+}
+
+// ---------------------------------------------------------------------------
+// Create
+// ---------------------------------------------------------------------------
+
+function mostrarFormularioNuevoPunto() {
+  document.getElementById('formModal').classList.add('show');
+  const c = map.getCenter();
+  document.getElementById('latitud').value  = c.lat.toFixed(6);
+  document.getElementById('longitud').value = c.lng.toFixed(6);
+}
+
+function cerrarFormularioNuevoPunto() {
+  document.getElementById('formModal').classList.remove('show');
+  document.getElementById('nuevoPuntoForm').reset();
+}
+
+async function crearNuevaEntidad() {
+  showLoading(true);
+  try {
+    const payload = {
+      nombre:     document.getElementById('nombre').value,
+      descripcion:document.getElementById('descripcion').value,
+      categoria:  document.getElementById('categoria').value,
+      country:    document.getElementById('country').value,
+      alliance:   document.getElementById('alliance').value,
+      latitud:    parseFloat(document.getElementById('latitud').value),
+      longitud:   parseFloat(document.getElementById('longitud').value)
+    };
+
+    const res  = await fetch('/api/entities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showMessage('Entidad creada', 'success');
+      cerrarFormularioNuevoPunto();
+      await loadEntities();
+    } else {
+      showMessage(data.message || 'Error al crear', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showMessage('Error de conexión', 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Delete
+// ---------------------------------------------------------------------------
+
+async function deleteEntity(id) {
+  if (!confirm('¿Eliminar esta entidad? No se puede deshacer.')) return;
+
+  showLoading(true);
+  try {
+    const res  = await fetch(`/api/entities/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+
+    if (data.success) {
+      showMessage('Entidad eliminada', 'success');
+      await loadEntities();
+    } else {
+      showMessage(data.message || 'Error al eliminar', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showMessage('Error de conexión', 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function centrarMapa() {
+  map.setView([39.47, -0.38], 12);
+}
+
+function showLoading(show) {
+  document.getElementById('loading').classList.toggle('show', !!show);
+}
+
+function showMessage(text, type) {
+  const el = document.getElementById('message');
+  el.textContent = text;
+  el.className   = `message message-${type} show`;
+  setTimeout(() => el.classList.remove('show'), 4000);
+}

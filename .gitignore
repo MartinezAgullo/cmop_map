@@ -30,15 +30,3 @@ Thumbs.db
 *.backup
 *.bak
 docs_backup/
-
-# Documentación temporal (opcional)
-docs/
-docs/EJEMPLOS_JSON.json
-docs/EJEMPLOS_PRACTICOS.md
-docs/POSTGIS_QUERIES.md
-docs/GUIA_RAPIDA_POSTMAN.md
-docs/EJEMPLO_CORRECTO_USO.md
-
-# Scripts de migración ya usados
-INSTRUCCIONES_ACTUALIZACION.md
-MIGRACION_CATEGORIAS.md
