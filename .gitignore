@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Docker volumes
+data/
+postgres_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backups
+*.backup
+*.bak
+docs_backup/
+
+# Documentación temporal (opcional)
+docs/
+docs/EJEMPLOS_JSON.json
+docs/EJEMPLOS_PRACTICOS.md
+docs/POSTGIS_QUERIES.md
+docs/GUIA_RAPIDA_POSTMAN.md
+docs/EJEMPLO_CORRECTO_USO.md
+
+# Scripts de migración ya usados
+INSTRUCCIONES_ACTUALIZACION.md
+MIGRACION_CATEGORIAS.md
