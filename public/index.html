@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Common Operational Map</title>
+  <title>CMOP — Common Medical Operational Picture</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="/css/styles.css"/>
@@ -12,23 +12,54 @@
   <div class="app-container">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1>Mapa Operacional</h1>
-        <p>Localización de Assets</p>
+        <h1>CMOP</h1>
+        <p>Common Medical Operational Picture</p>
       </div>
 
       <div class="sidebar-content">
+
+        <!-- ============================================================
+             Scenario selector
+             ============================================================ -->
+        <div class="scenario-block">
+          <label for="scenarioSelect">🎬 Escenario</label>
+          <div class="scenario-row">
+            <select id="scenarioSelect">
+              <option value="">Cargando escenarios…</option>
+            </select>
+            <button class="btn btn-scenario" id="loadScenarioBtn">Cargar</button>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             Stats
+             ============================================================ -->
         <div class="stats">
           <h3>📊 Estadísticas</h3>
           <div class="stat-item">
-            <span class="stat-label">Total de puntos:</span>
+            <span class="stat-label">Entidades:</span>
             <span class="stat-value" id="totalPuntos">0</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Categorías:</span>
             <span class="stat-value" id="totalCategorias">0</span>
           </div>
+          <div class="stat-item">
+            <span class="stat-label">Casualties:</span>
+            <span class="stat-value stat-casualties" id="totalCasualties">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">RED / YELLOW:</span>
+            <span class="stat-value" id="redYellowCount">
+              <span class="triage-pill RED">0</span>
+              <span class="triage-pill YELLOW">0</span>
+            </span>
+          </div>
         </div>
 
+        <!-- ============================================================
+             Filters
+             ============================================================ -->
         <div class="controls">
           <div class="control-group">
             <label for="categoriaFilter">Filtrar por categoría:</label>
@@ -53,32 +84,40 @@
             <input type="text" id="buscarNombre" placeholder="Escribe un nombre..."/>
           </div>
 
-          <button class="btn btn-primary" onclick="mostrarFormularioNuevoPunto()">➕ Agregar Nuevo Punto</button>
+          <button class="btn btn-primary" onclick="mostrarFormularioNuevoPunto()">➕ Nueva entidad</button>
           <button class="btn btn-secondary" onclick="centrarMapa()">🎯 Centrar en España</button>
         </div>
 
         <div id="message" class="message"></div>
 
+        <!-- ============================================================
+             Entity list
+             ============================================================ -->
         <div class="puntos-list" id="puntosList">
-          <p style="text-align:center;color:#999;">Cargando puntos de interés...</p>
+          <p style="text-align:center;color:#999;">Cargando…</p>
         </div>
       </div>
     </aside>
 
+    <!-- ================================================================
+         Map
+         ================================================================ -->
     <main class="map-container">
       <div id="map"></div>
       <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p>Cargando...</p>
+        <p>Cargando…</p>
       </div>
     </main>
   </div>
 
-  <!-- Modal -->
+  <!-- ================================================================
+       Modal — create entity
+       ================================================================ -->
   <div class="form-modal" id="formModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>➕ Nuevo Punto de Interés</h2>
+        <h2>➕ Nueva entidad</h2>
         <button class="close-btn" onclick="cerrarFormularioNuevoPunto()">&times;</button>
       </div>
 
@@ -97,31 +136,51 @@
           <label for="categoria">Categoría *</label>
           <select id="categoria" name="categoria" required>
             <option value="">Selecciona una categoría</option>
-            <option value="missile">missile</option>
-            <option value="fighter">fighter</option>
-            <option value="bomber">bomber</option>
-            <option value="aircraft">aircraft</option>
-            <option value="helicopter">helicopter</option>
-            <option value="uav">uav</option>
-            <option value="tank">tank</option>
-            <option value="artillery">artillery</option>
-            <option value="ship">ship</option>
-            <option value="destroyer">destroyer</option>
-            <option value="submarine">submarine</option>
-            <option value="ground_vehicle">ground_vehicle</option>
-            <option value="apc">apc</option>
-            <option value="infantry">infantry</option>
-            <option value="person">person</option>
-            <option value="base">base</option>
-            <option value="building">building</option>
-            <option value="infrastructure">infrastructure</option>
+
+            <!-- Military -->
+            <optgroup label="── Military ──">
+              <option value="missile">missile</option>
+              <option value="fighter">fighter</option>
+              <option value="bomber">bomber</option>
+              <option value="aircraft">aircraft</option>
+              <option value="helicopter">helicopter</option>
+              <option value="uav">uav</option>
+              <option value="tank">tank</option>
+              <option value="artillery">artillery</option>
+              <option value="ship">ship</option>
+              <option value="destroyer">destroyer</option>
+              <option value="submarine">submarine</option>
+              <option value="ground_vehicle">ground_vehicle</option>
+              <option value="apc">apc</option>
+              <option value="infantry">infantry</option>
+              <option value="person">person</option>
+              <option value="base">base</option>
+              <option value="building">building</option>
+              <option value="infrastructure">infrastructure</option>
+            </optgroup>
+
+            <!-- Medical facilities -->
+            <optgroup label="── Medical Facilities ──">
+              <option value="medical_role_1">medical_role_1 — Aid Post</option>
+              <option value="medical_role_2">medical_role_2 — Surgical</option>
+              <option value="medical_role_3">medical_role_3 — Field Hospital</option>
+              <option value="medevac_unit">medevac_unit — MEDEVAC Asset</option>
+            </optgroup>
+
+            <!-- Casualties -->
+            <optgroup label="── Casualties ──">
+              <option value="casualty_friendly">casualty_friendly</option>
+              <option value="casualty_hostile">casualty_hostile</option>
+              <option value="casualty_civilian">casualty_civilian</option>
+            </optgroup>
+
             <option value="default">default</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="country">Country (owner)</label>
-          <input type="text" id="country" name="country" placeholder="Spain, France, Italy..."/>
+          <label for="country">Country</label>
+          <input type="text" id="country" name="country" placeholder="Spain, France…"/>
         </div>
 
         <div class="form-group">
@@ -134,17 +193,18 @@
           </select>
         </div>
 
-        <div class="form-group">
-          <label for="latitud">Latitud *</label>
-          <input type="number" id="latitud" name="latitud" step="any" required />
-        </div>
-
-        <div class="form-group">
-          <label for="longitud">Longitud *</label>
-          <input type="number" id="longitud" name="longitud" step="any" required />
-        </div>
-
         <div style="display:flex;gap:10px;">
+          <div class="form-group" style="flex:1;">
+            <label for="latitud">Latitud *</label>
+            <input type="number" id="latitud" name="latitud" step="any" required />
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label for="longitud">Longitud *</label>
+            <input type="number" id="longitud" name="longitud" step="any" required />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:10px;">
           <button type="submit" class="btn btn-primary">Guardar</button>
           <button type="button" class="btn btn-secondary" onclick="cerrarFormularioNuevoPunto()">Cancelar</button>
         </div>

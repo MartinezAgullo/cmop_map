@@ -1,6 +1,6 @@
 # cmop_map
 
-CMOP (Common Medical Operational Picture) map service. Geospatial layer for military and medical entities with NATO APP-6 symbology, scenario-based data loading, and a REST API consumed by `cmop_fusion_mcp`.
+CMOP (Common Medical Operational Picture) map service. Geospatial layer for military and medical entities with NATO APP-6 symbology, scenario-based data loading, and a REST API consumed by `cmop_fusion_mcp`. This project is an evolution of the [https://github.com/MartinezAgullo/mapa-puntos-interes](mapa-puntos-interes) project.
 
 **Stack:** Node.js + Express · PostgreSQL/PostGIS (Docker) · Leaflet · vanilla JS
 
@@ -56,7 +56,7 @@ cmop_map/
 ## First-time setup
 
 ```bash
-git clone <repo-url> cmop_map && cd cmop_map
+git clone https://github.com/MartinezAgullo/cmop_map && cd cmop_map
 
 # 1. Dependencies
 npm install
@@ -159,7 +159,7 @@ All responses include `medical: {...} | null` when the entity has a medical reco
 
 **`categoria_militar` enum**
 
-```
+```bash
 Military:  missile, fighter, bomber, aircraft, helicopter, uav, tank,
            artillery, ship, destroyer, submarine, ground_vehicle, apc,
            infantry, person, base, building, infrastructure
@@ -187,3 +187,7 @@ Casualty:  casualty_friendly, casualty_hostile, casualty_civilian
 ## License
 
 GPL 3.0
+
+<!-- 
+tree -I "__pycache__|__init__.py|uv.lock|README.md|docs|node_modules|*.svg|*.png|images|*.json"
+-->

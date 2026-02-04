@@ -1,0 +1,28 @@
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: cmop_map_postgis
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: cmop_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - cmop_postgis_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+volumes:
+  cmop_postgis_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge
