@@ -15,6 +15,7 @@ npm-debug.log*
 data/
 postgres_data/
 
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -29,3 +30,6 @@ Thumbs.db
 *.backup
 *.bak
 docs_backup/
+
+
+rename-casualties.sh

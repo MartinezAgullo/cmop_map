@@ -57,6 +57,13 @@ const ENUMS = `
     'delivered',   -- Arrived at destination facility
     'unknown'
   );
+
+  -- Casualty status (WIA vs KIA)
+  CREATE TYPE casualty_status_enum AS ENUM (
+    'WIA',      -- Wounded in action
+    'KIA',      -- Killed in action
+    'UNKNOWN'
+  );
 `;
 
 // ---------------------------------------------------------------------------
@@ -103,11 +110,12 @@ const MEDICAL_TABLE = `
                                          ON DELETE CASCADE,
 
     -- Triage & injury
-    triage_color          triage_color_enum   DEFAULT 'UNKNOWN',
-    injury_mechanism      VARCHAR(100),       -- e.g. "Blast", "GSW", "MVA"
-    primary_injury        TEXT,               -- Free-text brief description
-    vital_signs           JSONB,              -- Array of timestamped readings (see above)
-    prehospital_treatment TEXT,               -- Tourniquet, airway, meds applied at POI
+    triage_color          triage_color_enum      DEFAULT 'UNKNOWN',
+    casualty_status       casualty_status_enum   DEFAULT 'UNKNOWN',  -- WIA / KIA / UNKNOWN
+    injury_mechanism      VARCHAR(100),          -- e.g. "Blast", "GSW", "MVA"
+    primary_injury        TEXT,                  -- Free-text brief description
+    vital_signs           JSONB,                 -- Array of timestamped readings (see above)
+    prehospital_treatment TEXT,                  -- Tourniquet, airway, meds applied at POI
 
     -- Evacuation management
     evac_priority         evac_priority_enum  DEFAULT 'UNKNOWN',
@@ -141,6 +149,7 @@ const INDEXES = `
   CREATE INDEX idx_md_vital_signs     ON medical_details USING GIN (vital_signs);
   CREATE INDEX idx_md_nine_line       ON medical_details USING GIN (nine_line_data);
   CREATE INDEX idx_md_triage_color    ON medical_details (triage_color);
+  CREATE INDEX idx_md_casualty_status ON medical_details (casualty_status);
   CREATE INDEX idx_md_evac_priority   ON medical_details (evac_priority);
   CREATE INDEX idx_md_evac_stage      ON medical_details (evac_stage);
   CREATE INDEX idx_md_destination     ON medical_details (destination_facility_id);

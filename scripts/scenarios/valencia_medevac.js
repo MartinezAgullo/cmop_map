@@ -85,6 +85,7 @@ const medicalDetails = [
   {
     entity_ref: 'CAS-1',
     triage_color: 'RED',
+    casualty_status: 'WIA',
     injury_mechanism: 'Blast (IED)',
     primary_injury: 'Bilateral above-knee amputation, haemorrhage controlled with tourniquet',
     vital_signs: [
@@ -110,6 +111,7 @@ const medicalDetails = [
   {
     entity_ref: 'CAS-2',
     triage_color: 'YELLOW',
+    casualty_status: 'WIA',
     injury_mechanism: 'GSW (rifle)',
     primary_injury: 'Right lower quadrant abdominal gunshot wound, no exit',
     vital_signs: [
@@ -131,6 +133,7 @@ const medicalDetails = [
   {
     entity_ref: 'CAS-3',
     triage_color: 'GREEN',
+    casualty_status: 'WIA',
     injury_mechanism: 'Blast (fragmentation)',
     primary_injury: 'Facial laceration, left cheek, ~6cm, superficial',
     vital_signs: [

@@ -9,8 +9,9 @@ const cors    = require('cors');
 const path    = require('path');
 require('dotenv').config();
 
-const entitiesRoutes = require('./routes/entities');
-const medicalRoutes  = require('./routes/medical');
+const entitiesRoutes  = require('./routes/entities');
+const medicalRoutes   = require('./routes/medical');
+const scenariosRoutes = require('./routes/scenarios');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ---------------------------------------------------------------------------
 app.use('/api/entities', entitiesRoutes);
 app.use('/api/medical',  medicalRoutes);
+app.use('/api/scenarios',  scenariosRoutes);
+
+
 
 // ---------------------------------------------------------------------------
 // Health check
@@ -56,15 +60,16 @@ app.use((err, _req, res, _next) => {
 // ---------------------------------------------------------------------------
 app.listen(PORT, () => {
   console.log(`
-╔══════════════════════════════════════════════════╗
-║   🗺️  CMOP Map Server                           ║
-║                                                  ║
-║   🔌 Port:    ${PORT}                                ║
-║   🌐 URL:     http://localhost:${PORT}               ║
-║   📊 Entities: http://localhost:${PORT}/api/entities ║
-║   🏥 Medical:  http://localhost:${PORT}/api/medical  ║
-║   💚 Env:     ${process.env.NODE_ENV || 'development'}                       ║
-╚══════════════════════════════════════════════════╝
+╔═════════════════════════════════════════════════════╗
+║   🗺️  CMOP Map Server                                ║
+║                                                     ║
+║   🔌 Port:    ${PORT}                                  ║
+║   🌐 URL:     http://localhost:${PORT}                 ║
+║   📊 Entities: http://localhost:${PORT}/api/entities.  ║
+║   🏥 Medical:  http://localhost:${PORT}/api/medical    ║
+║   🎬 Scenarios: http://localhost:${PORT}/api/scenarios ║
+║   💚 Env:     ${process.env.NODE_ENV || 'development'}                           ║
+╚═════════════════════════════════════════════════════╝
   `);
 });
 

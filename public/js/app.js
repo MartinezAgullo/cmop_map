@@ -47,12 +47,13 @@ const CATEGORY_BASE_NAMES = {
   medical_role_1: ['medical_role_1', 'medical_facility_role_1', 'medical_facility_default'],
   medical_role_2: ['medical_role_2', 'medical_facility_role_2', 'medical_facility_default'],
   medical_role_3: ['medical_role_3', 'medical_facility_role_3', 'medical_facility_default'],
-  medevac_unit:   ['medevac', 'medevac_fixedwing'],
+  medevac_unit:   ['medevac', 'medevac_fixedwing', 'medevac_mechanised'],
 
-  // Casualties  →  use the person icon (triage colour shown via border / pill)
-  casualty_friendly: ['person'],
-  casualty_hostile:  ['person'],
-  casualty_civilian: ['person'],
+  // Casualties — resolved dynamically based on medical.casualty_status (WIA/KIA/UNKNOWN)
+  // If no casualty_status → fallback to 'casualty' generic
+  casualty_friendly: ['casualty'],
+  casualty_hostile:  ['casualty'],
+  casualty_civilian: ['casualty'],
 
   default:        ['default']
 };
@@ -65,7 +66,7 @@ const ALLIANCE_COLORS = {
 };
 
 // ---------------------------------------------------------------------------
-// Icon cache & resolution helpers  (same HEAD-based chain as original)
+// Icon cache & resolution helpers
 // ---------------------------------------------------------------------------
 const iconCache = new Map();
 
@@ -78,8 +79,21 @@ function normalizeCountry(country) {
     .replace(/[^a-z0-9_]/g, '');
 }
 
-function buildFilenameCandidates(category, country) {
-  const bases   = CATEGORY_BASE_NAMES[category?.toLowerCase()] || CATEGORY_BASE_NAMES.default;
+function buildFilenameCandidates(category, country, entity) {
+  let bases = CATEGORY_BASE_NAMES[category?.toLowerCase()] || CATEGORY_BASE_NAMES.default;
+
+  // Special handling for casualties: if entity has medical.casualty_status, use WIA/KIA-specific icons
+  if (category && category.startsWith('casualty_') && entity?.medical?.casualty_status) {
+    const status = entity.medical.casualty_status.toLowerCase();
+    if (status === 'wia') {
+      // Try: casualty_wia_{country} → casualty_wia → casualty_{country} → casualty
+      bases = ['casualty_wia', 'casualty'];
+    } else if (status === 'kia') {
+      bases = ['casualty_kia', 'casualty'];
+    }
+    // If UNKNOWN → fallback to generic 'casualty' (already in bases)
+  }
+
   const cn      = normalizeCountry(country);
   const tryCountry = country && country.toLowerCase() !== 'unknown' && cn;
 
@@ -100,14 +114,15 @@ async function urlExists(url) {
   }
 }
 
-async function resolveIconUrl(category, alliance, country) {
+async function resolveIconUrl(category, alliance, country, entity) {
   const a   = (alliance || 'unknown').toLowerCase();
   const c   = (category || 'default').toLowerCase();
-  const key = `${a}|${c}|${normalizeCountry(country)}`;
+  const status = entity?.medical?.casualty_status || '';
+  const key = `${a}|${c}|${normalizeCountry(country)}|${status}`;
 
   if (iconCache.has(key)) return iconCache.get(key);
 
-  for (const filename of buildFilenameCandidates(c, country)) {
+  for (const filename of buildFilenameCandidates(c, country, entity)) {
     const url = `/icons/${a}/${filename}`;
     if (await urlExists(url)) {          // eslint-disable-line no-await-in-loop
       iconCache.set(key, url);
@@ -120,9 +135,9 @@ async function resolveIconUrl(category, alliance, country) {
   return fallback;
 }
 
-async function makeIcon(category, alliance, country) {
+async function makeIcon(entity) {
   return L.icon({
-    iconUrl:     await resolveIconUrl(category, alliance, country),
+    iconUrl:     await resolveIconUrl(entity.categoria, entity.alliance, entity.country, entity),
     iconSize:    [36, 36],
     iconAnchor:  [18, 36],
     popupAnchor: [0, -28]
@@ -312,8 +327,12 @@ function renderList() {
     // Medical badge (only for casualties)
     let medicalBadge = '';
     if (e.medical) {
+      const statusBadge = e.medical.casualty_status 
+        ? `<strong style="color:#c0392b;">${e.medical.casualty_status}</strong>`
+        : '';
       medicalBadge = `
         <div class="medical-badge">
+          ${statusBadge}
           <span class="triage-pill ${e.medical.triage_color || 'UNKNOWN'}">${e.medical.triage_color || '?'}</span>
           ${e.medical.evac_priority || ''}
           · ${e.medical.evac_stage || 'unknown'}
@@ -341,7 +360,7 @@ async function renderMarkers() {
   markers = [];
 
   for (const e of filteredEntities) {
-    const icon   = await makeIcon(e.categoria, e.alliance, e.country); // eslint-disable-line no-await-in-loop
+    const icon   = await makeIcon(e); // eslint-disable-line no-await-in-loop
     const marker = L.marker([e.latitud, e.longitud], { icon })
       .addTo(map)
       .bindPopup(buildPopup(e), { className: 'custom-popup' });
@@ -373,6 +392,10 @@ function buildPopup(e) {
           <span class="med-label">Triage</span>
           <span class="med-value"><span class="triage-pill ${m.triage_color || 'UNKNOWN'}">${m.triage_color || '?'}</span></span>
         </div>
+        ${m.casualty_status ? `<div class="med-row">
+          <span class="med-label">Status</span>
+          <span class="med-value"><strong>${m.casualty_status}</strong></span>
+        </div>` : ''}
         <div class="med-row">
           <span class="med-label">Priority</span>
           <span class="med-value">${m.evac_priority || '—'}</span>

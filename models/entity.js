@@ -44,6 +44,7 @@ class Entity {
         CASE WHEN md.entity_id IS NOT NULL THEN
           jsonb_build_object(
             'triage_color',              md.triage_color,
+            'casualty_status',           md.casualty_status,
             'injury_mechanism',          md.injury_mechanism,
             'primary_injury',            md.primary_injury,
             'vital_signs',               md.vital_signs,
@@ -333,23 +334,25 @@ class Entity {
   static async _upsertMedical(client, entityId, medical) {
     await client.query(
       `INSERT INTO medical_details (
-         entity_id, triage_color, injury_mechanism, primary_injury,
+         entity_id, triage_color, casualty_status, injury_mechanism, primary_injury,
          vital_signs, prehospital_treatment, evac_priority, evac_stage,
          destination_facility_id, nine_line_data
        )
        VALUES (
          $1,
          $2::triage_color_enum,
-         $3, $4,
-         $5::jsonb,
-         $6,
-         $7::evac_priority_enum,
-         $8::evac_stage_enum,
-         $9,
-         $10::jsonb
+         $3::casualty_status_enum,
+         $4, $5,
+         $6::jsonb,
+         $7,
+         $8::evac_priority_enum,
+         $9::evac_stage_enum,
+         $10,
+         $11::jsonb
        )
        ON CONFLICT (entity_id) DO UPDATE SET
          triage_color            = COALESCE(EXCLUDED.triage_color,            medical_details.triage_color),
+         casualty_status         = COALESCE(EXCLUDED.casualty_status,         medical_details.casualty_status),
          injury_mechanism        = COALESCE(EXCLUDED.injury_mechanism,        medical_details.injury_mechanism),
          primary_injury          = COALESCE(EXCLUDED.primary_injury,          medical_details.primary_injury),
          vital_signs             = COALESCE(EXCLUDED.vital_signs,             medical_details.vital_signs),
@@ -362,6 +365,7 @@ class Entity {
       [
         entityId,
         medical.triage_color ?? null,
+        medical.casualty_status ?? null,
         medical.injury_mechanism ?? null,
         medical.primary_injury ?? null,
         medical.vital_signs ? JSON.stringify(medical.vital_signs) : null,

@@ -141,6 +141,7 @@ All responses include `medical: {...} | null` when the entity has a medical reco
 |--------|----------|-------------|
 | GET | `/api/medical/casualties` | All entities that have a `medical_details` record |
 | GET | `/api/medical/triage/:color` | Filter by triage colour (`RED`, `YELLOW`, `GREEN`, `BLACK`) |
+| `casualty_status` | enum | WIA · KIA · UNKNOWN |
 | GET | `/api/medical/evac-stage/:stage` | Filter by evacuation stage (`at_poi`, `in_transit`, `delivered`) |
 | PUT | `/api/medical/:entity_id` | Upsert medical fields (partial — only provided keys written) |
 | POST | `/api/medical/:entity_id/vitals` | Append a single vital-signs reading to the history array |
