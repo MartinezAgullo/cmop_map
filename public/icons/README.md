@@ -16,7 +16,7 @@ In **cmop_map**, APP-6-style symbols are provided as simplified SVGs optimized f
 
 All icons used by this project were generated with the following tool:
 
-👉 [https://www.bidfoil.in/symbol.php](https://www.bidfoil.in/symbol.php)
+👉 [https://spatialillusions.com/unitgenerator/](https://spatialillusions.com/unitgenerator/)
 
 This tool was used to produce standardized APP-6–compatible symbols suitable for consistent rendering in web environments.
 

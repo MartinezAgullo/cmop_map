@@ -105,7 +105,7 @@ async function insertEntities(client, entities) {
 async function insertMedicalDetails(client, medicalDetails, refMap) {
   if (!medicalDetails || medicalDetails.length === 0) return;
 
-  const PARAMS_PER_ROW = 10;
+  const PARAMS_PER_ROW = 11;
 
   const values = medicalDetails.flatMap(m => {
     const entityId = refMap.get(m.entity_ref);
@@ -118,6 +118,7 @@ async function insertMedicalDetails(client, medicalDetails, refMap) {
     return [
       entityId,
       m.triage_color            ?? 'UNKNOWN',
+      m.casualty_status         ?? 'UNKNOWN',
       m.injury_mechanism        ?? null,
       m.primary_injury          ?? null,
       m.vital_signs             ? JSON.stringify(m.vital_signs)    : null,
@@ -134,19 +135,20 @@ async function insertMedicalDetails(client, medicalDetails, refMap) {
     return `(
       $${b+1},
       $${b+2}::triage_color_enum,
-      $${b+3}, $${b+4},
-      $${b+5}::jsonb,
-      $${b+6},
-      $${b+7}::evac_priority_enum,
-      $${b+8}::evac_stage_enum,
-      $${b+9},
-      $${b+10}::jsonb
+      $${b+3}::casualty_status_enum,
+      $${b+4}, $${b+5},
+      $${b+6}::jsonb,
+      $${b+7},
+      $${b+8}::evac_priority_enum,
+      $${b+9}::evac_stage_enum,
+      $${b+10},
+      $${b+11}::jsonb
     )`;
   });
 
   const query = `
     INSERT INTO medical_details (
-      entity_id, triage_color, injury_mechanism, primary_injury,
+      entity_id, triage_color, casualty_status, injury_mechanism, primary_injury,
       vital_signs, prehospital_treatment, evac_priority, evac_stage,
       destination_facility_id, nine_line_data
     )
