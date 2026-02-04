@@ -66,37 +66,37 @@ const entities = [
   // Medical facilities (Ukrainian)
   // ---------------------------------------------------------------
   // Role 1 — forward aid post near Azovstal
-  { nombre: 'UKR Aid Post-1', descripcion: 'Role-1 aid post (Azovstal sector)', categoria: 'medical_role_1', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R1-1', activo: true, tipo_elemento: 'Aid Post', prioridad: 10, observaciones: 'Under periodic indirect fire', altitud: null, lng: 37.622, lat: 47.089 },
+  { nombre: 'UKR Aid Post-1', descripcion: 'Role-1 aid post (Azovstal sector)', categoria: 'medical_facility', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R1-1', activo: true, tipo_elemento: 'medical_role_1', prioridad: 10, observaciones: 'Under periodic indirect fire', altitud: null, lng: 37.622, lat: 47.089 },
 
   // Role 2 — field hospital in western suburbs
-  { nombre: 'UKR Field Hosp-2', descripcion: 'Role-2 surgical facility', categoria: 'medical_role_2', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R2-1', activo: true, tipo_elemento: 'Field Hospital', prioridad: 10, observaciones: 'Limited surgical capability', altitud: null, lng: 37.510, lat: 47.085 },
+  { nombre: 'UKR Field Hosp-2', descripcion: 'Role-2 surgical facility', categoria: 'medical_facility', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R2-1', activo: true, tipo_elemento: 'medical_role_2', prioridad: 10, observaciones: 'Limited surgical capability', altitud: null, lng: 37.510, lat: 47.085 },
 
   // Role 3 — full hospital (notional — outside city, rear area)
-  { nombre: 'UKR Hospital-3', descripcion: 'Role-3 hospital (Zaporizhzhia)', categoria: 'medical_role_3', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R3-1', activo: true, tipo_elemento: 'Hospital', prioridad: 10, observaciones: 'Full surgical + ICU', altitud: null, lng: 37.450, lat: 47.150 },
+  { nombre: 'UKR Hospital-3', descripcion: 'Role-3 hospital (Zaporizhzhia)', categoria: 'medical_facility', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R3-1', activo: true, tipo_elemento: 'medical_role_3', prioridad: 10, observaciones: 'Full surgical + ICU', altitud: null, lng: 37.450, lat: 47.150 },
 
   // ---------------------------------------------------------------
   // MEDEVAC assets
   // ---------------------------------------------------------------
-  { nombre: 'UKR MEDEVAC-1', descripcion: 'Ukrainian MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MEDEVAC-1', activo: true, tipo_elemento: 'MEDEVAC', prioridad: 10, observaciones: 'Standby at Role-2', altitud: 0, lng: 37.512, lat: 47.086 },
-  { nombre: 'UKR MEDEVAC-2', descripcion: 'Ukrainian MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MEDEVAC-2', activo: true, tipo_elemento: 'MEDEVAC', prioridad: 10, observaciones: 'On ground at Azovstal',  altitud: 0, lng: 37.625, lat: 47.090 },
+  { nombre: 'UKR MEDEVAC-1', descripcion: 'Ukrainian MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_2', prioridad: 10, observaciones: 'Standby at Role-2', altitud: 0, lng: 37.512, lat: 47.086 },
+  { nombre: 'UKR MEDEVAC-2', descripcion: 'Ukrainian MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MEDEVAC-2', activo: true, tipo_elemento: 'medevac_role_1', prioridad: 10, observaciones: 'On ground at Azovstal',  altitud: 0, lng: 37.625, lat: 47.090 },
 
   // ---------------------------------------------------------------
   // Casualties
   // ---------------------------------------------------------------
   // Ukrainian WIA
-  { nombre: 'UKR-CAS-1 (WIA)', descripcion: 'Ukrainian WIA — shrapnel wounds', categoria: 'casualty_friendly', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-1', activo: true, tipo_elemento: 'Casualty', prioridad: 9, observaciones: 'Multiple shrapnel wounds, bleeding controlled', altitud: null, lng: 37.611, lat: 47.104 },
-  { nombre: 'UKR-CAS-2 (WIA)', descripcion: 'Ukrainian WIA — GSW abdomen',    categoria: 'casualty_friendly', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-2', activo: true, tipo_elemento: 'Casualty', prioridad: 10, observaciones: 'Abdominal GSW, urgent surgery needed', altitud: null, lng: 37.568, lat: 47.091 },
-  { nombre: 'UKR-CAS-3 (WIA)', descripcion: 'Ukrainian WIA — blast injury',   categoria: 'casualty_friendly', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-3', activo: true, tipo_elemento: 'Casualty', prioridad: 8, observaciones: 'TBI suspected, conscious', altitud: null, lng: 37.621, lat: 47.089 },
+  { nombre: 'UKR-CAS-1 (WIA)', descripcion: 'Ukrainian WIA — shrapnel wounds', categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-1', activo: true, tipo_elemento: 'Casualty', prioridad: 9, observaciones: 'Multiple shrapnel wounds, bleeding controlled', altitud: null, lng: 37.611, lat: 47.104 },
+  { nombre: 'UKR-CAS-2 (WIA)', descripcion: 'Ukrainian WIA — GSW abdomen',    categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-2', activo: true, tipo_elemento: 'Casualty', prioridad: 10, observaciones: 'Abdominal GSW, urgent surgery needed', altitud: null, lng: 37.568, lat: 47.091 },
+  { nombre: 'UKR-CAS-3 (WIA)', descripcion: 'Ukrainian WIA — blast injury',   categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-3', activo: true, tipo_elemento: 'Casualty', prioridad: 8, observaciones: 'TBI suspected, conscious', altitud: null, lng: 37.621, lat: 47.089 },
 
   // Ukrainian KIA
-  { nombre: 'UKR-CAS-4 (KIA)', descripcion: 'Ukrainian KIA',                  categoria: 'casualty_friendly', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-4', activo: true, tipo_elemento: 'Casualty', prioridad: 3, observaciones: 'KIA — direct hit from tank round', altitud: null, lng: 37.601, lat: 47.101 },
+  { nombre: 'UKR-CAS-4 (KIA)', descripcion: 'Ukrainian KIA',                  categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-4', activo: true, tipo_elemento: 'Casualty', prioridad: 3, observaciones: 'KIA — direct hit from tank round', altitud: null, lng: 37.601, lat: 47.101 },
 
   // Russian WIA
-  { nombre: 'RUS-CAS-1 (WIA)', descripcion: 'Russian WIA — gunshot wound',    categoria: 'casualty_hostile', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-1', activo: true, tipo_elemento: 'Casualty', prioridad: 7, observaciones: 'GSW to leg, tourniquet applied', altitud: null, lng: 37.521, lat: 47.099 },
-  { nombre: 'RUS-CAS-2 (WIA)', descripcion: 'Russian WIA — burns',            categoria: 'casualty_hostile', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-2', activo: true, tipo_elemento: 'Casualty', prioridad: 8, observaciones: 'Severe burns from vehicle fire', altitud: null, lng: 37.556, lat: 47.103 },
+  { nombre: 'RUS-CAS-1 (WIA)', descripcion: 'Russian WIA — gunshot wound',    categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-1', activo: true, tipo_elemento: 'Casualty', prioridad: 7, observaciones: 'GSW to leg, tourniquet applied', altitud: null, lng: 37.521, lat: 47.099 },
+  { nombre: 'RUS-CAS-2 (WIA)', descripcion: 'Russian WIA — burns',            categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-2', activo: true, tipo_elemento: 'Casualty', prioridad: 8, observaciones: 'Severe burns from vehicle fire', altitud: null, lng: 37.556, lat: 47.103 },
 
   // Russian KIA
-  { nombre: 'RUS-CAS-3 (KIA)', descripcion: 'Russian KIA',                    categoria: 'casualty_hostile', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-3', activo: true, tipo_elemento: 'Casualty', prioridad: 2, observaciones: 'KIA — artillery strike', altitud: null, lng: 37.591, lat: 47.111 },
+  { nombre: 'RUS-CAS-3 (KIA)', descripcion: 'Russian KIA',                    categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-3', activo: true, tipo_elemento: 'Casualty', prioridad: 2, observaciones: 'KIA — artillery strike', altitud: null, lng: 37.591, lat: 47.111 },
 ];
 
 // ---------------------------------------------------------------------------

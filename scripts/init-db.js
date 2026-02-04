@@ -16,15 +16,11 @@ const ENUMS = `
     'missile', 'fighter', 'bomber', 'aircraft', 'helicopter', 'uav',
     'tank', 'artillery', 'ship', 'destroyer', 'submarine', 'ground_vehicle',
     'apc', 'infantry', 'person', 'base', 'building', 'infrastructure',
-    -- Medical facilities & assets
-    'medical_role_1',   -- Basic aid post
-    'medical_role_2',   -- Limited surgical / stabilisation
-    'medical_role_3',   -- Full field hospital
-    'medevac_unit',     -- Dedicated evacuation assets (ambulance, medevac helo)
-    -- Casualty categories
-    'casualty_friendly',
-    'casualty_hostile',
-    'casualty_civilian',
+    -- Medical facilities & assets (generic — use tipo_elemento for specifics)
+    'medical_facility',  -- Roles 1/2/3/4 specified via tipo_elemento
+    'medevac_unit',      -- MEDEVAC assets (helo, fixed-wing, ambulance, etc.)
+    -- Casualties (use alliance + medical_details.casualty_status for WIA/KIA)
+    'casualty',
     -- Fallback
     'default'
   );

@@ -159,22 +159,26 @@
               <option value="infrastructure">infrastructure</option>
             </optgroup>
 
-            <!-- Medical facilities -->
-            <optgroup label="── Medical Facilities ──">
-              <option value="medical_role_1">medical_role_1 — Aid Post</option>
-              <option value="medical_role_2">medical_role_2 — Surgical</option>
-              <option value="medical_role_3">medical_role_3 — Field Hospital</option>
+            <!-- Medical & MEDEVAC -->
+            <optgroup label="── Medical & MEDEVAC ──">
+              <option value="medical_facility">medical_facility — Medical Facility</option>
               <option value="medevac_unit">medevac_unit — MEDEVAC Asset</option>
             </optgroup>
 
             <!-- Casualties -->
             <optgroup label="── Casualties ──">
-              <option value="casualty_friendly">casualty_friendly</option>
-              <option value="casualty_hostile">casualty_hostile</option>
-              <option value="casualty_civilian">casualty_civilian</option>
+              <option value="casualty">casualty — Casualty</option>
             </optgroup>
 
             <option value="default">default</option>
+          </select>
+        </div>
+
+        <!-- Tipo Elemento (dynamic, shown only for medical_facility, medevac_unit) -->
+        <div class="form-group" id="tipoElementoGroup" style="display:none;">
+          <label for="tipoElemento">Tipo Elemento *</label>
+          <select id="tipoElemento" name="tipoElemento">
+            <option value="">— Selecciona tipo —</option>
           </select>
         </div>
 

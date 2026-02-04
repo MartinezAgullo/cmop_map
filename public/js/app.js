@@ -43,17 +43,12 @@ const CATEGORY_BASE_NAMES = {
   building:       ['infrastructure'],
   infrastructure: ['infrastructure'],
 
-  // Medical facilities
-  medical_role_1: ['medical_role_1', 'medical_facility_role_1', 'medical_facility_default'],
-  medical_role_2: ['medical_role_2', 'medical_facility_role_2', 'medical_facility_default'],
-  medical_role_3: ['medical_role_3', 'medical_facility_role_3', 'medical_facility_default'],
-  medevac_unit:   ['medevac', 'medevac_fixedwing', 'medevac_mechanised'],
+  // Medical facilities & MEDEVAC (use tipo_elemento for specific icon)
+  medical_facility: ['medical_facility', 'medical_facility_default'],
+  medevac_unit:     ['medevac', 'medevac_default'],
 
   // Casualties — resolved dynamically based on medical.casualty_status (WIA/KIA/UNKNOWN)
-  // If no casualty_status → fallback to 'casualty' generic
-  casualty_friendly: ['casualty'],
-  casualty_hostile:  ['casualty'],
-  casualty_civilian: ['casualty'],
+  casualty:       ['casualty'],
 
   default:        ['default']
 };
@@ -83,7 +78,7 @@ function buildFilenameCandidates(category, country, entity) {
   let bases = CATEGORY_BASE_NAMES[category?.toLowerCase()] || CATEGORY_BASE_NAMES.default;
 
   // Special handling for casualties: if entity has medical.casualty_status, use WIA/KIA-specific icons
-  if (category && category.startsWith('casualty_') && entity?.medical?.casualty_status) {
+  if (category === 'casualty' && entity?.medical?.casualty_status) {
     const status = entity.medical.casualty_status.toLowerCase();
     if (status === 'wia') {
       // Try: casualty_wia_{country} → casualty_wia → casualty_{country} → casualty
@@ -92,6 +87,12 @@ function buildFilenameCandidates(category, country, entity) {
       bases = ['casualty_kia', 'casualty'];
     }
     // If UNKNOWN → fallback to generic 'casualty' (already in bases)
+  }
+
+  // Special handling for medical_facility and medevac_unit: use tipo_elemento for icon
+  if ((category === 'medical_facility' || category === 'medevac_unit') && entity?.tipo_elemento) {
+    const tipo = entity.tipo_elemento.toLowerCase().replace(/\s+/g, '_');
+    bases = [tipo, ...bases];  // Try tipo_elemento first, then fallback to generic
   }
 
   const cn      = normalizeCountry(country);
@@ -181,6 +182,54 @@ function setupEventListeners() {
   });
 
   document.getElementById('loadScenarioBtn').addEventListener('click', loadSelectedScenario);
+
+  // Dynamic tipo_elemento dropdown
+  document.getElementById('categoria').addEventListener('change', (e) => {
+    updateTipoElementoOptions(e.target.value);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Tipo Elemento options
+// ---------------------------------------------------------------------------
+
+const TIPO_ELEMENTO_OPTIONS = {
+  medical_facility: [
+    { value: 'medical_role_1', label: 'Role 1 — Aid Post' },
+    { value: 'medical_role_2', label: 'Role 2 — Surgical' },
+    { value: 'medical_role_3', label: 'Role 3 — Field Hospital' },
+    { value: 'medical_role_4', label: 'Role 4 — Definitive Care' },
+    { value: 'medical_role_2basic', label: 'Role 2 Basic' },
+    { value: 'medical_role_2enhanced', label: 'Role 2 Enhanced' },
+    { value: 'medical_facility_multinational', label: 'Multinational Facility' }
+  ],
+  medevac_unit: [
+    { value: 'medevac_role_1', label: 'MEDEVAC Role 1 — Immediate Care' },
+    { value: 'medevac_role_2', label: 'MEDEVAC Role 2 — Forward Resuscitative' },
+    { value: 'medevac_role_3', label: 'MEDEVAC Role 3 — Theater Hospitalization' },
+    { value: 'medevac_role_4', label: 'MEDEVAC Role 4 — Definitive/Rehab' },
+    { value: 'medevac_fixedwing', label: 'Fixed-Wing MEDEVAC' },
+    { value: 'medevac_ambulance', label: 'Ambulance' },
+    { value: 'medevac_mechanised', label: 'Mechanised MEDEVAC' },
+    { value: 'medevac_mortuary', label: 'Mortuary Affairs' }
+  ]
+};
+
+function updateTipoElementoOptions(categoria) {
+  const group = document.getElementById('tipoElementoGroup');
+  const select = document.getElementById('tipoElemento');
+
+  if (!TIPO_ELEMENTO_OPTIONS[categoria]) {
+    group.style.display = 'none';
+    select.innerHTML = '<option value="">— Selecciona tipo —</option>';
+    return;
+  }
+
+  group.style.display = 'block';
+  select.innerHTML = '<option value="">— Selecciona tipo —</option>' +
+    TIPO_ELEMENTO_OPTIONS[categoria]
+      .map(opt => `<option value="${opt.value}">${opt.label}</option>`)
+      .join('');
 }
 
 // ---------------------------------------------------------------------------
@@ -281,7 +330,7 @@ async function filterEntities() {
 // ---------------------------------------------------------------------------
 
 function updateStats() {
-  const casualties = allEntities.filter(e => e.categoria?.startsWith('casualty_'));
+  const casualties = allEntities.filter(e => e.categoria === 'casualty');
   const redCount   = casualties.filter(e => e.medical?.triage_color === 'RED').length;
   const yelCount   = casualties.filter(e => e.medical?.triage_color === 'YELLOW').length;
 
@@ -479,15 +528,23 @@ function cerrarFormularioNuevoPunto() {
 async function crearNuevaEntidad() {
   showLoading(true);
   try {
+    const categoria = document.getElementById('categoria').value;
+    const tipoElemento = document.getElementById('tipoElemento').value;
+
     const payload = {
       nombre:     document.getElementById('nombre').value,
       descripcion:document.getElementById('descripcion').value,
-      categoria:  document.getElementById('categoria').value,
+      categoria:  categoria,
       country:    document.getElementById('country').value,
       alliance:   document.getElementById('alliance').value,
       latitud:    parseFloat(document.getElementById('latitud').value),
       longitud:   parseFloat(document.getElementById('longitud').value)
     };
+
+    // Include tipo_elemento only if provided
+    if (tipoElemento) {
+      payload.tipo_elemento = tipoElemento;
+    }
 
     const res  = await fetch('/api/entities', {
       method: 'POST',

@@ -40,15 +40,15 @@ const entities = [
   // Medical facilities
   // ---------------------------------------------------------------
   // Role 1 — forward aid post, near the contact area
-  { nombre: 'Aid Post Alpha', descripcion: 'Role-1 forward aid post', categoria: 'medical_role_1', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R1-ALPHA', activo: true, tipo_elemento: 'Aid Post', prioridad: 10, observaciones: 'Co-located with ESP INF-B', altitud: null, lng: -0.3840, lat: 39.4640 },
+  { nombre: 'Aid Post Alpha', descripcion: 'Role-1 forward aid post', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R1-ALPHA', activo: true, tipo_elemento: 'medical_role_1', prioridad: 10, observaciones: 'Co-located with ESP INF-B', altitud: null, lng: -0.3840, lat: 39.4640 },
 
   // Role 2 — at Manises AB, limited surgical capability
-  { nombre: 'Manises Role-2', descripcion: 'Role-2 surgical facility at Manises AB', categoria: 'medical_role_2', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R2-MANISES', activo: true, tipo_elemento: 'Field Hospital', prioridad: 10, observaciones: 'Surgical + stabilisation', altitud: null, lng: -0.4755, lat: 39.4915 },
+  { nombre: 'Manises Role-2', descripcion: 'Role-2 surgical facility at Manises AB', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R2-MANISES', activo: true, tipo_elemento: 'medical_role_2', prioridad: 10, observaciones: 'Surgical + stabilisation', altitud: null, lng: -0.4755, lat: 39.4915 },
 
   // ---------------------------------------------------------------
   // MEDEVAC asset
   // ---------------------------------------------------------------
-  { nombre: 'ESP MEDEVAC-1', descripcion: 'Spanish MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-1', activo: true, tipo_elemento: 'MEDEVAC Helo', prioridad: 10, observaciones: 'On standby at Manises', altitud: 0, lng: -0.4760, lat: 39.4910 },
+  { nombre: 'ESP MEDEVAC-1', descripcion: 'Spanish MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_2', prioridad: 10, observaciones: 'On standby at Manises', altitud: 0, lng: -0.4760, lat: 39.4910 },
 
   // ---------------------------------------------------------------
   // Air / ISR (context)
@@ -61,13 +61,13 @@ const entities = [
   // Casualties (these are the entities that get medical_details)
   // ---------------------------------------------------------------
   // CAS-1: RED — blast injury, still at POI, urgent evacuation needed
-  { nombre: 'CAS-1 (RED)',  descripcion: 'Friendly casualty — blast injury, critical', categoria: 'casualty_friendly', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-1', activo: true, tipo_elemento: 'Casualty', prioridad: 10, observaciones: 'Bilateral leg amputation, tourniquet applied', altitud: null, lng: -0.3770, lat: 39.4740 },
+  { nombre: 'CAS-1 (RED)',  descripcion: 'Friendly casualty — blast injury, critical', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-1', activo: true, tipo_elemento: 'Casualty', prioridad: 10, observaciones: 'Bilateral leg amputation, tourniquet applied', altitud: null, lng: -0.3770, lat: 39.4740 },
 
   // CAS-2: YELLOW — GSW, being moved to Aid Post Alpha
-  { nombre: 'CAS-2 (YEL)', descripcion: 'Friendly casualty — GSW, in transit to R1', categoria: 'casualty_friendly', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-2', activo: true, tipo_elemento: 'Casualty', prioridad: 8,  observaciones: 'Abdominal GSW, IV fluids started', altitud: null, lng: -0.3800, lat: 39.4650 },
+  { nombre: 'CAS-2 (YEL)', descripcion: 'Friendly casualty — GSW, in transit to R1', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-2', activo: true, tipo_elemento: 'Casualty', prioridad: 8,  observaciones: 'Abdominal GSW, IV fluids started', altitud: null, lng: -0.3800, lat: 39.4650 },
 
   // CAS-3: GREEN — minor laceration, already at Aid Post
-  { nombre: 'CAS-3 (GRN)', descripcion: 'Friendly casualty — minor laceration, stable', categoria: 'casualty_friendly', country: 'France', alliance: 'friendly', elemento_identificado: 'CAS-3', activo: true, tipo_elemento: 'Casualty', prioridad: 3,  observaciones: 'Facial laceration, conscious and alert', altitud: null, lng: -0.3843, lat: 39.4638 },
+  { nombre: 'CAS-3 (GRN)', descripcion: 'Friendly casualty — minor laceration, stable', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'CAS-3', activo: true, tipo_elemento: 'Casualty', prioridad: 3,  observaciones: 'Facial laceration, conscious and alert', altitud: null, lng: -0.3843, lat: 39.4638 },
 ];
 
 // ---------------------------------------------------------------------------
