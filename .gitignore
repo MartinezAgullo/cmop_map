@@ -30,6 +30,3 @@ Thumbs.db
 *.backup
 *.bak
 docs_backup/
-
-
-rename-casualties.sh
