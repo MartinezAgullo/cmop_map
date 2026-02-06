@@ -93,11 +93,11 @@ function buildFilenameCandidates(category, country, entity) {
   if ((category === 'medical_facility' || category === 'medevac_unit') && entity?.tipo_elemento) {
     let tipo = entity.tipo_elemento.toLowerCase().replace(/\s+/g, '_');
     
-    // MEDEVAC icons use medical_role_X naming convention
-    // tipo_elemento: 'medevac_role_2' → icon: 'medical_role_2_{country}.svg'
-    if (category === 'medevac_unit' && tipo.startsWith('medevac_role_')) {
-      tipo = tipo.replace('medevac_role_', 'medical_role_');
+    // Medical facilities: medical_role_1 → medical_facility_role_1
+    if (category === 'medical_facility' && tipo.startsWith('medical_role_')) {
+      tipo = tipo.replace('medical_role_', 'medical_facility_role_');
     }
+    // MEDEVAC units: tipo_elemento already correct (medevac_role_X)
     
     bases = [tipo, ...bases];
   }
