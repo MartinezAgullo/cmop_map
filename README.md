@@ -164,8 +164,8 @@ All responses include `medical: {...} | null` when the entity has a medical reco
 Military:  missile, fighter, bomber, aircraft, helicopter, uav, tank,
            artillery, ship, destroyer, submarine, ground_vehicle, apc,
            infantry, person, base, building, infrastructure
-Medical:   medical_role_1, medical_role_2, medical_role_3, medevac_unit
-Casualty:  casualty_friendly, casualty_hostile, casualty_civilian
+Medical:   medical_facility, medevac_unit
+Casualty:  casualty
            default
 ```
 
