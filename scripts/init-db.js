@@ -13,20 +13,42 @@ const ENUMS = `
   -- Military + medical entity categories
   CREATE TYPE categoria_militar AS ENUM (
     -- Original military categories
-    'missile', 'fighter', 'bomber', 'aircraft', 'helicopter', 'uav',
-    'tank', 'artillery', 'ship', 'destroyer', 'submarine', 'ground_vehicle',
-    'apc', 'infantry', 'person', 'base', 'building', 'infrastructure',
+    'missile',              -- Misil
+    'fighter',              -- Caza
+    'bomber',               -- Bombardero
+    'aircraft',             -- Aeronave
+    'helicopter',           -- Helicóptero
+    'uav',                  -- UAV / Drone
+    'tank',                 -- Carro de combate (legacy, use 'armoured')
+    'armoured',             -- Carro de combate / Blindado
+    'artillery',            -- Artillería
+    'ship',                 -- Buque
+    'destroyer',            -- Destructor
+    'submarine',            -- Submarino
+    'ground_vehicle',       -- Vehículo terrestre
+    'apc',                  -- Transporte blindado de personal
+    'infantry',             -- Infantería (subtypes via tipo_elemento)
+    'reconnaissance',       -- Reconocimiento / Caballería
+    'engineer',             -- Ingenieros
+    'mortar',               -- Mortero (subtypes: heavy/medium/light)
+    'person',               -- Persona
+    'base',                 -- Base
+    'building',             -- Edificio
+    'infrastructure',       -- Infraestructura
     -- Medical facilities & assets (generic — use tipo_elemento for specifics)
-    'medical_facility',  -- Roles 1/2/3/4 specified via tipo_elemento
-    'medevac_unit',      -- MEDEVAC assets (helo, fixed-wing, ambulance, etc.)
+    'medical_facility',     -- Instalación médica (Roles 1/2/3/4 via tipo_elemento)
+    'medevac_unit',         -- Unidad MEDEVAC (helicóptero, ambulancia, etc.)
     -- Casualties (use alliance + medical_details.casualty_status for WIA/KIA)
-    'casualty',
+    'casualty',             -- Baja
     -- Fallback
     'default'
   );
 
   CREATE TYPE alliance_enum AS ENUM (
-    'friendly', 'hostile', 'neutral', 'unknown'
+    'friendly',   -- Aliado
+    'hostile',    -- Hostil
+    'neutral',    -- Neutral
+    'unknown'     -- Desconocido
   );
 
   -- Triage colours (TCCC standard + unknown default)

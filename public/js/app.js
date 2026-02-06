@@ -30,14 +30,18 @@ const CATEGORY_BASE_NAMES = {
   aircraft:       ['fixed_wing', 'air_and_space'],
   helicopter:     ['helicopter', 'rotary_wing'],
   uav:            ['uav'],
-  tank:           ['tank', 'armor_mechanized', 'ground'],
+  tank:           ['tank', 'armoured', 'armor_mechanized', 'ground'],  // legacy
+  armoured:       ['armoured', 'tank', 'armor_mechanized', 'ground'],  // Carro de combate
   artillery:      ['artillery'],
   ship:           ['ship', 'sea_surface'],
   destroyer:      ['destroyer', 'ship'],
   submarine:      ['submarine', 'sub_surface'],
   ground_vehicle: ['ground', 'armor_mechanized'],
   apc:            ['apc', 'armor_mechanized'],
-  infantry:       ['infantry', 'ground'],
+  infantry:       ['infantry', 'ground'],              // Infantería (subtypes via tipo_elemento)
+  reconnaissance: ['reconnaissance', 'ground'],        // Reconocimiento / Caballería
+  engineer:       ['engineer', 'ground'],              // Ingenieros
+  mortar:         ['mortar', 'artillery'],             // Mortero
   person:         ['person'],
   base:           ['base', 'headquarters'],
   building:       ['infrastructure'],
@@ -81,18 +85,34 @@ function buildFilenameCandidates(category, country, entity) {
   if (category === 'casualty' && entity?.medical?.casualty_status) {
     const status = entity.medical.casualty_status.toLowerCase();
     if (status === 'wia') {
-      // Try: casualty_wia_{country} → casualty_wia → casualty_{country} → casualty
       bases = ['casualty_wia', 'casualty'];
     } else if (status === 'kia') {
       bases = ['casualty_kia', 'casualty'];
     }
-    // If UNKNOWN → fallback to generic 'casualty' (already in bases)
   }
 
   // Special handling for medical_facility and medevac_unit: use tipo_elemento for icon
   if ((category === 'medical_facility' || category === 'medevac_unit') && entity?.tipo_elemento) {
     const tipo = entity.tipo_elemento.toLowerCase().replace(/\s+/g, '_');
-    bases = [tipo, ...bases];  // Try tipo_elemento first, then fallback to generic
+    bases = [tipo, ...bases];
+  }
+
+  // Special handling for infantry, reconnaissance, engineer, mortar: use tipo_elemento
+  if (['infantry', 'reconnaissance', 'engineer', 'mortar'].includes(category) && entity?.tipo_elemento) {
+    const tipo = entity.tipo_elemento.toLowerCase().replace(/\s+/g, '_');
+    // Infantry: infantry_light, infantry_motorised, etc.
+    // Reconnaissance: all use 'reconnaissance' (same icon regardless of subtype)
+    // Engineer: just 'engineer'
+    // Mortar: all use 'mortar' (same icon regardless of heavy/medium/light)
+    if (category === 'infantry') {
+      bases = [`infantry_${tipo}`, 'infantry', ...bases];
+    } else if (category === 'reconnaissance') {
+      bases = ['reconnaissance', ...bases];  // all subtypes use same icon
+    } else if (category === 'mortar') {
+      bases = ['mortar', ...bases];  // all subtypes use same icon
+    } else {
+      bases = [tipo, ...bases];
+    }
   }
 
   const cn      = normalizeCountry(country);
@@ -194,7 +214,32 @@ function setupEventListeners() {
 // ---------------------------------------------------------------------------
 
 const TIPO_ELEMENTO_OPTIONS = {
-  medical_facility: [
+  infantry: [  // Infantería
+    { value: 'standard', label: 'Infantry (Standard) — Infantería' },
+    { value: 'light', label: 'Light Infantry — Infantería Ligera' },
+    { value: 'motorised', label: 'Motorised Infantry — Infantería Motorizada' },
+    { value: 'mechanised', label: 'Mechanised Infantry — Infantería Mecanizada' },
+    { value: 'mechanised_wheeled', label: 'Mechanised Infantry (Wheeled) — Infantería Mecanizada con Ruedas' },
+    { value: 'armoured', label: 'Armoured Infantry — Infantería Blindada' },
+    { value: 'lav', label: 'Light Armoured Vehicle Infantry — Infantería LAV' },
+    { value: 'unarmed_transport', label: 'Unarmed Transport — Transporte Sin Armas' },
+    { value: 'uav', label: 'UAV Infantry — Infantería con UAV' }
+  ],
+  reconnaissance: [  // Reconocimiento / Caballería
+    { value: 'standard', label: 'Reconnaissance (Standard) — Reconocimiento' },
+    { value: 'mechanised', label: 'Mechanised Reconnaissance — Reconocimiento Mecanizado' },
+    { value: 'wheeled', label: 'Wheeled Reconnaissance — Reconocimiento con Ruedas' }
+  ],
+  engineer: [  // Ingenieros
+    { value: 'standard', label: 'Engineer — Ingenieros' }
+  ],
+  mortar: [  // Mortero
+    { value: 'heavy', label: 'Heavy Mortar — Mortero Pesado' },
+    { value: 'medium', label: 'Medium Mortar — Mortero Medio' },
+    { value: 'light', label: 'Light Mortar — Mortero Ligero' },
+    { value: 'unknown', label: 'Mortar (Unknown Type) — Mortero (Tipo Desconocido)' }
+  ],
+  medical_facility: [  // Instalación Médica
     { value: 'medical_role_1', label: 'Role 1 — Aid Post' },
     { value: 'medical_role_2', label: 'Role 2 — Surgical' },
     { value: 'medical_role_3', label: 'Role 3 — Field Hospital' },
@@ -203,7 +248,7 @@ const TIPO_ELEMENTO_OPTIONS = {
     { value: 'medical_role_2enhanced', label: 'Role 2 Enhanced' },
     { value: 'medical_facility_multinational', label: 'Multinational Facility' }
   ],
-  medevac_unit: [
+  medevac_unit: [  // Unidad MEDEVAC
     { value: 'medevac_role_1', label: 'MEDEVAC Role 1 — Immediate Care' },
     { value: 'medevac_role_2', label: 'MEDEVAC Role 2 — Forward Resuscitative' },
     { value: 'medevac_role_3', label: 'MEDEVAC Role 3 — Theater Hospitalization' },

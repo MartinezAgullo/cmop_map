@@ -1,9 +1,4 @@
 // server.js
-/**
- * server.js — Express entry point for the CMOP Map service.
- * Serves the static frontend, mounts the /api/entities and /api/medical
- * REST routes, and exposes a /health check endpoint.
- */
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
@@ -12,6 +7,7 @@ require('dotenv').config();
 const entitiesRoutes  = require('./routes/entities');
 const medicalRoutes   = require('./routes/medical');
 const scenariosRoutes = require('./routes/scenarios');
+const schemaRoutes    = require('./routes/schema');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -20,17 +16,16 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 // ---------------------------------------------------------------------------
 app.use(cors());
-app.use(express.json());
+app.use(express.json());                          // replaces body-parser
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
-app.use('/api/entities', entitiesRoutes);
-app.use('/api/medical',  medicalRoutes);
+app.use('/api/entities',   entitiesRoutes);
+app.use('/api/medical',    medicalRoutes);
 app.use('/api/scenarios',  scenariosRoutes);
-
-
+app.use('/api/schema',     schemaRoutes);
 
 // ---------------------------------------------------------------------------
 // Health check
@@ -60,16 +55,17 @@ app.use((err, _req, res, _next) => {
 // ---------------------------------------------------------------------------
 app.listen(PORT, () => {
   console.log(`
-╔═════════════════════════════════════════════════════╗
-║   🗺️  CMOP Map Server                                ║
-║                                                     ║
-║   🔌 Port:    ${PORT}                                  ║
-║   🌐 URL:     http://localhost:${PORT}                 ║
-║   📊 Entities: http://localhost:${PORT}/api/entities.  ║
-║   🏥 Medical:  http://localhost:${PORT}/api/medical    ║
+╔══════════════════════════════════════════════════╗
+║   🗺️  CMOP Map Server                           ║
+║                                                  ║
+║   🔌 Port:    ${PORT}                                ║
+║   🌐 URL:     http://localhost:${PORT}               ║
+║   📊 Entities:  http://localhost:${PORT}/api/entities  ║
+║   🏥 Medical:   http://localhost:${PORT}/api/medical   ║
 ║   🎬 Scenarios: http://localhost:${PORT}/api/scenarios ║
-║   💚 Env:     ${process.env.NODE_ENV || 'development'}                           ║
-╚═════════════════════════════════════════════════════╝
+║   📋 Schema:    http://localhost:${PORT}/api/schema    ║
+║   💚 Env:     ${process.env.NODE_ENV || 'development'}                       ║
+╚══════════════════════════════════════════════════╝
   `);
 });
 
