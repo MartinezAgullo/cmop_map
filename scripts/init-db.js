@@ -19,17 +19,15 @@ const ENUMS = `
     'aircraft',             -- Aeronave
     'helicopter',           -- Helicóptero
     'uav',                  -- UAV / Drone
-    'tank',                 -- Carro de combate (legacy, use 'armoured')
     'armoured',             -- Carro de combate / Blindado
     'artillery',            -- Artillería
     'ship',                 -- Buque
     'destroyer',            -- Destructor
     'submarine',            -- Submarino
     'ground_vehicle',       -- Vehículo terrestre
-    'apc',                  -- Transporte blindado de personal
     'infantry',             -- Infantería (subtypes via tipo_elemento)
     'reconnaissance',       -- Reconocimiento / Caballería
-    'engineer',             -- Ingenieros
+    'engineer',             -- Ingenieros (subtypes: standard, armoured)
     'mortar',               -- Mortero (subtypes: heavy/medium/light)
     'person',               -- Persona
     'base',                 -- Base

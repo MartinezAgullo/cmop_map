@@ -30,17 +30,15 @@ const CATEGORY_BASE_NAMES = {
   aircraft:       ['fixed_wing', 'air_and_space'],
   helicopter:     ['helicopter', 'rotary_wing'],
   uav:            ['uav'],
-  tank:           ['tank', 'armoured', 'armor_mechanized', 'ground'],  // legacy
   armoured:       ['armoured', 'tank', 'armor_mechanized', 'ground'],  // Carro de combate
   artillery:      ['artillery'],
   ship:           ['ship', 'sea_surface'],
   destroyer:      ['destroyer', 'ship'],
   submarine:      ['submarine', 'sub_surface'],
   ground_vehicle: ['ground', 'armor_mechanized'],
-  apc:            ['apc', 'armor_mechanized'],
   infantry:       ['infantry', 'ground'],              // Infantería (subtypes via tipo_elemento)
   reconnaissance: ['reconnaissance', 'ground'],        // Reconocimiento / Caballería
-  engineer:       ['engineer', 'ground'],              // Ingenieros
+  engineer:       ['engineer', 'ground'],              // Ingenieros (subtypes: standard, armoured)
   mortar:         ['mortar', 'artillery'],             // Mortero
   person:         ['person'],
   base:           ['base', 'headquarters'],
@@ -93,7 +91,14 @@ function buildFilenameCandidates(category, country, entity) {
 
   // Special handling for medical_facility and medevac_unit: use tipo_elemento for icon
   if ((category === 'medical_facility' || category === 'medevac_unit') && entity?.tipo_elemento) {
-    const tipo = entity.tipo_elemento.toLowerCase().replace(/\s+/g, '_');
+    let tipo = entity.tipo_elemento.toLowerCase().replace(/\s+/g, '_');
+    
+    // MEDEVAC icons use medical_role_X naming convention
+    // tipo_elemento: 'medevac_role_2' → icon: 'medical_role_2_{country}.svg'
+    if (category === 'medevac_unit' && tipo.startsWith('medevac_role_')) {
+      tipo = tipo.replace('medevac_role_', 'medical_role_');
+    }
+    
     bases = [tipo, ...bases];
   }
 
@@ -102,12 +107,22 @@ function buildFilenameCandidates(category, country, entity) {
     const tipo = entity.tipo_elemento.toLowerCase().replace(/\s+/g, '_');
     // Infantry: infantry_light, infantry_motorised, etc.
     // Reconnaissance: all use 'reconnaissance' (same icon regardless of subtype)
-    // Engineer: just 'engineer'
+    // Engineer: engineer (standard) or engineer_armoured
     // Mortar: all use 'mortar' (same icon regardless of heavy/medium/light)
     if (category === 'infantry') {
-      bases = [`infantry_${tipo}`, 'infantry', ...bases];
+      if (tipo === 'standard') {
+        bases = ['infantry', ...bases];  // standard → infantry (not infantry_standard)
+      } else {
+        bases = [`infantry_${tipo}`, 'infantry', ...bases];
+      }
     } else if (category === 'reconnaissance') {
       bases = ['reconnaissance', ...bases];  // all subtypes use same icon
+    } else if (category === 'engineer') {
+      if (tipo === 'armoured') {
+        bases = ['engineer_armoured', 'engineer', ...bases];
+      } else {
+        bases = ['engineer', ...bases];
+      }
     } else if (category === 'mortar') {
       bases = ['mortar', ...bases];  // all subtypes use same icon
     } else {
@@ -219,9 +234,9 @@ const TIPO_ELEMENTO_OPTIONS = {
     { value: 'light', label: 'Light Infantry — Infantería Ligera' },
     { value: 'motorised', label: 'Motorised Infantry — Infantería Motorizada' },
     { value: 'mechanised', label: 'Mechanised Infantry — Infantería Mecanizada' },
-    { value: 'mechanised_wheeled', label: 'Mechanised Infantry (Wheeled) — Infantería Mecanizada con Ruedas' },
+    { value: 'mechanised_wheeled', label: 'Mechanised Infantry Wheeled (APC) — Infantería Mecanizada con Ruedas' },
     { value: 'armoured', label: 'Armoured Infantry — Infantería Blindada' },
-    { value: 'lav', label: 'Light Armoured Vehicle Infantry — Infantería LAV' },
+    { value: 'lav', label: 'Light Armoured Vehicle Infantry — Vehículos de Combate de Infantería a Ruedas' },
     { value: 'unarmed_transport', label: 'Unarmed Transport — Transporte Sin Armas' },
     { value: 'uav', label: 'UAV Infantry — Infantería con UAV' }
   ],
@@ -231,7 +246,8 @@ const TIPO_ELEMENTO_OPTIONS = {
     { value: 'wheeled', label: 'Wheeled Reconnaissance — Reconocimiento con Ruedas' }
   ],
   engineer: [  // Ingenieros
-    { value: 'standard', label: 'Engineer — Ingenieros' }
+    { value: 'standard', label: 'Engineer — Ingenieros' },
+    { value: 'armoured', label: 'Engineer Armoured — Ingenieros Blindados' }
   ],
   mortar: [  // Mortero
     { value: 'heavy', label: 'Heavy Mortar — Mortero Pesado' },

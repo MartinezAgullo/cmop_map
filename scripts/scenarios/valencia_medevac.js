@@ -23,18 +23,18 @@ const entities = [
   // ---------------------------------------------------------------
   // Friendly infantry (subset of valencia_urban — kept for context)
   // ---------------------------------------------------------------
-  { nombre: 'ESP INF-A',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-A',     activo: true, tipo_elemento: 'Infantry',  prioridad: 5, observaciones: 'Urban patrol',          altitud: null, lng: -0.3768, lat: 39.4745 },
-  { nombre: 'ESP INF-B',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-B',     activo: true, tipo_elemento: 'Infantry',  prioridad: 5, observaciones: 'Holding intersection',  altitud: null, lng: -0.3850, lat: 39.4632 },
-  { nombre: 'ESP INF-C',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-C',     activo: true, tipo_elemento: 'Infantry',  prioridad: 5, observaciones: 'Near park area',       altitud: null, lng: -0.3650, lat: 39.4841 },
-  { nombre: 'FRA INF-1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'France',  alliance: 'friendly', elemento_identificado: 'FRA-INF-1',     activo: true, tipo_elemento: 'Infantry',  prioridad: 5, observaciones: 'Supporting ESP',       altitud: null, lng: -0.3530, lat: 39.4525 },
-  { nombre: 'DEU INF-1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-INF-1',     activo: true, tipo_elemento: 'Infantry',  prioridad: 5, observaciones: 'QR force',              altitud: null, lng: -0.4002, lat: 39.4820 },
+  { nombre: 'ESP INF-A',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-A',     activo: true, tipo_elemento: 'standard',  prioridad: 5, observaciones: 'Urban patrol',          altitud: null, lng: -0.3768, lat: 39.4745 },
+  { nombre: 'ESP INF-B',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-B',     activo: true, tipo_elemento: 'standard',  prioridad: 5, observaciones: 'Holding intersection',  altitud: null, lng: -0.3850, lat: 39.4632 },
+  { nombre: 'ESP INF-C',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-C',     activo: true, tipo_elemento: 'standard',  prioridad: 5, observaciones: 'Near park area',       altitud: null, lng: -0.3650, lat: 39.4841 },
+  { nombre: 'FRA INF-1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'France',  alliance: 'friendly', elemento_identificado: 'FRA-INF-1',     activo: true, tipo_elemento: 'standard',  prioridad: 5, observaciones: 'Supporting ESP',       altitud: null, lng: -0.3530, lat: 39.4525 },
+  { nombre: 'DEU INF-1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-INF-1',     activo: true, tipo_elemento: 'standard',  prioridad: 5, observaciones: 'QR force',              altitud: null, lng: -0.4002, lat: 39.4820 },
 
   // ---------------------------------------------------------------
   // Hostile forces (reduced subset)
   // ---------------------------------------------------------------
-  { nombre: 'H-INF-1',    descripcion: 'Hostile infantry',        categoria: 'infantry',   country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-1',      activo: true, tipo_elemento: 'Infantry',  prioridad: 6, observaciones: 'Skirmishing',           altitud: null, lng: -0.3609, lat: 39.4705 },
-  { nombre: 'H-INF-4',    descripcion: 'Hostile infantry',        categoria: 'infantry',   country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-4',      activo: true, tipo_elemento: 'Infantry',  prioridad: 6, observaciones: 'Ambush expected',      altitud: null, lng: -0.3687, lat: 39.4611 },
-  { nombre: 'H-TANK-1',   descripcion: 'Hostile MBT',            categoria: 'tank',       country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-TNK-1',      activo: true, tipo_elemento: 'MBT',       prioridad: 9, observaciones: 'Covered position',     altitud: null, lng: -0.3700, lat: 39.4930 },
+  { nombre: 'H-INF-1',    descripcion: 'Hostile infantry',        categoria: 'infantry',   country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-1',      activo: true, tipo_elemento: 'standard',  prioridad: 6, observaciones: 'Skirmishing',           altitud: null, lng: -0.3609, lat: 39.4705 },
+  { nombre: 'H-INF-4',    descripcion: 'Hostile infantry',        categoria: 'infantry',   country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-4',      activo: true, tipo_elemento: 'standard',  prioridad: 6, observaciones: 'Ambush expected',      altitud: null, lng: -0.3687, lat: 39.4611 },
+  { nombre: 'H-TANK-1',   descripcion: 'Hostile MBT',            categoria: 'armoured',       country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-TNK-1',      activo: true, tipo_elemento: 'MBT',       prioridad: 9, observaciones: 'Covered position',     altitud: null, lng: -0.3700, lat: 39.4930 },
 
   // ---------------------------------------------------------------
   // Medical facilities
@@ -61,13 +61,13 @@ const entities = [
   // Casualties (these are the entities that get medical_details)
   // ---------------------------------------------------------------
   // CAS-1: RED — blast injury, still at POI, urgent evacuation needed
-  { nombre: 'CAS-1 (RED)',  descripcion: 'Friendly casualty — blast injury, critical', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-1', activo: true, tipo_elemento: 'Casualty', prioridad: 10, observaciones: 'Bilateral leg amputation, tourniquet applied', altitud: null, lng: -0.3770, lat: 39.4740 },
+  { nombre: 'CAS-1 (RED)',  descripcion: 'Friendly casualty — blast injury, critical', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 10, observaciones: 'Bilateral leg amputation, tourniquet applied', altitud: null, lng: -0.3770, lat: 39.4740 },
 
   // CAS-2: YELLOW — GSW, being moved to Aid Post Alpha
-  { nombre: 'CAS-2 (YEL)', descripcion: 'Friendly casualty — GSW, in transit to R1', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-2', activo: true, tipo_elemento: 'Casualty', prioridad: 8,  observaciones: 'Abdominal GSW, IV fluids started', altitud: null, lng: -0.3800, lat: 39.4650 },
+  { nombre: 'CAS-2 (YEL)', descripcion: 'Friendly casualty — GSW, in transit to R1', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 8,  observaciones: 'Abdominal GSW, IV fluids started', altitud: null, lng: -0.3800, lat: 39.4650 },
 
   // CAS-3: GREEN — minor laceration, already at Aid Post
-  { nombre: 'CAS-3 (GRN)', descripcion: 'Friendly casualty — minor laceration, stable', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'CAS-3', activo: true, tipo_elemento: 'Casualty', prioridad: 3,  observaciones: 'Facial laceration, conscious and alert', altitud: null, lng: -0.3843, lat: 39.4638 },
+  { nombre: 'CAS-3 (GRN)', descripcion: 'Friendly casualty — minor laceration, stable', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'CAS-3', activo: true, tipo_elemento: 'casualty', prioridad: 3,  observaciones: 'Facial laceration, conscious and alert', altitud: null, lng: -0.3843, lat: 39.4638 },
 ];
 
 // ---------------------------------------------------------------------------

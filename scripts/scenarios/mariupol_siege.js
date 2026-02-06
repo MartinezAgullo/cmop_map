@@ -23,13 +23,13 @@ const entities = [
   // Ukrainian forces
   // ---------------------------------------------------------------
   // Infantry
-  { nombre: 'UKR INF-1',  descripcion: 'Ukrainian infantry squad', categoria: 'infantry', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-INF-1', activo: true, tipo_elemento: 'Infantry', prioridad: 5, observaciones: 'Holding northern sector',  altitud: null, lng: 37.610, lat: 47.105 },
-  { nombre: 'UKR INF-2',  descripcion: 'Ukrainian infantry squad', categoria: 'infantry', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-INF-2', activo: true, tipo_elemento: 'Infantry', prioridad: 5, observaciones: 'Port area defense',        altitud: null, lng: 37.565, lat: 47.090 },
-  { nombre: 'UKR INF-3',  descripcion: 'Ukrainian infantry squad', categoria: 'infantry', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-INF-3', activo: true, tipo_elemento: 'Infantry', prioridad: 5, observaciones: 'Azovstal perimeter',      altitud: null, lng: 37.620, lat: 47.088 },
-  { nombre: 'UKR INF-4',  descripcion: 'Ukrainian infantry squad', categoria: 'infantry', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-INF-4', activo: true, tipo_elemento: 'Infantry', prioridad: 5, observaciones: 'City center strongpoint', altitud: null, lng: 37.545, lat: 47.095 },
+  { nombre: 'UKR INF-1',  descripcion: 'Ukrainian infantry squad', categoria: 'infantry', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-INF-1', activo: true, tipo_elemento: 'standard', prioridad: 5, observaciones: 'Holding northern sector',  altitud: null, lng: 37.610, lat: 47.105 },
+  { nombre: 'UKR INF-2',  descripcion: 'Ukrainian infantry squad', categoria: 'infantry', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-INF-2', activo: true, tipo_elemento: 'standard', prioridad: 5, observaciones: 'Port area defense',        altitud: null, lng: 37.565, lat: 47.090 },
+  { nombre: 'UKR INF-3',  descripcion: 'Ukrainian infantry squad', categoria: 'infantry', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-INF-3', activo: true, tipo_elemento: 'standard', prioridad: 5, observaciones: 'Azovstal perimeter',      altitud: null, lng: 37.620, lat: 47.088 },
+  { nombre: 'UKR INF-4',  descripcion: 'Ukrainian infantry squad', categoria: 'infantry', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-INF-4', activo: true, tipo_elemento: 'standard', prioridad: 5, observaciones: 'City center strongpoint', altitud: null, lng: 37.545, lat: 47.095 },
 
   // Armor
-  { nombre: 'UKR TNK-1',  descripcion: 'Ukrainian MBT',             categoria: 'tank',     country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-TNK-1', activo: true, tipo_elemento: 'MBT',      prioridad: 7, observaciones: 'Hull-down, covering avenue', altitud: null, lng: 37.600, lat: 47.100 },
+  { nombre: 'UKR TNK-1',  descripcion: 'Ukrainian MBT',             categoria: 'armoured',     country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-TNK-1', activo: true, tipo_elemento: 'MBT',      prioridad: 7, observaciones: 'Hull-down, covering avenue', altitud: null, lng: 37.600, lat: 47.100 },
 
   // Artillery
   { nombre: 'UKR ART-1',  descripcion: 'Ukrainian 155mm battery',   categoria: 'artillery', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-ART-1', activo: true, tipo_elemento: '155mm',   prioridad: 8, observaciones: 'Counterbattery missions', altitud: null, lng: 37.530, lat: 47.110 },
@@ -41,13 +41,13 @@ const entities = [
   // Russian forces
   // ---------------------------------------------------------------
   // Infantry
-  { nombre: 'RUS INF-1',  descripcion: 'Russian infantry squad',    categoria: 'infantry',  country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-INF-1', activo: true, tipo_elemento: 'Infantry', prioridad: 6, observaciones: 'Advancing from west',      altitud: null, lng: 37.520, lat: 47.098 },
-  { nombre: 'RUS INF-2',  descripcion: 'Russian infantry squad',    categoria: 'infantry',  country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-INF-2', activo: true, tipo_elemento: 'Infantry', prioridad: 6, observaciones: 'Clearing residential area', altitud: null, lng: 37.590, lat: 47.110 },
-  { nombre: 'RUS INF-3',  descripcion: 'Russian infantry squad',    categoria: 'infantry',  country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-INF-3', activo: true, tipo_elemento: 'Infantry', prioridad: 6, observaciones: 'Securing crossroads',      altitud: null, lng: 37.600, lat: 47.105 },
+  { nombre: 'RUS INF-1',  descripcion: 'Russian infantry squad',    categoria: 'infantry',  country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-INF-1', activo: true, tipo_elemento: 'standard', prioridad: 6, observaciones: 'Advancing from west',      altitud: null, lng: 37.520, lat: 47.098 },
+  { nombre: 'RUS INF-2',  descripcion: 'Russian infantry squad',    categoria: 'infantry',  country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-INF-2', activo: true, tipo_elemento: 'standard', prioridad: 6, observaciones: 'Clearing residential area', altitud: null, lng: 37.590, lat: 47.110 },
+  { nombre: 'RUS INF-3',  descripcion: 'Russian infantry squad',    categoria: 'infantry',  country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-INF-3', activo: true, tipo_elemento: 'standard', prioridad: 6, observaciones: 'Securing crossroads',      altitud: null, lng: 37.600, lat: 47.105 },
 
   // Armor
-  { nombre: 'RUS TNK-1',  descripcion: 'Russian MBT',               categoria: 'tank',      country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-TNK-1', activo: true, tipo_elemento: 'MBT',      prioridad: 8, observaciones: 'Covering main axis',      altitud: null, lng: 37.555, lat: 47.102 },
-  { nombre: 'RUS TNK-2',  descripcion: 'Russian MBT',               categoria: 'tank',      country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-TNK-2', activo: true, tipo_elemento: 'MBT',      prioridad: 8, observaciones: 'Turret-down position',    altitud: null, lng: 37.540, lat: 47.100 },
+  { nombre: 'RUS TNK-1',  descripcion: 'Russian MBT',               categoria: 'armoured',      country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-TNK-1', activo: true, tipo_elemento: 'MBT',      prioridad: 8, observaciones: 'Covering main axis',      altitud: null, lng: 37.555, lat: 47.102 },
+  { nombre: 'RUS TNK-2',  descripcion: 'Russian MBT',               categoria: 'armoured',      country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-TNK-2', activo: true, tipo_elemento: 'MBT',      prioridad: 8, observaciones: 'Turret-down position',    altitud: null, lng: 37.540, lat: 47.100 },
 
   // Artillery
   { nombre: 'RUS ART-1',  descripcion: 'Russian 152mm battery',     categoria: 'artillery', country: 'Russia',  alliance: 'hostile',  elemento_identificado: 'RUS-ART-1', activo: true, tipo_elemento: '152mm',   prioridad: 9, observaciones: 'Shelling port area',      altitud: null, lng: 37.480, lat: 47.120 },
@@ -84,19 +84,19 @@ const entities = [
   // Casualties
   // ---------------------------------------------------------------
   // Ukrainian WIA
-  { nombre: 'UKR-CAS-1 (WIA)', descripcion: 'Ukrainian WIA — shrapnel wounds', categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-1', activo: true, tipo_elemento: 'Casualty', prioridad: 9, observaciones: 'Multiple shrapnel wounds, bleeding controlled', altitud: null, lng: 37.611, lat: 47.104 },
-  { nombre: 'UKR-CAS-2 (WIA)', descripcion: 'Ukrainian WIA — GSW abdomen',    categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-2', activo: true, tipo_elemento: 'Casualty', prioridad: 10, observaciones: 'Abdominal GSW, urgent surgery needed', altitud: null, lng: 37.568, lat: 47.091 },
-  { nombre: 'UKR-CAS-3 (WIA)', descripcion: 'Ukrainian WIA — blast injury',   categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-3', activo: true, tipo_elemento: 'Casualty', prioridad: 8, observaciones: 'TBI suspected, conscious', altitud: null, lng: 37.621, lat: 47.089 },
+  { nombre: 'UKR-CAS-1 (WIA)', descripcion: 'Ukrainian WIA — shrapnel wounds', categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 9, observaciones: 'Multiple shrapnel wounds, bleeding controlled', altitud: null, lng: 37.611, lat: 47.104 },
+  { nombre: 'UKR-CAS-2 (WIA)', descripcion: 'Ukrainian WIA — GSW abdomen',    categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 10, observaciones: 'Abdominal GSW, urgent surgery needed', altitud: null, lng: 37.568, lat: 47.091 },
+  { nombre: 'UKR-CAS-3 (WIA)', descripcion: 'Ukrainian WIA — blast injury',   categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-3', activo: true, tipo_elemento: 'casualty', prioridad: 8, observaciones: 'TBI suspected, conscious', altitud: null, lng: 37.621, lat: 47.089 },
 
   // Ukrainian KIA
-  { nombre: 'UKR-CAS-4 (KIA)', descripcion: 'Ukrainian KIA',                  categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-4', activo: true, tipo_elemento: 'Casualty', prioridad: 3, observaciones: 'KIA — direct hit from tank round', altitud: null, lng: 37.601, lat: 47.101 },
+  { nombre: 'UKR-CAS-4 (KIA)', descripcion: 'Ukrainian KIA',                  categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-4', activo: true, tipo_elemento: 'casualty', prioridad: 3, observaciones: 'KIA — direct hit from tank round', altitud: null, lng: 37.601, lat: 47.101 },
 
   // Russian WIA
-  { nombre: 'RUS-CAS-1 (WIA)', descripcion: 'Russian WIA — gunshot wound',    categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-1', activo: true, tipo_elemento: 'Casualty', prioridad: 7, observaciones: 'GSW to leg, tourniquet applied', altitud: null, lng: 37.521, lat: 47.099 },
-  { nombre: 'RUS-CAS-2 (WIA)', descripcion: 'Russian WIA — burns',            categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-2', activo: true, tipo_elemento: 'Casualty', prioridad: 8, observaciones: 'Severe burns from vehicle fire', altitud: null, lng: 37.556, lat: 47.103 },
+  { nombre: 'RUS-CAS-1 (WIA)', descripcion: 'Russian WIA — gunshot wound',    categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 7, observaciones: 'GSW to leg, tourniquet applied', altitud: null, lng: 37.521, lat: 47.099 },
+  { nombre: 'RUS-CAS-2 (WIA)', descripcion: 'Russian WIA — burns',            categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 8, observaciones: 'Severe burns from vehicle fire', altitud: null, lng: 37.556, lat: 47.103 },
 
   // Russian KIA
-  { nombre: 'RUS-CAS-3 (KIA)', descripcion: 'Russian KIA',                    categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-3', activo: true, tipo_elemento: 'Casualty', prioridad: 2, observaciones: 'KIA — artillery strike', altitud: null, lng: 37.591, lat: 47.111 },
+  { nombre: 'RUS-CAS-3 (KIA)', descripcion: 'Russian KIA',                    categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-3', activo: true, tipo_elemento: 'casualty', prioridad: 2, observaciones: 'KIA — artillery strike', altitud: null, lng: 37.591, lat: 47.111 },
 ];
 
 // ---------------------------------------------------------------------------

@@ -22,14 +22,12 @@ const SCHEMA = {
     { value: 'aircraft', label_en: 'Aircraft', label_es: 'Aeronave', subtypes: [] },
     { value: 'helicopter', label_en: 'Helicopter', label_es: 'Helicóptero', subtypes: [] },
     { value: 'uav', label_en: 'UAV', label_es: 'UAV / Drone', subtypes: [] },
-    { value: 'tank', label_en: 'Tank (legacy)', label_es: 'Carro de Combate (legacy)', subtypes: [] },
     { value: 'armoured', label_en: 'Armoured / Tank', label_es: 'Carro de Combate / Blindado', subtypes: [] },
     { value: 'artillery', label_en: 'Artillery', label_es: 'Artillería', subtypes: [] },
     { value: 'ship', label_en: 'Ship', label_es: 'Buque', subtypes: [] },
     { value: 'destroyer', label_en: 'Destroyer', label_es: 'Destructor', subtypes: [] },
     { value: 'submarine', label_en: 'Submarine', label_es: 'Submarino', subtypes: [] },
     { value: 'ground_vehicle', label_en: 'Ground Vehicle', label_es: 'Vehículo Terrestre', subtypes: [] },
-    { value: 'apc', label_en: 'APC', label_es: 'Transporte Blindado de Personal', subtypes: [] },
     {
       value: 'infantry',
       label_en: 'Infantry',
@@ -39,9 +37,9 @@ const SCHEMA = {
         { value: 'light', label_en: 'Light Infantry', label_es: 'Infantería Ligera' },
         { value: 'motorised', label_en: 'Motorised Infantry', label_es: 'Infantería Motorizada' },
         { value: 'mechanised', label_en: 'Mechanised Infantry', label_es: 'Infantería Mecanizada' },
-        { value: 'mechanised_wheeled', label_en: 'Mechanised Infantry (Wheeled)', label_es: 'Infantería Mecanizada con Ruedas' },
+        { value: 'mechanised_wheeled', label_en: 'Mechanised Infantry Wheeled (APC)', label_es: 'Infantería Mecanizada con Ruedas' },
         { value: 'armoured', label_en: 'Armoured Infantry', label_es: 'Infantería Blindada' },
-        { value: 'lav', label_en: 'Light Armoured Vehicle Infantry', label_es: 'Infantería LAV' },
+        { value: 'lav', label_en: 'Light Armoured Vehicle Infantry', label_es: 'Vehículos de Combate de Infantería a Ruedas' },
         { value: 'unarmed_transport', label_en: 'Unarmed Transport', label_es: 'Transporte Sin Armas' },
         { value: 'uav', label_en: 'UAV Infantry', label_es: 'Infantería con UAV' }
       ]
@@ -62,7 +60,8 @@ const SCHEMA = {
       label_en: 'Engineer',
       label_es: 'Ingenieros',
       subtypes: [
-        { value: 'standard', label_en: 'Engineer', label_es: 'Ingenieros' }
+        { value: 'standard', label_en: 'Engineer', label_es: 'Ingenieros' },
+        { value: 'armoured', label_en: 'Engineer Armoured', label_es: 'Ingenieros Blindados' }
       ]
     },
     {
