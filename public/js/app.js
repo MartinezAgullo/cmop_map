@@ -154,7 +154,8 @@ async function resolveIconUrl(category, alliance, country, entity) {
   const a   = (alliance || 'unknown').toLowerCase();
   const c   = (category || 'default').toLowerCase();
   const status = entity?.medical?.casualty_status || '';
-  const key = `${a}|${c}|${normalizeCountry(country)}|${status}`;
+  const tipo = entity?.tipo_elemento || '';
+  const key = `${a}|${c}|${normalizeCountry(country)}|${tipo}|${status}`;
 
   if (iconCache.has(key)) return iconCache.get(key);
 
@@ -449,13 +450,23 @@ function renderList() {
         </div>`;
     }
 
+    // Build categoria display with tipo_elemento
+    let categoriaText = e.categoria;
+    if (e.tipo_elemento) {
+      categoriaText += ` · ${e.tipo_elemento}`;
+    }
+    categoriaText += ` · ${e.alliance || 'unknown'}`;
+    if (e.country) {
+      categoriaText += ` · ${e.country}`;
+    }
+
     return `
       <div class="punto-item${activeClass}${triageClass}" onclick="selectEntity(${e.id})">
         <div class="punto-nombre">
           <span class="pill" style="background:${allianceColor}"></span>
           ${e.nombre}
         </div>
-        <span class="punto-categoria">${e.categoria} · ${e.alliance || 'unknown'}${e.country ? ' · ' + e.country : ''}</span>
+        <span class="punto-categoria">${categoriaText}</span>
         ${medicalBadge}
       </div>`;
   }).join('');
@@ -490,6 +501,26 @@ async function renderMarkers() {
 
 function buildPopup(e) {
   const allianceColor = ALLIANCE_COLORS[e.alliance || 'unknown'] || '#A9A9A9';
+  
+  // Build subtitle with tipo_elemento if present
+  let subtitle = e.categoria;
+  if (e.tipo_elemento) {
+    subtitle += ` · ${e.tipo_elemento}`;
+  }
+  subtitle += ` · ${e.alliance || 'unknown'}`;
+  if (e.country) {
+    subtitle += ` · ${e.country}`;
+  }
+
+  // Build categoria display with tipo_elemento if present
+  let categoriaDisplay = e.categoria;
+  if (e.tipo_elemento) {
+    categoriaDisplay += ` · ${e.tipo_elemento}`;
+  }
+  categoriaDisplay += ` · ${e.alliance || 'unknown'}`;
+  if (e.country) {
+    categoriaDisplay += ` · ${e.country}`;
+  }
 
   // Medical section — rendered only when present
   let medicalHTML = '';
@@ -539,7 +570,7 @@ function buildPopup(e) {
         <span class="pill" style="background:${allianceColor}"></span>
         ${e.nombre}
       </div>
-      <span class="popup-categoria">${e.categoria} · ${e.alliance || 'unknown'}${e.country ? ' · ' + e.country : ''}</span>
+      <span class="popup-categoria">${categoriaDisplay}</span>
       <div class="popup-info">
         ${e.descripcion ? `<p>${e.descripcion}</p>` : ''}
         ${e.observaciones ? `<p><strong>Obs:</strong> ${e.observaciones}</p>` : ''}
