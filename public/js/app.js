@@ -7,6 +7,7 @@
 //   - Entity fetching, filtering, rendering (list + map markers)
 //   - Icon resolution (APP-6 + medical, with country-variant fallback)
 //   - Popup & list rendering with medical data when present
+//   - Multi-select category filtering with subfilters
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
@@ -20,39 +21,36 @@ let selectedId       = null;
 
 // ---------------------------------------------------------------------------
 // Icon resolution — category → candidate base filenames
-//   Medical categories map to the filenames visible in the user's icon set.
 // ---------------------------------------------------------------------------
 const CATEGORY_BASE_NAMES = {
-  // Military (unchanged)
+  // Military
   missile:        ['missile'],
   fighter:        ['fighter', 'fixed_wing'],
   bomber:         ['bomber', 'fixed_wing'],
   aircraft:       ['fixed_wing', 'air_and_space'],
   helicopter:     ['helicopter', 'rotary_wing'],
   uav:            ['uav'],
-  armoured:       ['armoured', 'tank', 'armor_mechanized', 'ground'],  // Carro de combate
+  armoured:       ['armoured', 'tank', 'armor_mechanized', 'ground'],
   artillery:      ['artillery'],
   ship:           ['ship', 'sea_surface'],
   destroyer:      ['destroyer', 'ship'],
   submarine:      ['submarine', 'sub_surface'],
   ground_vehicle: ['ground', 'armor_mechanized'],
-  infantry:       ['infantry', 'ground'],              // Infantería (subtypes via tipo_elemento)
-  reconnaissance: ['reconnaissance', 'ground'],        // Reconocimiento / Caballería
-  engineer:       ['engineer', 'ground'],              // Ingenieros (subtypes: standard, armoured)
-  mortar:         ['mortar', 'artillery'],             // Mortero
+  infantry:       ['infantry', 'ground'],
+  reconnaissance: ['reconnaissance', 'ground'],
+  engineer:       ['engineer', 'ground'],
+  mortar:         ['mortar', 'artillery'],
   person:         ['person'],
   base:           ['base', 'headquarters'],
   building:       ['infrastructure'],
   infrastructure: ['infrastructure'],
 
-  // Medical facilities & MEDEVAC (use tipo_elemento for specific icon)
+  // Medical
   medical_facility: ['medical_facility', 'medical_facility_default'],
   medevac_unit:     ['medevac', 'medevac_default'],
+  casualty:         ['casualty'],
 
-  // Casualties — resolved dynamically based on medical.casualty_status (WIA/KIA/UNKNOWN)
-  casualty:       ['casualty'],
-
-  default:        ['default']
+  default: ['default']
 };
 
 const ALLIANCE_COLORS = {
@@ -61,6 +59,21 @@ const ALLIANCE_COLORS = {
   neutral:  '#ADFF2F',
   unknown:  '#A9A9A9'
 };
+
+// Medical facility "Other" tipo_elemento values
+const MED_FACILITY_OTHER = [
+  'medical_role_2basic',
+  'medical_role_2enhanced',
+  'medical_facility_multinational'
+];
+
+// MEDEVAC "Other" tipo_elemento values
+const MEDEVAC_OTHER = [
+  'medevac_fixedwing',
+  'medevac_ambulance',
+  'medevac_mechanised',
+  'medevac_mortuary'
+];
 
 // ---------------------------------------------------------------------------
 // Icon cache & resolution helpers
@@ -79,7 +92,7 @@ function normalizeCountry(country) {
 function buildFilenameCandidates(category, country, entity) {
   let bases = CATEGORY_BASE_NAMES[category?.toLowerCase()] || CATEGORY_BASE_NAMES.default;
 
-  // Special handling for casualties: if entity has medical.casualty_status, use WIA/KIA-specific icons
+  // Casualties: WIA/KIA-specific icons
   if (category === 'casualty' && entity?.medical?.casualty_status) {
     const status = entity.medical.casualty_status.toLowerCase();
     if (status === 'wia') {
@@ -89,48 +102,36 @@ function buildFilenameCandidates(category, country, entity) {
     }
   }
 
-  // Special handling for medical_facility and medevac_unit: use tipo_elemento for icon
+  // Medical facility / medevac: use tipo_elemento for icon
   if ((category === 'medical_facility' || category === 'medevac_unit') && entity?.tipo_elemento) {
     let tipo = entity.tipo_elemento.toLowerCase().replace(/\s+/g, '_');
-    
-    // Medical facilities: medical_role_1 → medical_facility_role_1
     if (category === 'medical_facility' && tipo.startsWith('medical_role_')) {
       tipo = tipo.replace('medical_role_', 'medical_facility_role_');
     }
-    // MEDEVAC units: tipo_elemento already correct (medevac_role_X)
-    
     bases = [tipo, ...bases];
   }
 
-  // Special handling for infantry, reconnaissance, engineer, mortar: use tipo_elemento
+  // Infantry, reconnaissance, engineer, mortar: use tipo_elemento
   if (['infantry', 'reconnaissance', 'engineer', 'mortar'].includes(category) && entity?.tipo_elemento) {
     const tipo = entity.tipo_elemento.toLowerCase().replace(/\s+/g, '_');
-    // Infantry: infantry_light, infantry_motorised, etc.
-    // Reconnaissance: all use 'reconnaissance' (same icon regardless of subtype)
-    // Engineer: engineer (standard) or engineer_armoured
-    // Mortar: all use 'mortar' (same icon regardless of heavy/medium/light)
     if (category === 'infantry') {
-      if (tipo === 'standard') {
-        bases = ['infantry', ...bases];  // standard → infantry (not infantry_standard)
-      } else {
-        bases = [`infantry_${tipo}`, 'infantry', ...bases];
-      }
+      bases = tipo === 'standard'
+        ? ['infantry', ...bases]
+        : [`infantry_${tipo}`, 'infantry', ...bases];
     } else if (category === 'reconnaissance') {
-      bases = ['reconnaissance', ...bases];  // all subtypes use same icon
+      bases = ['reconnaissance', ...bases];
     } else if (category === 'engineer') {
-      if (tipo === 'armoured') {
-        bases = ['engineer_armoured', 'engineer', ...bases];
-      } else {
-        bases = ['engineer', ...bases];
-      }
+      bases = tipo === 'armoured'
+        ? ['engineer_armoured', 'engineer', ...bases]
+        : ['engineer', ...bases];
     } else if (category === 'mortar') {
-      bases = ['mortar', ...bases];  // all subtypes use same icon
+      bases = ['mortar', ...bases];
     } else {
       bases = [tipo, ...bases];
     }
   }
 
-  const cn      = normalizeCountry(country);
+  const cn         = normalizeCountry(country);
   const tryCountry = country && country.toLowerCase() !== 'unknown' && cn;
 
   const candidates = [];
@@ -151,17 +152,17 @@ async function urlExists(url) {
 }
 
 async function resolveIconUrl(category, alliance, country, entity) {
-  const a   = (alliance || 'unknown').toLowerCase();
-  const c   = (category || 'default').toLowerCase();
+  const a      = (alliance || 'unknown').toLowerCase();
+  const c      = (category || 'default').toLowerCase();
   const status = entity?.medical?.casualty_status || '';
-  const tipo = entity?.tipo_elemento || '';
-  const key = `${a}|${c}|${normalizeCountry(country)}|${tipo}|${status}`;
+  const tipo   = entity?.tipo_elemento || '';
+  const key    = `${a}|${c}|${normalizeCountry(country)}|${tipo}|${status}`;
 
   if (iconCache.has(key)) return iconCache.get(key);
 
   for (const filename of buildFilenameCandidates(c, country, entity)) {
     const url = `/icons/${a}/${filename}`;
-    if (await urlExists(url)) {          // eslint-disable-line no-await-in-loop
+    if (await urlExists(url)) {
       iconCache.set(key, url);
       return url;
     }
@@ -186,19 +187,18 @@ async function makeIcon(entity) {
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
-  initScenarios();          // fetch & populate scenario selector
+  initScenarios();
   loadEntities();
   setupEventListeners();
 });
 
 function initMap() {
-  map = L.map('map').setView([39.47, -0.38], 12);   // Valencia default
+  map = L.map('map').setView([39.47, -0.38], 12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
     maxZoom: 19
   }).addTo(map);
 
-  // Click on map → fill lat/lng in the open modal (if any)
   map.on('click', (e) => {
     if (document.getElementById('formModal').classList.contains('show')) {
       document.getElementById('latitud').value  = e.latlng.lat.toFixed(6);
@@ -207,11 +207,90 @@ function initMap() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Event listeners
+// ---------------------------------------------------------------------------
 function setupEventListeners() {
-  document.getElementById('categoriaFilter').addEventListener('change', filterEntities);
-  document.getElementById('allianceFilter').addEventListener('change', filterEntities);
+  // Collapsible filter sections
+  document.querySelectorAll('.filter-section-header').forEach(header => {
+    header.addEventListener('click', (e) => {
+      // Don't toggle when clicking "Limpiar" button
+      if (e.target.classList.contains('btn-clear')) return;
+      const targetId = header.dataset.toggle;
+      if (!targetId) return;
+      const body = document.getElementById(targetId);
+      body.classList.toggle('collapsed');
+      header.querySelector('.chevron')?.classList.toggle('collapsed');
+    });
+  });
+
+  // Category checkboxes → filter + toggle subfilters
+  document.querySelectorAll('#categoryCheckboxes input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      toggleSubfilters();
+      filterEntities();
+    });
+  });
+
+  // Triage subfilter checkboxes
+  document.querySelectorAll('#triageCheckboxes input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', filterEntities);
+  });
+
+  // Medical facility subfilter checkboxes
+  document.querySelectorAll('#medFacilityCheckboxes input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', filterEntities);
+  });
+
+  // MEDEVAC subfilter checkboxes
+  document.querySelectorAll('#medevacCheckboxes input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', filterEntities);
+  });
+
+  // Alliance checkboxes
+  document.querySelectorAll('#allianceCheckboxes input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', filterEntities);
+  });
+
+  // Name search
   document.getElementById('buscarNombre').addEventListener('input', filterEntities);
 
+  // Clear buttons
+  document.getElementById('clearCategories').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('#categoryCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+    clearSubfilter('triageCheckboxes');
+    clearSubfilter('medFacilityCheckboxes');
+    clearSubfilter('medevacCheckboxes');
+    toggleSubfilters();
+    filterEntities();
+  });
+
+  document.getElementById('clearTriageFilter').addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearSubfilter('triageCheckboxes');
+    filterEntities();
+  });
+
+  document.getElementById('clearMedFacilityFilter').addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearSubfilter('medFacilityCheckboxes');
+    filterEntities();
+  });
+
+  document.getElementById('clearMedevacFilter').addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearSubfilter('medevacCheckboxes');
+    filterEntities();
+  });
+
+  document.getElementById('clearAlliance').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('#allianceCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+    filterEntities();
+  });
+
+  // Create entity form
   document.getElementById('nuevoPuntoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     await crearNuevaEntidad();
@@ -219,18 +298,50 @@ function setupEventListeners() {
 
   document.getElementById('loadScenarioBtn').addEventListener('click', loadSelectedScenario);
 
-  // Dynamic tipo_elemento dropdown
+  // Dynamic tipo_elemento dropdown in modal
   document.getElementById('categoria').addEventListener('change', (e) => {
     updateTipoElementoOptions(e.target.value);
   });
 }
 
-// ---------------------------------------------------------------------------
-// Tipo Elemento options
-// ---------------------------------------------------------------------------
+function clearSubfilter(containerId) {
+  document.querySelectorAll(`#${containerId} input[type="checkbox"]`).forEach(cb => cb.checked = false);
+}
 
+// ---------------------------------------------------------------------------
+// Subfilter visibility toggling
+// ---------------------------------------------------------------------------
+function toggleSubfilters() {
+  const checkedCategories = getCheckedValues('categoryCheckboxes');
+
+  document.getElementById('subfilterCasualty').style.display =
+    checkedCategories.includes('casualty') ? 'block' : 'none';
+
+  document.getElementById('subfilterMedFacility').style.display =
+    checkedCategories.includes('medical_facility') ? 'block' : 'none';
+
+  document.getElementById('subfilterMedevac').style.display =
+    checkedCategories.includes('medevac_unit') ? 'block' : 'none';
+
+  // Clear subfilter selections when parent category is unchecked
+  if (!checkedCategories.includes('casualty'))        clearSubfilter('triageCheckboxes');
+  if (!checkedCategories.includes('medical_facility')) clearSubfilter('medFacilityCheckboxes');
+  if (!checkedCategories.includes('medevac_unit'))     clearSubfilter('medevacCheckboxes');
+}
+
+// ---------------------------------------------------------------------------
+// Checkbox helpers
+// ---------------------------------------------------------------------------
+function getCheckedValues(containerId) {
+  return [...document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`)]
+    .map(cb => cb.value);
+}
+
+// ---------------------------------------------------------------------------
+// Tipo Elemento options (modal)
+// ---------------------------------------------------------------------------
 const TIPO_ELEMENTO_OPTIONS = {
-  infantry: [  // Infantería
+  infantry: [
     { value: 'standard', label: 'Infantry (Standard) — Infantería' },
     { value: 'light', label: 'Light Infantry — Infantería Ligera' },
     { value: 'motorised', label: 'Motorised Infantry — Infantería Motorizada' },
@@ -241,22 +352,22 @@ const TIPO_ELEMENTO_OPTIONS = {
     { value: 'unarmed_transport', label: 'Unarmed Transport — Transporte Sin Armas' },
     { value: 'uav', label: 'UAV Infantry — Infantería con UAV' }
   ],
-  reconnaissance: [  // Reconocimiento / Caballería
+  reconnaissance: [
     { value: 'standard', label: 'Reconnaissance (Standard) — Reconocimiento' },
     { value: 'mechanised', label: 'Mechanised Reconnaissance — Reconocimiento Mecanizado' },
     { value: 'wheeled', label: 'Wheeled Reconnaissance — Reconocimiento con Ruedas' }
   ],
-  engineer: [  // Ingenieros
+  engineer: [
     { value: 'standard', label: 'Engineer — Ingenieros' },
     { value: 'armoured', label: 'Engineer Armoured — Ingenieros Blindados' }
   ],
-  mortar: [  // Mortero
+  mortar: [
     { value: 'heavy', label: 'Heavy Mortar — Mortero Pesado' },
     { value: 'medium', label: 'Medium Mortar — Mortero Medio' },
     { value: 'light', label: 'Light Mortar — Mortero Ligero' },
     { value: 'unknown', label: 'Mortar (Unknown Type) — Mortero (Tipo Desconocido)' }
   ],
-  medical_facility: [  // Instalación Médica
+  medical_facility: [
     { value: 'medical_role_1', label: 'Role 1 — Aid Post' },
     { value: 'medical_role_2', label: 'Role 2 — Surgical' },
     { value: 'medical_role_3', label: 'Role 3 — Field Hospital' },
@@ -265,7 +376,7 @@ const TIPO_ELEMENTO_OPTIONS = {
     { value: 'medical_role_2enhanced', label: 'Role 2 Enhanced' },
     { value: 'medical_facility_multinational', label: 'Multinational Facility' }
   ],
-  medevac_unit: [  // Unidad MEDEVAC
+  medevac_unit: [
     { value: 'medevac_role_1', label: 'MEDEVAC Role 1 — Immediate Care' },
     { value: 'medevac_role_2', label: 'MEDEVAC Role 2 — Forward Resuscitative' },
     { value: 'medevac_role_3', label: 'MEDEVAC Role 3 — Theater Hospitalization' },
@@ -278,7 +389,7 @@ const TIPO_ELEMENTO_OPTIONS = {
 };
 
 function updateTipoElementoOptions(categoria) {
-  const group = document.getElementById('tipoElementoGroup');
+  const group  = document.getElementById('tipoElementoGroup');
   const select = document.getElementById('tipoElemento');
 
   if (!TIPO_ELEMENTO_OPTIONS[categoria]) {
@@ -297,7 +408,6 @@ function updateTipoElementoOptions(categoria) {
 // ---------------------------------------------------------------------------
 // Scenarios
 // ---------------------------------------------------------------------------
-
 async function initScenarios() {
   try {
     const res  = await fetch('/api/scenarios');
@@ -308,8 +418,8 @@ async function initScenarios() {
     select.innerHTML = '<option value="">— Selecciona escenario —</option>';
 
     for (const s of data.data) {
-      const opt      = document.createElement('option');
-      opt.value      = s.name;
+      const opt       = document.createElement('option');
+      opt.value       = s.name;
       opt.textContent = s.name + (s.description ? `  —  ${s.description}` : '');
       select.appendChild(opt);
     }
@@ -332,7 +442,7 @@ async function loadSelectedScenario() {
 
     if (data.success) {
       showMessage(`Escenario "${name}" cargado`, 'success');
-      await loadEntities();                 // refresh map + list
+      await loadEntities();
     } else {
       showMessage(data.message || 'Error cargando escenario', 'error');
     }
@@ -347,7 +457,6 @@ async function loadSelectedScenario() {
 // ---------------------------------------------------------------------------
 // Entity loading & filtering
 // ---------------------------------------------------------------------------
-
 async function loadEntities() {
   try {
     showLoading(true);
@@ -358,9 +467,7 @@ async function loadEntities() {
       allEntities      = data.data;
       filteredEntities = [...allEntities];
       updateStats();
-      updateCategoriaFilter();
-      renderList();
-      await renderMarkers();
+      filterEntities();   // apply current filters to new data
     } else {
       showMessage('Error al cargar entidades', 'error');
     }
@@ -373,15 +480,55 @@ async function loadEntities() {
 }
 
 async function filterEntities() {
-  const cat      = document.getElementById('categoriaFilter').value;
-  const alliance = document.getElementById('allianceFilter').value;
-  const search   = document.getElementById('buscarNombre').value.toLowerCase();
+  const selectedCategories = getCheckedValues('categoryCheckboxes');
+  const selectedAlliances  = getCheckedValues('allianceCheckboxes');
+  const selectedTriage     = getCheckedValues('triageCheckboxes');
+  const selectedMedRoles   = getCheckedValues('medFacilityCheckboxes');
+  const selectedMedevac    = getCheckedValues('medevacCheckboxes');
+  const search             = document.getElementById('buscarNombre').value.toLowerCase();
 
-  filteredEntities = allEntities.filter(e =>
-    (!cat      || e.categoria === cat) &&
-    (!alliance || e.alliance  === alliance) &&
-    (!search   || (e.nombre || '').toLowerCase().includes(search))
-  );
+  filteredEntities = allEntities.filter(e => {
+    // Category filter (empty = all)
+    if (selectedCategories.length > 0) {
+      if (!selectedCategories.includes(e.categoria)) return false;
+    }
+
+    // Alliance filter (empty = all)
+    if (selectedAlliances.length > 0) {
+      if (!selectedAlliances.includes(e.alliance)) return false;
+    }
+
+    // Name search
+    if (search && !(e.nombre || '').toLowerCase().includes(search)) return false;
+
+    // Triage subfilter (only applies to casualties)
+    if (selectedTriage.length > 0 && e.categoria === 'casualty') {
+      const triageColor = e.medical?.triage_color || 'UNKNOWN';
+      if (!selectedTriage.includes(triageColor)) return false;
+    }
+
+    // Medical facility role subfilter
+    if (selectedMedRoles.length > 0 && e.categoria === 'medical_facility') {
+      const tipo = e.tipo_elemento || '';
+      const matchesRole  = selectedMedRoles.some(role => {
+        if (role === 'medical_other') return MED_FACILITY_OTHER.includes(tipo);
+        return tipo === role;
+      });
+      if (!matchesRole) return false;
+    }
+
+    // MEDEVAC role subfilter
+    if (selectedMedevac.length > 0 && e.categoria === 'medevac_unit') {
+      const tipo = e.tipo_elemento || '';
+      const matchesRole = selectedMedevac.some(role => {
+        if (role === 'medevac_other') return MEDEVAC_OTHER.includes(tipo);
+        return tipo === role;
+      });
+      if (!matchesRole) return false;
+    }
+
+    return true;
+  });
 
   renderList();
   await renderMarkers();
@@ -390,38 +537,29 @@ async function filterEntities() {
 // ---------------------------------------------------------------------------
 // Stats
 // ---------------------------------------------------------------------------
-
 function updateStats() {
   const casualties = allEntities.filter(e => e.categoria === 'casualty');
-  const redCount   = casualties.filter(e => e.medical?.triage_color === 'RED').length;
-  const yelCount   = casualties.filter(e => e.medical?.triage_color === 'YELLOW').length;
+  const t1Count    = casualties.filter(e => e.medical?.triage_color === 'RED').length;
+  const t2Count    = casualties.filter(e => e.medical?.triage_color === 'YELLOW').length;
+  const t3Count    = casualties.filter(e => e.medical?.triage_color === 'GREEN').length;
+  const t4Count    = casualties.filter(e => e.medical?.triage_color === 'BLUE').length;
+  const deadCount  = casualties.filter(e => e.medical?.triage_color === 'BLACK').length;
 
-  document.getElementById('totalPuntos').textContent    = allEntities.length;
-  document.getElementById('totalCategorias').textContent = [...new Set(allEntities.map(e => e.categoria))].length;
-  document.getElementById('totalCasualties').textContent = casualties.length;
+  document.getElementById('totalPuntos').textContent     = allEntities.length;
+  document.getElementById('totalCategorias').textContent  = [...new Set(allEntities.map(e => e.categoria))].length;
+  document.getElementById('totalCasualties').textContent  = casualties.length;
 
-  document.getElementById('redYellowCount').innerHTML =
-    `<span class="triage-pill RED">${redCount}</span>` +
-    `<span class="triage-pill YELLOW">${yelCount}</span>`;
-}
-
-function updateCategoriaFilter() {
-  const select     = document.getElementById('categoriaFilter');
-  const inData     = [...new Set(allEntities.map(e => e.categoria))].sort();
-
-  select.innerHTML = '<option value="">Todas las categorías</option>';
-  for (const cat of inData) {
-    const opt      = document.createElement('option');
-    opt.value      = cat;
-    opt.textContent = cat;
-    select.appendChild(opt);
-  }
+  document.getElementById('triageCounts').innerHTML =
+    `<span class="triage-pill RED"   title="T1 Immediate">${t1Count}</span>` +
+    `<span class="triage-pill YELLOW" title="T2 Urgent">${t2Count}</span>` +
+    `<span class="triage-pill GREEN"  title="T3 Minimal">${t3Count}</span>` +
+    (t4Count > 0 ? `<span class="triage-pill BLUE" title="T4 Expectant">${t4Count}</span>` : '') +
+    (deadCount > 0 ? `<span class="triage-pill BLACK" title="Dead">${deadCount}</span>` : '');
 }
 
 // ---------------------------------------------------------------------------
 // List rendering
 // ---------------------------------------------------------------------------
-
 function renderList() {
   const container = document.getElementById('puntosList');
 
@@ -438,7 +576,7 @@ function renderList() {
     // Medical badge (only for casualties)
     let medicalBadge = '';
     if (e.medical) {
-      const statusBadge = e.medical.casualty_status 
+      const statusBadge = e.medical.casualty_status
         ? `<strong style="color:#c0392b;">${e.medical.casualty_status}</strong>`
         : '';
       medicalBadge = `
@@ -475,13 +613,12 @@ function renderList() {
 // ---------------------------------------------------------------------------
 // Map markers
 // ---------------------------------------------------------------------------
-
 async function renderMarkers() {
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
   for (const e of filteredEntities) {
-    const icon   = await makeIcon(e); // eslint-disable-line no-await-in-loop
+    const icon   = await makeIcon(e);
     const marker = L.marker([e.latitud, e.longitud], { icon })
       .addTo(map)
       .bindPopup(buildPopup(e), { className: 'custom-popup' });
@@ -498,21 +635,10 @@ async function renderMarkers() {
 // ---------------------------------------------------------------------------
 // Popup
 // ---------------------------------------------------------------------------
-
 function buildPopup(e) {
   const allianceColor = ALLIANCE_COLORS[e.alliance || 'unknown'] || '#A9A9A9';
-  
-  // Build subtitle with tipo_elemento if present
-  let subtitle = e.categoria;
-  if (e.tipo_elemento) {
-    subtitle += ` · ${e.tipo_elemento}`;
-  }
-  subtitle += ` · ${e.alliance || 'unknown'}`;
-  if (e.country) {
-    subtitle += ` · ${e.country}`;
-  }
 
-  // Build categoria display with tipo_elemento if present
+  // Build subtitle
   let categoriaDisplay = e.categoria;
   if (e.tipo_elemento) {
     categoriaDisplay += ` · ${e.tipo_elemento}`;
@@ -522,7 +648,7 @@ function buildPopup(e) {
     categoriaDisplay += ` · ${e.country}`;
   }
 
-  // Medical section — rendered only when present
+  // Medical section
   let medicalHTML = '';
   if (e.medical) {
     const m = e.medical;
@@ -585,7 +711,6 @@ function buildPopup(e) {
 // ---------------------------------------------------------------------------
 // Select & zoom
 // ---------------------------------------------------------------------------
-
 function selectEntity(id) {
   selectedId = id;
   const e = allEntities.find(x => x.id === id);
@@ -604,7 +729,6 @@ function selectEntity(id) {
 // ---------------------------------------------------------------------------
 // Create
 // ---------------------------------------------------------------------------
-
 function mostrarFormularioNuevoPunto() {
   document.getElementById('formModal').classList.add('show');
   const c = map.getCenter();
@@ -620,20 +744,19 @@ function cerrarFormularioNuevoPunto() {
 async function crearNuevaEntidad() {
   showLoading(true);
   try {
-    const categoria = document.getElementById('categoria').value;
+    const categoria    = document.getElementById('categoria').value;
     const tipoElemento = document.getElementById('tipoElemento').value;
 
     const payload = {
-      nombre:     document.getElementById('nombre').value,
-      descripcion:document.getElementById('descripcion').value,
-      categoria:  categoria,
-      country:    document.getElementById('country').value,
-      alliance:   document.getElementById('alliance').value,
-      latitud:    parseFloat(document.getElementById('latitud').value),
-      longitud:   parseFloat(document.getElementById('longitud').value)
+      nombre:      document.getElementById('nombre').value,
+      descripcion: document.getElementById('descripcion').value,
+      categoria,
+      country:     document.getElementById('country').value,
+      alliance:    document.getElementById('alliance').value,
+      latitud:     parseFloat(document.getElementById('latitud').value),
+      longitud:    parseFloat(document.getElementById('longitud').value)
     };
 
-    // Include tipo_elemento only if provided
     if (tipoElemento) {
       payload.tipo_elemento = tipoElemento;
     }
@@ -663,7 +786,6 @@ async function crearNuevaEntidad() {
 // ---------------------------------------------------------------------------
 // Delete
 // ---------------------------------------------------------------------------
-
 async function deleteEntity(id) {
   if (!confirm('¿Eliminar esta entidad? No se puede deshacer.')) return;
 
@@ -689,7 +811,6 @@ async function deleteEntity(id) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
 function centrarMapa() {
   map.setView([39.47, -0.38], 12);
 }

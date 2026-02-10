@@ -49,10 +49,11 @@
             <span class="stat-value stat-casualties" id="totalCasualties">0</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">RED / YELLOW:</span>
-            <span class="stat-value" id="redYellowCount">
+            <span class="stat-label">Triage:</span>
+            <span class="stat-value" id="triageCounts">
               <span class="triage-pill RED">0</span>
               <span class="triage-pill YELLOW">0</span>
+              <span class="triage-pill GREEN">0</span>
             </span>
           </div>
         </div>
@@ -61,31 +62,148 @@
              Filters
              ============================================================ -->
         <div class="controls">
-          <div class="control-group">
-            <label for="categoriaFilter">Filtrar por categoría:</label>
-            <select id="categoriaFilter">
-              <option value="">Todas las categorías</option>
-            </select>
+
+          <!-- Category multi-select -->
+          <div class="filter-section">
+            <div class="filter-section-header" data-toggle="categoriesBody">
+              <span>🏷️ Categorías</span>
+              <div class="filter-section-actions">
+                <button class="btn-clear" id="clearCategories" title="Limpiar">Limpiar</button>
+                <span class="chevron">▾</span>
+              </div>
+            </div>
+            <div class="filter-section-body" id="categoriesBody">
+              <div class="checkbox-grid" id="categoryCheckboxes">
+                <!-- Military -->
+                <label class="filter-cb"><input type="checkbox" value="infantry" /><span>Infantry</span></label>
+                <label class="filter-cb"><input type="checkbox" value="armoured" /><span>Armoured</span></label>
+                <label class="filter-cb"><input type="checkbox" value="artillery" /><span>Artillery</span></label>
+                <label class="filter-cb"><input type="checkbox" value="reconnaissance" /><span>Recon</span></label>
+                <label class="filter-cb"><input type="checkbox" value="engineer" /><span>Engineer</span></label>
+                <label class="filter-cb"><input type="checkbox" value="mortar" /><span>Mortar</span></label>
+                <label class="filter-cb"><input type="checkbox" value="helicopter" /><span>Helicopter</span></label>
+                <label class="filter-cb"><input type="checkbox" value="uav" /><span>UAV</span></label>
+                <label class="filter-cb"><input type="checkbox" value="aircraft" /><span>Aircraft</span></label>
+                <!-- Medical -->
+                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="casualty" /><span>🩸 Casualty</span></label>
+                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medical_facility" /><span>🏥 Med Facility</span></label>
+                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medevac_unit" /><span>🚁 MEDEVAC</span></label>
+                <!-- Other military -->
+                <label class="filter-cb"><input type="checkbox" value="missile" /><span>Missile</span></label>
+                <label class="filter-cb"><input type="checkbox" value="fighter" /><span>Fighter</span></label>
+                <label class="filter-cb"><input type="checkbox" value="bomber" /><span>Bomber</span></label>
+                <label class="filter-cb"><input type="checkbox" value="ship" /><span>Ship</span></label>
+                <label class="filter-cb"><input type="checkbox" value="destroyer" /><span>Destroyer</span></label>
+                <label class="filter-cb"><input type="checkbox" value="submarine" /><span>Submarine</span></label>
+                <label class="filter-cb"><input type="checkbox" value="ground_vehicle" /><span>Ground Veh.</span></label>
+                <label class="filter-cb"><input type="checkbox" value="person" /><span>Person</span></label>
+                <label class="filter-cb"><input type="checkbox" value="base" /><span>Base</span></label>
+                <label class="filter-cb"><input type="checkbox" value="building" /><span>Building</span></label>
+                <label class="filter-cb"><input type="checkbox" value="infrastructure" /><span>Infrastructure</span></label>
+              </div>
+
+              <!-- Casualty triage subfilter -->
+              <div class="subfilter" id="subfilterCasualty" style="display:none;">
+                <div class="subfilter-header">
+                  <span>Triage Level</span>
+                  <button class="btn-clear" id="clearTriageFilter">Limpiar</button>
+                </div>
+                <div class="subfilter-options" id="triageCheckboxes">
+                  <label class="filter-cb triage-option">
+                    <input type="checkbox" value="RED" />
+                    <span class="triage-pill RED">T1 — Immediate</span>
+                  </label>
+                  <label class="filter-cb triage-option">
+                    <input type="checkbox" value="YELLOW" />
+                    <span class="triage-pill YELLOW">T2 — Urgent</span>
+                  </label>
+                  <label class="filter-cb triage-option">
+                    <input type="checkbox" value="GREEN" />
+                    <span class="triage-pill GREEN">T3 — Minimal</span>
+                  </label>
+                  <label class="filter-cb triage-option">
+                    <input type="checkbox" value="BLUE" />
+                    <span class="triage-pill BLUE">T4 — Expectant</span>
+                  </label>
+                  <label class="filter-cb triage-option">
+                    <input type="checkbox" value="BLACK" />
+                    <span class="triage-pill BLACK">Dead</span>
+                  </label>
+                  <label class="filter-cb triage-option">
+                    <input type="checkbox" value="UNKNOWN" />
+                    <span class="triage-pill UNKNOWN">Unknown</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Medical facility role subfilter -->
+              <div class="subfilter" id="subfilterMedFacility" style="display:none;">
+                <div class="subfilter-header">
+                  <span>Facility Role</span>
+                  <button class="btn-clear" id="clearMedFacilityFilter">Limpiar</button>
+                </div>
+                <div class="subfilter-options" id="medFacilityCheckboxes">
+                  <label class="filter-cb"><input type="checkbox" value="medical_role_1" /><span>Role 1 — Aid Post</span></label>
+                  <label class="filter-cb"><input type="checkbox" value="medical_role_2" /><span>Role 2 — Surgical</span></label>
+                  <label class="filter-cb"><input type="checkbox" value="medical_role_3" /><span>Role 3 — Field Hospital</span></label>
+                  <label class="filter-cb"><input type="checkbox" value="medical_role_4" /><span>Role 4 — Definitive</span></label>
+                  <label class="filter-cb"><input type="checkbox" value="medical_other" /><span>Other (R2B/R2E/Multi)</span></label>
+                </div>
+              </div>
+
+              <!-- MEDEVAC role subfilter -->
+              <div class="subfilter" id="subfilterMedevac" style="display:none;">
+                <div class="subfilter-header">
+                  <span>MEDEVAC Role</span>
+                  <button class="btn-clear" id="clearMedevacFilter">Limpiar</button>
+                </div>
+                <div class="subfilter-options" id="medevacCheckboxes">
+                  <label class="filter-cb"><input type="checkbox" value="medevac_role_1" /><span>Role 1 — Immediate</span></label>
+                  <label class="filter-cb"><input type="checkbox" value="medevac_role_2" /><span>Role 2 — Forward</span></label>
+                  <label class="filter-cb"><input type="checkbox" value="medevac_role_3" /><span>Role 3 — Theater</span></label>
+                  <label class="filter-cb"><input type="checkbox" value="medevac_role_4" /><span>Role 4 — Definitive</span></label>
+                  <label class="filter-cb"><input type="checkbox" value="medevac_other" /><span>Other (FW/Amb/Mech/Mort)</span></label>
+                </div>
+              </div>
+
+            </div>
           </div>
 
-          <div class="control-group">
-            <label for="allianceFilter">Filtrar por alianza:</label>
-            <select id="allianceFilter">
-              <option value="">Todas</option>
-              <option value="friendly">Friendly</option>
-              <option value="hostile">Hostile</option>
-              <option value="neutral">Neutral</option>
-              <option value="unknown">Unknown</option>
-            </select>
+          <!-- Alliance filter -->
+          <div class="filter-section">
+            <div class="filter-section-header" data-toggle="allianceBody">
+              <span>🛡️ Alianza</span>
+              <div class="filter-section-actions">
+                <button class="btn-clear" id="clearAlliance" title="Limpiar">Limpiar</button>
+                <span class="chevron">▾</span>
+              </div>
+            </div>
+            <div class="filter-section-body" id="allianceBody">
+              <div class="checkbox-grid" id="allianceCheckboxes">
+                <label class="filter-cb"><input type="checkbox" value="friendly" /><span class="alliance-dot" style="--dot-color:#00AEEF"></span><span>Friendly</span></label>
+                <label class="filter-cb"><input type="checkbox" value="hostile" /><span class="alliance-dot" style="--dot-color:#FF0000"></span><span>Hostile</span></label>
+                <label class="filter-cb"><input type="checkbox" value="neutral" /><span class="alliance-dot" style="--dot-color:#ADFF2F"></span><span>Neutral</span></label>
+                <label class="filter-cb"><input type="checkbox" value="unknown" /><span class="alliance-dot" style="--dot-color:#A9A9A9"></span><span>Unknown</span></label>
+              </div>
+            </div>
           </div>
 
-          <div class="control-group">
-            <label for="buscarNombre">Buscar por nombre:</label>
-            <input type="text" id="buscarNombre" placeholder="Escribe un nombre..."/>
+          <!-- Search -->
+          <div class="filter-section">
+            <div class="filter-section-header" data-toggle="searchBody">
+              <span>🔍 Buscar</span>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="filter-section-body" id="searchBody">
+              <input type="text" id="buscarNombre" placeholder="Escribe un nombre…" class="search-input"/>
+            </div>
           </div>
 
-          <button class="btn btn-primary" onclick="mostrarFormularioNuevoPunto()">➕ Nueva entidad</button>
-          <button class="btn btn-secondary" onclick="centrarMapa()">🎯 Centrar en España</button>
+          <!-- Action buttons -->
+          <div class="filter-actions">
+            <button class="btn btn-primary" onclick="mostrarFormularioNuevoPunto()">➕ Nueva entidad</button>
+            <button class="btn btn-secondary" onclick="centrarMapa()">🎯 Centrar en España</button>
+          </div>
         </div>
 
         <div id="message" class="message"></div>

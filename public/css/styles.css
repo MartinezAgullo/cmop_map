@@ -81,7 +81,7 @@ body {
 }
 
 .scenario-row select {
-  flex: 0 1 260px;          /* don't grow, can shrink, preferred 260px */
+  flex: 0 1 260px;
   max-width: 260px;
   padding: 8px 10px;
   border: 1px solid #cdd5de;
@@ -107,7 +107,7 @@ body {
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s;
-  width: auto;                /* override the global .btn width:100% */
+  width: auto;
 }
 
 .btn-scenario:hover {
@@ -153,13 +153,12 @@ body {
   font-size: 0.9em;
 }
 
-/* Casualties count — highlighted when > 0 */
 .stat-casualties {
   color: #c0392b;
 }
 
 /* ====================================================================
-   Triage pills  (used in stats row + list items + popups)
+   Triage pills  (used in stats + list items + popups + filter)
    ==================================================================== */
 .triage-pill {
   display: inline-block;
@@ -171,33 +170,186 @@ body {
   margin-right: 4px;
 }
 
-.triage-pill.RED    { background: #e74c3c; }
-.triage-pill.YELLOW { background: #f39c12; }
-.triage-pill.GREEN  { background: #27ae60; }
-.triage-pill.BLACK  { background: #2c3e50; }
-.triage-pill.UNKNOWN{ background: #95a5a6; color: #fff; }
+.triage-pill.RED     { background: #e74c3c; }
+.triage-pill.YELLOW  { background: #f39c12; }
+.triage-pill.GREEN   { background: #27ae60; }
+.triage-pill.BLUE    { background: #2980b9; }
+.triage-pill.BLACK   { background: #2c3e50; }
+.triage-pill.UNKNOWN { background: #95a5a6; color: #fff; }
 
 /* ====================================================================
-   Controls & filters
+   Filter sections — collapsible
    ==================================================================== */
 .controls {
   margin-bottom: 16px;
 }
 
-.control-group {
-  margin-bottom: 12px;
+.filter-section {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
 }
 
-.control-group label {
-  display: block;
-  margin-bottom: 4px;
+.filter-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f0f4f8;
+  cursor: pointer;
+  user-select: none;
   font-weight: 600;
-  color: #333;
   font-size: 0.9em;
+  color: #34495e;
 }
 
-.control-group select,
-.control-group input {
+.filter-section-header:hover {
+  background: #e4eaf1;
+}
+
+.filter-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chevron {
+  font-size: 0.85em;
+  transition: transform 0.2s;
+  color: #888;
+}
+
+.chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.filter-section-body {
+  padding: 10px 14px;
+  transition: max-height 0.25s ease;
+}
+
+.filter-section-body.collapsed {
+  display: none;
+}
+
+/* Clear button (inline in section headers & subfilters) */
+.btn-clear {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.75em;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: auto;
+}
+
+.btn-clear:hover {
+  background: #e74c3c;
+  color: white;
+  border-color: #e74c3c;
+}
+
+/* ====================================================================
+   Checkbox grid (categories, alliance)
+   ==================================================================== */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+}
+
+.filter-cb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 0.82em;
+  color: #444;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.filter-cb:hover {
+  background: #f0f4f8;
+}
+
+.filter-cb input[type="checkbox"] {
+  accent-color: #667eea;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Medical category checkboxes — highlighted */
+.filter-cb--medical {
+  background: #fef9f0;
+  border: 1px solid #f0e4d0;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.filter-cb--medical:hover {
+  background: #fdf3e0;
+}
+
+/* Alliance dots */
+.alliance-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dot-color, #ccc);
+  flex-shrink: 0;
+}
+
+/* ====================================================================
+   Subfilters (triage, med facility roles, medevac roles)
+   ==================================================================== */
+.subfilter {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #fafbfc;
+  border: 1px solid #e8ecf0;
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
+}
+
+.subfilter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.82em;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.subfilter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Triage options — full-width pills as labels */
+.triage-option {
+  padding: 3px 4px;
+}
+
+.triage-option .triage-pill {
+  font-size: 0.82em;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+
+/* Search input */
+.search-input {
   width: 100%;
   padding: 9px 10px;
   border: 2px solid #e0e0e0;
@@ -206,10 +358,14 @@ body {
   transition: border-color 0.2s;
 }
 
-.control-group select:focus,
-.control-group input:focus {
+.search-input:focus {
   outline: none;
   border-color: #667eea;
+}
+
+/* Filter action buttons */
+.filter-actions {
+  margin-top: 10px;
 }
 
 /* ====================================================================
@@ -275,10 +431,11 @@ body {
   border-left-color: #764ba2;
 }
 
-/* Casualty items get a coloured left border based on triage */
+/* Casualty items — triage-coloured left border */
 .punto-item.triage-RED    { border-left-color: #e74c3c; }
 .punto-item.triage-YELLOW { border-left-color: #f39c12; }
 .punto-item.triage-GREEN  { border-left-color: #27ae60; }
+.punto-item.triage-BLUE   { border-left-color: #2980b9; }
 .punto-item.triage-BLACK  { border-left-color: #2c3e50; }
 
 .punto-nombre {
@@ -291,7 +448,6 @@ body {
   gap: 8px;
 }
 
-/* Alliance colour dot */
 .punto-nombre .pill {
   display: inline-block;
   width: 10px;
@@ -310,7 +466,6 @@ body {
   margin-bottom: 4px;
 }
 
-/* Medical badge shown below the category pill */
 .medical-badge {
   display: inline-flex;
   align-items: center;
@@ -388,7 +543,6 @@ body {
   color: #333;
 }
 
-/* Medical section inside popup */
 .popup-medical {
   margin-top: 10px;
   padding-top: 10px;
@@ -618,5 +772,9 @@ body {
 
   .map-container {
     height: 60vh;
+  }
+
+  .checkbox-grid {
+    grid-template-columns: 1fr;
   }
 }
