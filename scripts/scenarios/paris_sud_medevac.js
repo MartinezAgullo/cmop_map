@@ -6,6 +6,12 @@
 // Combined arms training with medical support, MEDEVAC assets, and casualties.
 // All friendly forces — no hostile units in this exercise.
 //
+// Triage colours follow multinational STANAG coding:
+//   T1=RED (Immediate), T2=YELLOW (Urgent), T3=GREEN (Minimal),
+//   T4=BLUE (Expectant), Dead=BLACK
+//
+// nine_line_data follows NATO 9-Line MEDEVAC Request structure (see schema.js)
+//
 // Coordinates: South of Paris, France (48.5-48.6°N, 2.2-2.35°E)
 // Run with
 //   docker compose up -d
@@ -103,6 +109,9 @@ const entities = [
   { nombre: 'FRA-CAS-1 (KIA)', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 3, observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.353, lat: 48.598 },
   { nombre: 'FRA-CAS-2 (KIA)', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 3, observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.354, lat: 48.5985 },
 
+  // French T4 Expectant (new — demonstrates BLUE triage in training exercise)
+  { nombre: 'FRA-CAS-3 (T4)', descripcion: 'French T4 Expectant — severe polytrauma from vehicle rollover', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-3', activo: true, tipo_elemento: 'casualty', prioridad: 4, observaciones: 'Third occupant from vehicle rollover. Massive internal injuries. Triaged T4 given MASCAL conditions.', altitud: null, lng: 2.3535, lat: 48.5983 },
+
   // German WIA
   { nombre: 'GER-CAS-1 (WIA)', descripcion: 'German WIA — blast injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 9, observaciones: 'Shrapnel wounds, stable', altitud: null, lng: 2.368, lat: 48.606 },
   { nombre: 'GER-CAS-2 (WIA)', descripcion: 'German WIA — crush injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 8, observaciones: 'Lower limb trauma', altitud: null, lng: 2.372, lat: 48.607 },
@@ -117,12 +126,15 @@ const entities = [
 
 // ---------------------------------------------------------------------------
 // Medical details
+//
+// nine_line_data follows NATO 9-Line MEDEVAC Request structure.
+// See GET /api/schema → nine_line_medevac for field definitions.
 // ---------------------------------------------------------------------------
 const medicalDetails = [
   // French KIA
   {
     entity_ref: 'FRA-CAS-1',
-    triage_color: 'BLACK',
+    triage_color: 'BLACK',       // Dead — immediate death
     casualty_status: 'KIA',
     injury_mechanism: 'Vehicle rollover',
     primary_injury: 'Fatal head trauma',
@@ -135,7 +147,7 @@ const medicalDetails = [
   },
   {
     entity_ref: 'FRA-CAS-2',
-    triage_color: 'BLACK',
+    triage_color: 'BLACK',       // Dead — immediate death
     casualty_status: 'KIA',
     injury_mechanism: 'Vehicle rollover',
     primary_injury: 'Fatal crush injury',
@@ -145,6 +157,24 @@ const medicalDetails = [
     evac_stage: 'at_poi',
     destination_facility_ref: null,
     nine_line_data: null
+  },
+
+  // French T4 Expectant (new — demonstrates BLUE triage)
+  {
+    entity_ref: 'FRA-CAS-3',
+    triage_color: 'BLUE',        // T4 Expectant — expected to die given MASCAL conditions
+    casualty_status: 'WIA',
+    injury_mechanism: 'Vehicle rollover',
+    primary_injury: 'Massive internal haemorrhage, bilateral flail chest, suspected C-spine fracture. Non-survivable given simultaneous multiple-casualty event.',
+    vital_signs: [
+      { hr: 130, bp: '65/40', spo2: 80, recorded_at: '2026-02-06T16:10:00Z' },
+      { hr: 138, bp: '58/35', spo2: 75, recorded_at: '2026-02-06T16:25:00Z' }
+    ],
+    prehospital_treatment: 'IV morphine 10mg, comfort measures. Triaged T4 due to concurrent MASCAL with 2x KIA.',
+    evac_priority: 'ROUTINE',     // T4 patients receive lowest evac priority
+    evac_stage: 'at_poi',
+    destination_facility_ref: null,
+    nine_line_data: null           // No MEDEVAC request — palliative care only
   },
 
   // German WIA
@@ -162,11 +192,20 @@ const medicalDetails = [
     evac_stage: 'in_transit',
     destination_facility_ref: 'FRA-MED-R2',
     nine_line_data: {
-      line1_location: '48.606°N 2.368°E',
+      line1_location: '48.606,2.368',
+      line2_callsign: 'GETANKPL MEDIC',
       line2_frequency: 'FM 45.100',
-      line3_casualties: '1 PRIORITY',
-      line5_patient_info: 'Male, 26y, German tank crew',
-      line9_remarks: 'Stable, en route to Role-2'
+      line3_precedence: 'C',
+      line3_count: 1,
+      line4_special_eqpt: 'A',
+      line5_litter: 0,
+      line5_ambulatory: 1,
+      line6_security: 'N',
+      line7_marking: 'A',
+      line7_marking_detail: 'orange VS-17 panel',
+      line8_nationality: 'C',
+      line9_nbc: null,
+      remarks: 'Stable, en route to Role-2 by ground ambulance.'
     }
   },
   {
@@ -183,11 +222,20 @@ const medicalDetails = [
     evac_stage: 'at_poi',
     destination_facility_ref: 'FRA-MED-R2',
     nine_line_data: {
-      line1_location: '48.607°N 2.372°E',
+      line1_location: '48.607,2.372',
+      line2_callsign: 'GETANKSQ2 MEDIC',
       line2_frequency: 'FM 45.100',
-      line3_casualties: '1 PRIORITY',
-      line5_patient_info: 'Male, 24y, German infantry',
-      line9_remarks: 'Possible compartment syndrome, needs surgical eval'
+      line3_precedence: 'C',
+      line3_count: 1,
+      line4_special_eqpt: 'A',
+      line5_litter: 1,
+      line5_ambulatory: 0,
+      line6_security: 'N',
+      line7_marking: 'C',
+      line7_marking_detail: 'green smoke',
+      line8_nationality: 'C',
+      line9_nbc: null,
+      remarks: 'Possible compartment syndrome, needs surgical eval. Requesting MEDEVAC helicopter.'
     }
   },
 

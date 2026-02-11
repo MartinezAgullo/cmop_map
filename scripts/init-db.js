@@ -49,13 +49,15 @@ const ENUMS = `
     'unknown'     -- Desconocido
   );
 
-  -- Triage colours (TCCC standard + unknown default)
+  -- Triage colours — multinational STANAG colour coding for Major Incident / MASCAL
+  -- Reference: NATO AJMedP-7 / STANAG 2879
   CREATE TYPE triage_color_enum AS ENUM (
-    'RED',      -- Immediate
-    'YELLOW',   -- Delayed
-    'GREEN',    -- Minor
-    'BLACK',    -- Expectant / deceased
-    'UNKNOWN'
+    'RED',      -- T1 Immediate:  life-threatening, requires immediate intervention
+    'YELLOW',   -- T2 Urgent:     needs stabilizing treatment, can tolerate short delay
+    'GREEN',    -- T3 Minimal:    minor injuries, can self-care or receive first-aid
+    'BLUE',     -- T4 Expectant:  expected to die given MASCAL circumstances, palliative care
+    'BLACK',    -- Dead:          declared dead by medical professional or non-survivable injuries
+    'UNKNOWN'   -- Not yet triaged
   );
 
   -- MEDEVAC evacuation priority (NATO / TCCC)
@@ -113,8 +115,28 @@ const BASE_TABLE = `
 //   - All fields NULLABLE; unknown state is the default.
 //   - vital_signs: JSONB array of timestamped readings
 //       [{ "hr": 80, "bp": "120/80", "spo2": 95, "recorded_at": "2026-..." }, ...]
-//   - nine_line_data: JSONB with the structured 9-Line MEDEVAC fields
-//       { "line1_location": "...", "line2_frequency": "...", ... }
+//
+//   - nine_line_data: JSONB — structured 9-Line MEDEVAC Request
+//     Based on NATO STANAG 9-LINE format. Expected structure:
+//     {
+//       "line1_location":       string,  -- Grid coordinates of the pickup site
+//       "line2_callsign":       string,  -- Radio call sign at the site
+//       "line2_frequency":      string,  -- Radio frequency
+//       "line3_precedence":     string,  -- Precedence code: A=Urgent, B=Urgent Surg, C=Priority, D=Routine
+//       "line3_count":          number,  -- Number of patients at this precedence
+//       "line4_special_eqpt":   string,  -- A=None, B=Hoist, C=Extraction Eqpt, D=Ventilator
+//       "line5_litter":         number,  -- Number of litter patients
+//       "line5_ambulatory":     number,  -- Number of ambulatory patients
+//       "line6_security":       string,  -- N=No enemy, P=Possible, E=Enemy (caution), X=Enemy (armed escort)
+//       "line6_peacetime_info": string,  -- Peacetime alt: number & type of wounded (free text)
+//       "line7_marking":        string,  -- A=Panels, B=Pyrotechnic, C=Smoke, D=None, E=Other
+//       "line7_marking_detail": string,  -- Detail (e.g. panel colour, smoke colour)
+//       "line8_nationality":    string,  -- A=US Mil, B=US Civ, C=Non-US Mil, D=Non-US Civ, E=EPW
+//       "line9_nbc":            string,  -- N=Nuclear, B=Biological, C=Chemical, or null
+//       "line9_terrain_desc":   string,  -- Peacetime: terrain/landing zone description
+//       "remarks":              string   -- Additional free-text remarks
+//     }
+//
 //   - destination_facility_id: FK back to puntos_interes (Role 1/2/3 facility)
 // ---------------------------------------------------------------------------
 
@@ -161,7 +183,6 @@ const INDEXES = `
   CREATE INDEX idx_pi_country     ON puntos_interes (country);
 
   -- Medical details
-  -- GIN on vital_signs for JSONB path queries
   CREATE INDEX idx_md_vital_signs     ON medical_details USING GIN (vital_signs);
   CREATE INDEX idx_md_nine_line       ON medical_details USING GIN (nine_line_data);
   CREATE INDEX idx_md_triage_color    ON medical_details (triage_color);
@@ -201,6 +222,7 @@ const DROP_ALL = `
   DROP TABLE IF EXISTS medical_details CASCADE;
   DROP TABLE IF EXISTS puntos_interes  CASCADE;
 
+  DROP TYPE IF EXISTS casualty_status_enum;
   DROP TYPE IF EXISTS evac_stage_enum;
   DROP TYPE IF EXISTS evac_priority_enum;
   DROP TYPE IF EXISTS triage_color_enum;
@@ -228,13 +250,13 @@ const initDatabase = async () => {
 
     // Rebuild
     await pool.query(ENUMS);
-    console.log('✅ Enums created');
+    console.log('✅ Enums created (triage includes BLUE for T4 Expectant)');
 
     await pool.query(BASE_TABLE);
     console.log('✅ Table puntos_interes created');
 
     await pool.query(MEDICAL_TABLE);
-    console.log('✅ Table medical_details created');
+    console.log('✅ Table medical_details created (nine_line_data JSONB structured)');
 
     await pool.query(INDEXES);
     console.log('✅ Indexes created');

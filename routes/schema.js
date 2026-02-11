@@ -1,8 +1,10 @@
 // routes/schema.js
 //
 // GET /api/schema
-// Returns structured information about CMOP Map's entity types, categories, alliances, etc.
-// Used by MCP servers to dynamically discover available entity types.
+// Returns structured information about CMOP Map's entity types, categories,
+// alliances, triage colours, 9-LINE MEDEVAC structure, etc.
+// Used by MCP servers to dynamically discover available entity types and
+// understand the data model for creating/updating entities.
 // ---------------------------------------------------------------------------
 
 const express = require('express');
@@ -13,7 +15,7 @@ const router = express.Router();
 // ---------------------------------------------------------------------------
 
 const SCHEMA = {
-  version: '1.0.0',
+  version: '1.1.0',
   categories: [
     // Military
     { value: 'missile', label_en: 'Missile', label_es: 'Misil', subtypes: [] },
@@ -130,12 +132,47 @@ const SCHEMA = {
     { value: 'unknown', label_en: 'Unknown', label_es: 'Desconocido' }
   ],
 
+  // -------------------------------------------------------------------------
+  // Triage colours — multinational STANAG colour coding
+  // Reference: NATO AJMedP-7 / STANAG 2879
+  // -------------------------------------------------------------------------
   triage_colors: [
-    { value: 'RED', label_en: 'Immediate', label_es: 'Inmediato', description: 'Life-threatening, requires immediate care' },
-    { value: 'YELLOW', label_en: 'Delayed', label_es: 'Demorado', description: 'Serious but stable' },
-    { value: 'GREEN', label_en: 'Minor', label_es: 'Menor', description: 'Minor injuries, stable' },
-    { value: 'BLACK', label_en: 'Expectant / Deceased', label_es: 'Expectante / Fallecido', description: 'Deceased or expectant' },
-    { value: 'UNKNOWN', label_en: 'Unknown', label_es: 'Desconocido', description: 'Not yet triaged' }
+    {
+      value: 'RED',
+      label_en: 'T1 — Immediate',
+      label_es: 'T1 — Inmediato',
+      description: 'Life-threatening injuries requiring immediate life-saving interventions. May be converted to T2 with appropriate temporary intervention(s).'
+    },
+    {
+      value: 'YELLOW',
+      label_en: 'T2 — Urgent',
+      label_es: 'T2 — Urgente',
+      description: 'Needs stabilizing treatment, but general condition permits delay in surgical or other special treatment without unduly endangering life.'
+    },
+    {
+      value: 'GREEN',
+      label_en: 'T3 — Minimal',
+      label_es: 'T3 — Mínimo',
+      description: 'Relatively minor injuries. Can effectively care for themselves or be helped by first-aid trained personnel.'
+    },
+    {
+      value: 'BLUE',
+      label_en: 'T4 — Expectant',
+      label_es: 'T4 — Expectante',
+      description: 'Expected to die given the circumstances of the Major Incident/MASCAL. Receives appropriate supportive treatment and palliative care.'
+    },
+    {
+      value: 'BLACK',
+      label_en: 'Dead',
+      label_es: 'Fallecido',
+      description: 'Declared dead by a medical professional, or non-survivable injuries with no vital signs.'
+    },
+    {
+      value: 'UNKNOWN',
+      label_en: 'Unknown',
+      label_es: 'Desconocido',
+      description: 'Not yet triaged.'
+    }
   ],
 
   casualty_status: [
@@ -156,7 +193,205 @@ const SCHEMA = {
     { value: 'in_transit', label_en: 'In Transit', label_es: 'En Tránsito' },
     { value: 'delivered', label_en: 'Delivered', label_es: 'Entregado' },
     { value: 'unknown', label_en: 'Unknown', label_es: 'Desconocido' }
-  ]
+  ],
+
+  // -------------------------------------------------------------------------
+  // 9-Line MEDEVAC Request — structured JSONB stored in
+  // medical_details.nine_line_data
+  //
+  // Based on NATO STANAG 9-LINE MEDEVAC Request format.
+  // Agents should populate these fields when creating or updating a
+  // casualty's medical record via PUT /api/medical/:entity_id or
+  // POST /api/medical/:entity_id/nine-line
+  // -------------------------------------------------------------------------
+  nine_line_medevac: {
+    description: '9-Line MEDEVAC Request — NATO standard format for requesting medical evacuation. Stored as JSONB in medical_details.nine_line_data.',
+    fields: [
+      {
+        key: 'line1_location',
+        line: 1,
+        title: 'Location',
+        type: 'string',
+        description: 'Grid coordinates of the pickup site (e.g. "38TQK 1234 5678" or "47.091,37.568").',
+        required: true
+      },
+      {
+        key: 'line2_callsign',
+        line: 2,
+        title: 'Call Sign',
+        type: 'string',
+        description: 'Radio call sign of the unit at the pickup site (e.g. "DUSTOFF 7-2").',
+        required: true
+      },
+      {
+        key: 'line2_frequency',
+        line: 2,
+        title: 'Frequency',
+        type: 'string',
+        description: 'Radio frequency for contact (e.g. "243.0 MHz").',
+        required: true
+      },
+      {
+        key: 'line3_precedence',
+        line: 3,
+        title: 'Precedence',
+        type: 'string',
+        description: 'Number of patients sorted by precedence.',
+        required: true,
+        enum_values: {
+          'A': 'URGENT — within 2 hours',
+          'B': 'URGENT SURGICAL — within 2 hours',
+          'C': 'PRIORITY — within 4 hours',
+          'D': 'ROUTINE — within 24 hours'
+        }
+      },
+      {
+        key: 'line3_count',
+        line: 3,
+        title: 'Patient Count',
+        type: 'number',
+        description: 'Number of patients at the stated precedence level.',
+        required: true
+      },
+      {
+        key: 'line4_special_eqpt',
+        line: 4,
+        title: 'Special Equipment',
+        type: 'string',
+        description: 'Special equipment required at the pickup site.',
+        required: true,
+        enum_values: {
+          'A': 'None',
+          'B': 'Hoist',
+          'C': 'Extraction equipment',
+          'D': 'Ventilator'
+        }
+      },
+      {
+        key: 'line5_litter',
+        line: 5,
+        title: 'Litter Patients',
+        type: 'number',
+        description: 'Number of patients requiring litter (stretcher) transport.',
+        required: true
+      },
+      {
+        key: 'line5_ambulatory',
+        line: 5,
+        title: 'Ambulatory Patients',
+        type: 'number',
+        description: 'Number of patients who can walk.',
+        required: true
+      },
+      {
+        key: 'line6_security',
+        line: 6,
+        title: 'Security of Pickup Site (Wartime)',
+        type: 'string',
+        description: 'Threat level at the pickup zone.',
+        required: false,
+        enum_values: {
+          'N': 'No enemy troops in area',
+          'P': 'Possible enemy troops in area',
+          'E': 'Enemy troops in area — proceed with caution',
+          'X': 'Enemy troops in area — armed escort required'
+        }
+      },
+      {
+        key: 'line6_peacetime_info',
+        line: 6,
+        title: 'Peacetime Info',
+        type: 'string',
+        description: 'Peacetime alternative: number and type of wounded (free text). Used instead of line6_security in peacetime operations.',
+        required: false
+      },
+      {
+        key: 'line7_marking',
+        line: 7,
+        title: 'Method of Marking Pickup Site',
+        type: 'string',
+        description: 'How the pilot will identify the pickup site.',
+        required: true,
+        enum_values: {
+          'A': 'Panels (specify colour in line7_marking_detail)',
+          'B': 'Pyrotechnic signal',
+          'C': 'Smoke signal',
+          'D': 'None',
+          'E': 'Other (describe in line7_marking_detail)'
+        }
+      },
+      {
+        key: 'line7_marking_detail',
+        line: 7,
+        title: 'Marking Detail',
+        type: 'string',
+        description: 'Colour or description of the marking method (e.g. "green smoke", "orange VS-17 panel").',
+        required: false
+      },
+      {
+        key: 'line8_nationality',
+        line: 8,
+        title: 'Patient Nationality and Status',
+        type: 'string',
+        description: 'Nationality and military/civilian status of the patient(s).',
+        required: true,
+        enum_values: {
+          'A': 'US Military',
+          'B': 'US Civilian',
+          'C': 'Non-US Military',
+          'D': 'Non-US Civilian',
+          'E': 'Enemy Prisoner of War (EPW)'
+        }
+      },
+      {
+        key: 'line9_nbc',
+        line: 9,
+        title: 'NBC Contamination (Wartime)',
+        type: 'string',
+        description: 'Nuclear, Biological, or Chemical contamination at the site.',
+        required: false,
+        enum_values: {
+          'N': 'Nuclear',
+          'B': 'Biological',
+          'C': 'Chemical'
+        }
+      },
+      {
+        key: 'line9_terrain_desc',
+        line: 9,
+        title: 'Terrain Description (Peacetime)',
+        type: 'string',
+        description: 'Peacetime alternative: terrain and landing zone description (free text).',
+        required: false
+      },
+      {
+        key: 'remarks',
+        line: null,
+        title: 'Remarks',
+        type: 'string',
+        description: 'Additional free-text remarks or notes about the MEDEVAC request.',
+        required: false
+      }
+    ],
+    example: {
+      line1_location:       '38TQK 1234 5678',
+      line2_callsign:       'DUSTOFF 7-2',
+      line2_frequency:      '243.0 MHz',
+      line3_precedence:     'A',
+      line3_count:          1,
+      line4_special_eqpt:   'A',
+      line5_litter:         1,
+      line5_ambulatory:     0,
+      line6_security:       'N',
+      line6_peacetime_info: null,
+      line7_marking:        'C',
+      line7_marking_detail: 'green smoke',
+      line8_nationality:    'C',
+      line9_nbc:            null,
+      line9_terrain_desc:   null,
+      remarks:              'Requires immediate surgery. Ground route compromised.'
+    }
+  }
 };
 
 // ---------------------------------------------------------------------------

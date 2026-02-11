@@ -1,19 +1,18 @@
 # ==============================================================================
-# docker-compose.yml - CMOP Map Full Stack
+# docker-compose.yml - CMOP Map Full Stack (ARM64 Compatible)
 # ==============================================================================
 # Services:
-#   - postgis: PostgreSQL + PostGIS database
+#   - postgis: PostgreSQL + PostGIS (ARM64 native)
 #   - backend: Node.js API + static frontend
 # ==============================================================================
 
 services:
   # ----------------------------------------------------------------------------
-  # PostgreSQL + PostGIS Database
+  # PostgreSQL + PostGIS Database (ARM64 Compatible)
   # ----------------------------------------------------------------------------
   postgis:
-    image: postgis/postgis:16-3.4
+    image: imresamu/postgis:16-3.4-alpine
     container_name: cmop_map_postgis
-    platform: linux/amd64
     environment:
       POSTGRES_DB: cmop_db
       POSTGRES_USER: postgres

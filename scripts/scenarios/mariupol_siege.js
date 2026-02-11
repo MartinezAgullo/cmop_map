@@ -6,6 +6,12 @@
 // Demonstrates full multi-domain operations: ground, air, sea.
 // Medical layer: Ukrainian medical facilities (Role-1/2/3), MEDEVAC assets, casualties (WIA/KIA) on both sides.
 //
+// Triage colours follow multinational STANAG coding:
+//   T1=RED (Immediate), T2=YELLOW (Urgent), T3=GREEN (Minimal),
+//   T4=BLUE (Expectant), Dead=BLACK
+//
+// nine_line_data follows NATO 9-Line MEDEVAC Request structure (see schema.js)
+//
 // Purpose: showcase map capabilities with realistic combined-arms scenario + medical evacuation workflow.
 // ---------------------------------------------------------------------------
 
@@ -91,6 +97,9 @@ const entities = [
   // Ukrainian KIA
   { nombre: 'UKR-CAS-4 (KIA)', descripcion: 'Ukrainian KIA',                  categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-4', activo: true, tipo_elemento: 'casualty', prioridad: 3, observaciones: 'KIA — direct hit from tank round', altitud: null, lng: 37.601, lat: 47.101 },
 
+  // Ukrainian T4 Expectant (new)
+  { nombre: 'UKR-CAS-5 (T4)', descripcion: 'Ukrainian T4 Expectant — massive polytrauma', categoria: 'casualty', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-CAS-5', activo: true, tipo_elemento: 'casualty', prioridad: 4, observaciones: 'Massive polytrauma from building collapse, palliative care only', altitud: null, lng: 37.615, lat: 47.093 },
+
   // Russian WIA
   { nombre: 'RUS-CAS-1 (WIA)', descripcion: 'Russian WIA — gunshot wound',    categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 7, observaciones: 'GSW to leg, tourniquet applied', altitud: null, lng: 37.521, lat: 47.099 },
   { nombre: 'RUS-CAS-2 (WIA)', descripcion: 'Russian WIA — burns',            categoria: 'casualty', country: 'Russia', alliance: 'hostile', elemento_identificado: 'RUS-CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 8, observaciones: 'Severe burns from vehicle fire', altitud: null, lng: 37.556, lat: 47.103 },
@@ -101,6 +110,9 @@ const entities = [
 
 // ---------------------------------------------------------------------------
 // Medical details
+//
+// nine_line_data follows NATO 9-Line MEDEVAC Request structure.
+// See GET /api/schema → nine_line_medevac for field definitions.
 // ---------------------------------------------------------------------------
 const medicalDetails = [
   // Ukrainian WIA
@@ -119,9 +131,18 @@ const medicalDetails = [
     destination_facility_ref: 'UKR-MED-R1-1',
     nine_line_data: {
       line1_location: '47.104,37.611',
-      line3_casualties: '1 PRIORITY',
-      line5_patient_info: 'Male, 26y, UKR INF-1',
-      line9_remarks: 'Awaiting ground evacuation to Aid Post-1'
+      line2_callsign: 'UKR INF-1 MEDIC',
+      line2_frequency: 'FM 148.350',
+      line3_precedence: 'C',
+      line3_count: 1,
+      line4_special_eqpt: 'A',
+      line5_litter: 0,
+      line5_ambulatory: 1,
+      line6_security: 'E',
+      line7_marking: 'D',
+      line8_nationality: 'C',
+      line9_nbc: null,
+      remarks: 'Awaiting ground evacuation to Aid Post-1. Area under sporadic indirect fire.'
     }
   },
   {
@@ -140,9 +161,18 @@ const medicalDetails = [
     destination_facility_ref: 'UKR-MED-R2-1',
     nine_line_data: {
       line1_location: '47.091,37.568',
-      line3_casualties: '1 URGENT',
-      line5_patient_info: 'Male, 31y, UKR INF-2',
-      line9_remarks: 'Being moved by ground to Role-2. Requires immediate surgery.'
+      line2_callsign: 'UKR INF-2 MEDIC',
+      line2_frequency: 'FM 148.350',
+      line3_precedence: 'B',
+      line3_count: 1,
+      line4_special_eqpt: 'A',
+      line5_litter: 1,
+      line5_ambulatory: 0,
+      line6_security: 'P',
+      line7_marking: 'D',
+      line8_nationality: 'C',
+      line9_nbc: null,
+      remarks: 'Being moved by ground to Role-2. Requires immediate surgery. Hemodynamically unstable.'
     }
   },
   {
@@ -162,7 +192,7 @@ const medicalDetails = [
   },
   {
     entity_ref: 'UKR-CAS-4',
-    triage_color: 'BLACK',
+    triage_color: 'BLACK',       // Dead — KIA on scene
     casualty_status: 'KIA',
     injury_mechanism: 'Direct hit (tank APFSDS)',
     primary_injury: 'Catastrophic trauma, KIA on scene',
@@ -172,6 +202,24 @@ const medicalDetails = [
     evac_stage: 'at_poi',
     destination_facility_ref: null,
     nine_line_data: null
+  },
+
+  // Ukrainian T4 Expectant (new — demonstrates BLUE triage)
+  {
+    entity_ref: 'UKR-CAS-5',
+    triage_color: 'BLUE',        // T4 Expectant — expected to die given MASCAL circumstances
+    casualty_status: 'WIA',
+    injury_mechanism: 'Building collapse (structural)',
+    primary_injury: 'Massive polytrauma: crush syndrome, bilateral open femur fractures, suspected spinal cord injury. Non-survivable given available resources.',
+    vital_signs: [
+      { hr: 140, bp: '60/40', spo2: 78, recorded_at: '2026-02-03T14:40:00Z' },
+      { hr: 145, bp: '55/35', spo2: 74, recorded_at: '2026-02-03T14:55:00Z' }
+    ],
+    prehospital_treatment: 'IV morphine for pain management, comfort measures only',
+    evac_priority: 'ROUTINE',     // T4 patients receive lowest evac priority
+    evac_stage: 'at_poi',
+    destination_facility_ref: 'UKR-MED-R1-1',
+    nine_line_data: null           // No MEDEVAC request — palliative care only
   },
 
   // Russian WIA
@@ -207,7 +255,7 @@ const medicalDetails = [
   },
   {
     entity_ref: 'RUS-CAS-3',
-    triage_color: 'BLACK',
+    triage_color: 'BLACK',       // Dead — KIA from artillery
     casualty_status: 'KIA',
     injury_mechanism: 'Artillery (155mm HE)',
     primary_injury: 'KIA — blast overpressure + fragmentation',
