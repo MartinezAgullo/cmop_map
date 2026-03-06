@@ -27,14 +27,53 @@ const Entity  = require('../models/entity');
 // 9-Line MEDEVAC validation
 // ---------------------------------------------------------------------------
 
-/** Valid enum values for each coded 9-Line field */
+/**
+ * Valid enum values for each coded 9-Line field.
+ *
+ * Line 3 — Precedence (number of patients by urgency):
+ *   A = URGENT          — life/limb threatening, needs care within 2 hours
+ *   B = URGENT SURGICAL — requires surgical intervention within 2 hours
+ *   C = PRIORITY        — serious but stable, needs care within 4 hours
+ *   D = ROUTINE         — stable, needs care within 24 hours
+ *
+ * Line 4 — Special Equipment required at pickup site:
+ *   A = None
+ *   B = Hoist           — e.g. jungle, cliff, rooftop extraction
+ *   C = Extraction equipment — e.g. Stokes litter, rescue basket
+ *   D = Ventilator      — patient requires mechanical ventilation
+ *
+ * Line 6 — Security of Pickup Zone (wartime):
+ *   N = No enemy troops in area
+ *   P = Possible enemy activity in area
+ *   E = Enemy in area, proceed with caution
+ *   X = Enemy in area, armed escort required
+ *
+ * Line 7 — Method of Marking the pickup site:
+ *   A = Panels          — (specify colour in line7_marking_detail)
+ *   B = Pyrotechnic signal
+ *   C = Smoke signal    — (specify colour in line7_marking_detail)
+ *   D = None
+ *   E = Other           — (describe in line7_marking_detail)
+ *
+ * Line 8 — Patient Nationality and Status:
+ *   A = US Military
+ *   B = US Civilian
+ *   C = Non-US Military (NATO/allied)
+ *   D = Non-US Civilian
+ *   E = Enemy Prisoner of War (EPW)
+ *
+ * Line 9 — NBC Contamination (wartime):
+ *   N = Nuclear
+ *   B = Biological
+ *   C = Chemical
+ */
 const NINE_LINE_ENUMS = {
-  line3_precedence:  ['A', 'B', 'C', 'D'],
-  line4_special_eqpt:['A', 'B', 'C', 'D'],
-  line6_security:    ['N', 'P', 'E', 'X'],
-  line7_marking:     ['A', 'B', 'C', 'D', 'E'],
-  line8_nationality: ['A', 'B', 'C', 'D', 'E'],
-  line9_nbc:         ['N', 'B', 'C']
+  line3_precedence:   ['A', 'B', 'C', 'D'],
+  line4_special_eqpt: ['A', 'B', 'C', 'D'],
+  line6_security:     ['N', 'P', 'E', 'X'],
+  line7_marking:      ['A', 'B', 'C', 'D', 'E'],
+  line8_nationality:  ['A', 'B', 'C', 'D', 'E'],
+  line9_nbc:          ['N', 'B', 'C']
 };
 
 /**
@@ -44,6 +83,9 @@ const NINE_LINE_ENUMS = {
  * Validation is lenient: only supplied fields are checked.
  * Required fields are only enforced when `strict` is true (e.g. for
  * a complete 9-Line submission via POST /nine-line).
+ *
+ * Only Lines 1, 2, and 3 are mandatory — in combat situations the
+ * remaining lines are often transmitted later when conditions allow.
  */
 function validateNineLineData(data, strict = false) {
   const errors = [];
@@ -52,13 +94,14 @@ function validateNineLineData(data, strict = false) {
     return { valid: false, errors: ['nine_line_data must be a non-null object'] };
   }
 
-  // Required fields (only in strict mode)
+  // Required fields (only in strict mode) — Lines 1, 2, 3 only
   if (strict) {
     const required = [
-      'line1_location', 'line2_callsign', 'line2_frequency',
-      'line3_precedence', 'line3_count', 'line4_special_eqpt',
-      'line5_litter', 'line5_ambulatory', 'line7_marking',
-      'line8_nationality'
+      'line1_location',     // Line 1: pickup site coordinates
+      'line2_callsign',     // Line 2: radio call sign
+      'line2_frequency',    // Line 2: radio frequency
+      'line3_precedence',   // Line 3: urgency code (A/B/C/D)
+      'line3_count'         // Line 3: number of patients
     ];
     for (const field of required) {
       if (data[field] === undefined || data[field] === null || data[field] === '') {

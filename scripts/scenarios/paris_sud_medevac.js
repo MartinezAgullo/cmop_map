@@ -110,7 +110,7 @@ const entities = [
   { nombre: 'FRA-CAS-2 (KIA)', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 3, observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.354, lat: 48.5985 },
 
   // French T4 Expectant (new — demonstrates BLUE triage in training exercise)
-  { nombre: 'FRA-CAS-3 (T4)', descripcion: 'French T4 Expectant — severe polytrauma from vehicle rollover', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-3', activo: true, tipo_elemento: 'casualty', prioridad: 4, observaciones: 'Third occupant from vehicle rollover. Massive internal injuries. Triaged T4 given MASCAL conditions.', altitud: null, lng: 2.3535, lat: 48.5983 },
+  { nombre: 'FRA-CAS-3 (WIA))', descripcion: 'French WIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-3', activo: true, tipo_elemento: 'casualty', prioridad: 4, observaciones: 'Third occupant from vehicle rollover. Massive internal injuries. Triaged T4 given MASCAL conditions.', altitud: null, lng: 2.3535, lat: 48.5983 },
 
   // German WIA
   { nombre: 'GER-CAS-1 (WIA)', descripcion: 'German WIA — blast injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 9, observaciones: 'Shrapnel wounds, stable', altitud: null, lng: 2.368, lat: 48.606 },
