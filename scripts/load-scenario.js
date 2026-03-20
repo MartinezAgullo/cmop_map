@@ -111,9 +111,13 @@ async function insertMedicalDetails(client, medicalDetails, refMap) {
     const entityId = refMap.get(m.entity_ref);
     if (!entityId) throw new Error(`entity_ref "${m.entity_ref}" not found in loaded entities`);
 
-    const destId = m.destination_facility_ref
-      ? (refMap.get(m.destination_facility_ref) ?? null)
-      : null;
+    let destId = null;
+    if (m.destination_facility_ref) {
+      destId = refMap.get(m.destination_facility_ref) ?? null;
+      if (destId === null) {
+        console.warn(`⚠️  destination_facility_ref "${m.destination_facility_ref}" (entity_ref: "${m.entity_ref}") not found in loaded entities — set to NULL`);
+      }
+    }
 
     return [
       entityId,

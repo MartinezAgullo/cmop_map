@@ -57,6 +57,37 @@ cmop_map/
 
 ---
 
+## Running modes
+
+There are two ways to run the stack. Choose one — do not mix them.
+
+### Mode A — Docker (production / deployment)
+
+The entire stack (PostgreSQL + backend) runs in containers.
+
+```bash
+docker compose up -d          # starts PostgreSQL + backend on :3000
+docker compose down           # stop everything
+```
+
+→ `http://localhost:3000`
+
+### Mode B — Dev (hot-reload)
+
+Only PostgreSQL runs in Docker; the Node.js server runs locally with nodemon.
+
+```bash
+docker compose up -d postgis  # PostgreSQL only
+npm run dev                   # server with hot-reload on :3000
+
+# Stop: Ctrl+C then:
+docker compose down
+```
+
+→ `http://localhost:3000`
+
+---
+
 ## First-time setup
 
 ```bash
@@ -68,8 +99,8 @@ npm install
 # 2. Environment
 cp .env.example .env          # edit DB_PASSWORD at minimum
 
-# 3. PostgreSQL
-docker compose up -d
+# 3. PostgreSQL only (dev mode)
+docker compose up -d postgis
 
 # Wait for PostgreSQL to be ready
 until docker exec cmop_map_postgis pg_isready -U postgres >/dev/null 2>&1; do
@@ -90,24 +121,14 @@ npm run dev
 
 ---
 
-## Quick start script
+## Daily workflow (dev mode)
 
 ```bash
-./scripts/cmop_map/start_cmop_map.sh
-```
-
-Handles Docker, PostgreSQL, schema init, scenario loading, and server startup automatically.
-
----
-
-## Daily workflow
-
-```bash
-docker compose up -d          # PostgreSQL
+docker compose up -d postgis  # PostgreSQL only
 npm run dev                   # server (hot-reload)
 
 # Swap scenarios (no restart needed)
-node scripts/load-scenario.js valencia_medevac
+node scripts/load-scenario.js paris_sud_medevac
 
 # List scenarios
 node scripts/load-scenario.js --list

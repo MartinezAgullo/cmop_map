@@ -108,6 +108,7 @@ const entities = [
   // French KIA
   { nombre: 'FRA-CAS-1 (KIA)', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 3, observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.353, lat: 48.598 },
   { nombre: 'FRA-CAS-2 (KIA)', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 3, observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.354, lat: 48.5985 },
+  { nombre: 'FRA-CAS-4 (WIA)', descripcion: 'French WIA — penetrating thoracic trauma', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-4', activo: true, tipo_elemento: 'casualty', prioridad: 10, observaciones: 'Penetrating chest wound, tension pneumothorax decompressed on scene', altitud: null, lng: 2.3532, lat: 48.5978 },
 
   // French T4 Expectant (new — demonstrates BLUE triage in training exercise)
   { nombre: 'FRA-CAS-3 (WIA))', descripcion: 'French WIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-3', activo: true, tipo_elemento: 'casualty', prioridad: 4, observaciones: 'Third occupant from vehicle rollover. Massive internal injuries. Triaged T4 given MASCAL conditions.', altitud: null, lng: 2.3535, lat: 48.5983 },
@@ -118,6 +119,7 @@ const entities = [
 
   // Italian WIA
   { nombre: 'ITA-CAS-1 (WIA)', descripcion: 'Italian WIA — heat exhaustion', categoria: 'casualty', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 5, observaciones: 'Heat exhaustion, dehydration', altitud: null, lng: 2.348, lat: 48.615 },
+  { nombre: 'ITA-CAS-2 (WIA)', descripcion: 'Italian WIA — fragmentation wound', categoria: 'casualty', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 7, observaciones: 'Fragmentation wound to left thigh, tourniquet applied', altitud: null, lng: 2.3493, lat: 48.6141 },
 
   // Spanish WIA
   { nombre: 'ESP-CAS-1 (WIA)', descripcion: 'Spanish WIA — laceration', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 6, observaciones: 'Facial laceration, conscious', altitud: null, lng: 2.328, lat: 48.587 },
@@ -157,6 +159,39 @@ const medicalDetails = [
     evac_stage: 'at_poi',
     destination_facility_ref: null,
     nine_line_data: null
+  },
+
+  // French RED
+  {
+    entity_ref: 'FRA-CAS-4',
+    triage_color: 'RED',
+    casualty_status: 'WIA',
+    injury_mechanism: 'Penetrating trauma (shrapnel)',
+    primary_injury: 'Open pneumothorax right side, tension pneumothorax decompressed with needle decompression. Haemothorax suspected.',
+    vital_signs: [
+      { hr: 125, bp: '85/55', spo2: 88, recorded_at: '2026-02-06T16:12:00Z' },
+      { hr: 118, bp: '92/60', spo2: 91, recorded_at: '2026-02-06T16:22:00Z' }
+    ],
+    prehospital_treatment: 'Needle decompression right 2nd ICS, chest seal applied, high-flow O2, IV morphine 5mg, two large-bore IV lines',
+    evac_priority: 'URGENT',
+    evac_stage: 'at_poi',
+    destination_facility_ref: null,
+    nine_line_data: {
+      line1_location: '48.5978,2.3532',
+      line2_callsign: 'FRPLSQ1 MEDIC',
+      line2_frequency: 'FM 45.100',
+      line3_precedence: 'A',
+      line3_count: 1,
+      line4_special_eqpt: 'A',
+      line5_litter: 1,
+      line5_ambulatory: 0,
+      line6_security: 'N',
+      line7_marking: 'A',
+      line7_marking_detail: 'red VS-17 panel',
+      line8_nationality: 'C',
+      line9_nbc: null,
+      remarks: 'Immediate MEDEVAC required. Deteriorating respiratory status post-decompression.'
+    }
   },
 
   // French T4 Expectant (new — demonstrates BLUE triage)
@@ -240,6 +275,36 @@ const medicalDetails = [
   },
 
   // Italian WIA
+  {
+    entity_ref: 'ITA-CAS-2',
+    triage_color: 'YELLOW',
+    casualty_status: 'WIA',
+    injury_mechanism: 'Fragmentation (training ordnance)',
+    primary_injury: 'Penetrating fragmentation wound left thigh, femoral haemorrhage controlled with tourniquet',
+    vital_signs: [
+      { hr: 112, bp: '100/65', spo2: 95, recorded_at: '2026-02-06T17:10:00Z' }
+    ],
+    prehospital_treatment: 'Tourniquet applied proximal to wound, IV access, 1L NaCl bolus',
+    evac_priority: 'PRIORITY',
+    evac_stage: 'at_poi',
+    destination_facility_ref: null,
+    nine_line_data: {
+      line1_location: '48.6141,2.3493',
+      line2_callsign: 'ITPLSQ2 MEDIC',
+      line2_frequency: 'FM 45.150',
+      line3_precedence: 'C',
+      line3_count: 1,
+      line4_special_eqpt: 'A',
+      line5_litter: 1,
+      line5_ambulatory: 0,
+      line6_security: 'N',
+      line7_marking: 'C',
+      line7_marking_detail: 'yellow smoke',
+      line8_nationality: 'C',
+      line9_nbc: null,
+      remarks: 'Tourniquet time noted. Requires surgical haemorrhage control urgently.'
+    }
+  },
   {
     entity_ref: 'ITA-CAS-1',
     triage_color: 'GREEN',
