@@ -4,6 +4,7 @@ const cors    = require('cors');
 const path    = require('path');
 require('dotenv').config();
 
+const pool            = require('./config/database');
 const entitiesRoutes  = require('./routes/entities');
 const medicalRoutes   = require('./routes/medical');
 const scenariosRoutes = require('./routes/scenarios');
@@ -51,9 +52,19 @@ app.use((err, _req, res, _next) => {
 });
 
 // ---------------------------------------------------------------------------
+// DB migrations (idempotent — safe to run on every startup)
+// ---------------------------------------------------------------------------
+async function runMigrations() {
+  // ADD VALUE is idempotent via IF NOT EXISTS — no-op if already present
+  await pool.query("ALTER TYPE triage_color_enum ADD VALUE IF NOT EXISTS 'BLUE' BEFORE 'BLACK';");
+  console.log('✅ DB migrations applied');
+}
+
+// ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await runMigrations();
   console.log(`
 ╔══════════════════════════════════════════════════╗
 ║   🗺️  CMOP Map Server                           ║
