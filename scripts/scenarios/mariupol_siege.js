@@ -140,7 +140,7 @@ const medicalDetails = [
       line5_ambulatory: 1,
       line6_security: 'E',
       line7_marking: 'D',
-      line8_nationality: 'C',
+      line8_nationality: 'Ukrainian Military',
       line9_nbc: null,
       remarks: 'Awaiting ground evacuation to Aid Post-1. Area under sporadic indirect fire.'
     }
@@ -170,7 +170,7 @@ const medicalDetails = [
       line5_ambulatory: 0,
       line6_security: 'P',
       line7_marking: 'D',
-      line8_nationality: 'C',
+      line8_nationality: 'Ukrainian Military',
       line9_nbc: null,
       remarks: 'Being moved by ground to Role-2. Requires immediate surgery. Hemodynamically unstable.'
     }

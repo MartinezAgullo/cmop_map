@@ -55,12 +55,9 @@ const Entity  = require('../models/entity');
  *   D = None
  *   E = Other           — (describe in line7_marking_detail)
  *
- * Line 8 — Patient Nationality and Status:
- *   A = US Military
- *   B = US Civilian
- *   C = Non-US Military (NATO/allied)
- *   D = Non-US Civilian
- *   E = Enemy Prisoner of War (EPW)
+ * Line 8 — Patient Nationality and Status (free text):
+ *   Free-text field — e.g. "German Military", "French Civilian", "EPW".
+ *   (APJ-4.02 defines this as a US-centric enum; we use free text instead.)
  *
  * Line 9 — NBC Contamination (wartime):
  *   N = Nuclear
@@ -72,7 +69,6 @@ const NINE_LINE_ENUMS = {
   line4_special_eqpt: ['A', 'B', 'C', 'D'],
   line6_security:     ['N', 'P', 'E', 'X'],
   line7_marking:      ['A', 'B', 'C', 'D', 'E'],
-  line8_nationality:  ['A', 'B', 'C', 'D', 'E'],
   line9_nbc:          ['N', 'B', 'C']
 };
 

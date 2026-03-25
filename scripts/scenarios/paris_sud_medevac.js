@@ -188,7 +188,7 @@ const medicalDetails = [
       line6_security: 'N',
       line7_marking: 'A',
       line7_marking_detail: 'red VS-17 panel',
-      line8_nationality: 'C',
+      line8_nationality: 'French Military',
       line9_nbc: null,
       remarks: 'Immediate MEDEVAC required. Deteriorating respiratory status post-decompression.'
     }
@@ -238,7 +238,7 @@ const medicalDetails = [
       line6_security: 'N',
       line7_marking: 'A',
       line7_marking_detail: 'orange VS-17 panel',
-      line8_nationality: 'C',
+      line8_nationality: 'German Military',
       line9_nbc: null,
       remarks: 'Stable, en route to Role-2 by ground ambulance.'
     }
@@ -268,7 +268,7 @@ const medicalDetails = [
       line6_security: 'N',
       line7_marking: 'C',
       line7_marking_detail: 'green smoke',
-      line8_nationality: 'C',
+      line8_nationality: 'German Military',
       line9_nbc: null,
       remarks: 'Possible compartment syndrome, needs surgical eval. Requesting MEDEVAC helicopter.'
     }
@@ -300,7 +300,7 @@ const medicalDetails = [
       line6_security: 'N',
       line7_marking: 'C',
       line7_marking_detail: 'yellow smoke',
-      line8_nationality: 'C',
+      line8_nationality: 'Italian Military',
       line9_nbc: null,
       remarks: 'Tourniquet time noted. Requires surgical haemorrhage control urgently.'
     }

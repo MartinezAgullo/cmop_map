@@ -329,19 +329,16 @@ const SCHEMA = {
         required: false
       },
       {
+        // NOTE: La referencia APJ-4.02 define esta línea como un enum centrado en
+        // la perspectiva estadounidense (US Military / US Civilian / Non-US...).
+        // En este sistema usamos texto libre para reflejar la nacionalidad real
+        // del paciente sin subordinarla a la dicotomía US/Non-US.
         key: 'line8_nationality',
         line: 8,
         title: 'Patient Nationality and Status',
         type: 'string',
-        description: 'Nationality and military/civilian status of the patient(s).',
-        required: true,
-        enum_values: {
-          'A': 'US Military',
-          'B': 'US Civilian',
-          'C': 'Non-US Military',
-          'D': 'Non-US Civilian',
-          'E': 'Enemy Prisoner of War (EPW)'
-        }
+        description: 'Free-text nationality and military/civilian status of the patient(s) (e.g. "Spanish Military", "French Civilian", "EPW").',
+        required: true
       },
       {
         key: 'line9_nbc',
@@ -386,7 +383,7 @@ const SCHEMA = {
       line6_peacetime_info: null,
       line7_marking:        'C',
       line7_marking_detail: 'green smoke',
-      line8_nationality:    'C',
+      line8_nationality:    'Spanish Military',
       line9_nbc:            null,
       line9_terrain_desc:   null,
       remarks:              'Requires immediate surgery. Ground route compromised.'
