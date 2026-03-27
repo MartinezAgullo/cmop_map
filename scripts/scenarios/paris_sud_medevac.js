@@ -108,10 +108,10 @@ const entities = [
   // French KIA
   { nombre: 'FRA-CAS-1 (KIA)', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 3, observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.353, lat: 48.598 },
   { nombre: 'FRA-CAS-2 (KIA)', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-2', activo: true, tipo_elemento: 'casualty', prioridad: 3, observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.354, lat: 48.5985 },
-  { nombre: 'FRA-CAS-4 (WIA)', descripcion: 'French WIA — penetrating thoracic trauma', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-4', activo: true, tipo_elemento: 'casualty', prioridad: 10, observaciones: 'Penetrating chest wound, tension pneumothorax decompressed on scene', altitud: null, lng: 2.3532, lat: 48.5978 },
+  // { nombre: 'FRA-CAS-4 (WIA)', descripcion: 'French WIA — penetrating thoracic trauma', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-4', activo: true, tipo_elemento: 'casualty', prioridad: 10, observaciones: 'Penetrating chest wound, tension pneumothorax decompressed on scene', altitud: null, lng: 2.3532, lat: 48.5978 },
 
   // French T4 Expectant (new — demonstrates BLUE triage in training exercise)
-  { nombre: 'FRA-CAS-3 (WIA))', descripcion: 'French WIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-3', activo: true, tipo_elemento: 'casualty', prioridad: 4, observaciones: 'Third occupant from vehicle rollover. Massive internal injuries. Triaged T4 given MASCAL conditions.', altitud: null, lng: 2.3535, lat: 48.5983 },
+  // { nombre: 'FRA-CAS-3 (WIA)', descripcion: 'French WIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-3', activo: true, tipo_elemento: 'casualty', prioridad: 4, observaciones: 'Third occupant from vehicle rollover. Massive internal injuries. Triaged T4 given MASCAL conditions.', altitud: null, lng: 2.3535, lat: 48.5983 },
 
   // German WIA
   { nombre: 'GER-CAS-1 (WIA)', descripcion: 'German WIA — blast injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-1', activo: true, tipo_elemento: 'casualty', prioridad: 9, observaciones: 'Shrapnel wounds, stable', altitud: null, lng: 2.368, lat: 48.606 },
@@ -162,55 +162,55 @@ const medicalDetails = [
   },
 
   // French RED
-  {
-    entity_ref: 'FRA-CAS-4',
-    triage_color: 'RED',
-    casualty_status: 'WIA',
-    injury_mechanism: 'Penetrating trauma (shrapnel)',
-    primary_injury: 'Open pneumothorax right side, tension pneumothorax decompressed with needle decompression. Haemothorax suspected.',
-    vital_signs: [
-      { hr: 125, bp: '85/55', spo2: 88, recorded_at: '2026-02-06T16:12:00Z' },
-      { hr: 118, bp: '92/60', spo2: 91, recorded_at: '2026-02-06T16:22:00Z' }
-    ],
-    prehospital_treatment: 'Needle decompression right 2nd ICS, chest seal applied, high-flow O2, IV morphine 5mg, two large-bore IV lines',
-    evac_priority: 'URGENT',
-    evac_stage: 'at_poi',
-    destination_facility_ref: null,
-    nine_line_data: {
-      line1_location: '48.5978,2.3532',
-      line2_callsign: 'FRPLSQ1 MEDIC',
-      line2_frequency: 'FM 45.100',
-      line3_precedence: 'A',
-      line3_count: 1,
-      line4_special_eqpt: 'A',
-      line5_litter: 1,
-      line5_ambulatory: 0,
-      line6_security: 'N',
-      line7_marking: 'A',
-      line7_marking_detail: 'red VS-17 panel',
-      line8_nationality: 'French Military',
-      line9_nbc: null,
-      remarks: 'Immediate MEDEVAC required. Deteriorating respiratory status post-decompression.'
-    }
-  },
+  // {
+  //   entity_ref: 'FRA-CAS-4',
+  //   triage_color: 'RED',
+  //   casualty_status: 'WIA',
+  //   injury_mechanism: 'Penetrating trauma (shrapnel)',
+  //   primary_injury: 'Open pneumothorax right side, tension pneumothorax decompressed with needle decompression. Haemothorax suspected.',
+  //   vital_signs: [
+  //     { hr: 125, bp: '85/55', spo2: 88, recorded_at: '2026-02-06T16:12:00Z' },
+  //     { hr: 118, bp: '92/60', spo2: 91, recorded_at: '2026-02-06T16:22:00Z' }
+  //   ],
+  //   prehospital_treatment: 'Needle decompression right 2nd ICS, chest seal applied, high-flow O2, IV morphine 5mg, two large-bore IV lines',
+  //   evac_priority: 'URGENT',
+  //   evac_stage: 'at_poi',
+  //   destination_facility_ref: null,
+  //   nine_line_data: {
+  //     line1_location: '48.5978,2.3532',
+  //     line2_callsign: 'FRPLSQ1 MEDIC',
+  //     line2_frequency: 'FM 45.100',
+  //     line3_precedence: 'A',
+  //     line3_count: 1,
+  //     line4_special_eqpt: 'A',
+  //     line5_litter: 1,
+  //     line5_ambulatory: 0,
+  //     line6_security: 'N',
+  //     line7_marking: 'A',
+  //     line7_marking_detail: 'red VS-17 panel',
+  //     line8_nationality: 'French Military',
+  //     line9_nbc: null,
+  //     remarks: 'Immediate MEDEVAC required. Deteriorating respiratory status post-decompression.'
+  //   }
+  // },
 
   // French T4 Expectant (new — demonstrates BLUE triage)
-  {
-    entity_ref: 'FRA-CAS-3',
-    triage_color: 'BLUE',        // T4 Expectant — expected to die given MASCAL conditions
-    casualty_status: 'WIA',
-    injury_mechanism: 'Vehicle rollover',
-    primary_injury: 'Massive internal haemorrhage, bilateral flail chest, suspected C-spine fracture. Non-survivable given simultaneous multiple-casualty event.',
-    vital_signs: [
-      { hr: 130, bp: '65/40', spo2: 80, recorded_at: '2026-02-06T16:10:00Z' },
-      { hr: 138, bp: '58/35', spo2: 75, recorded_at: '2026-02-06T16:25:00Z' }
-    ],
-    prehospital_treatment: 'IV morphine 10mg, comfort measures. Triaged T4 due to concurrent MASCAL with 2x KIA.',
-    evac_priority: 'ROUTINE',     // T4 patients receive lowest evac priority
-    evac_stage: 'at_poi',
-    destination_facility_ref: null,
-    nine_line_data: null           // No MEDEVAC request — palliative care only
-  },
+  // {
+  //   entity_ref: 'FRA-CAS-3',
+  //   triage_color: 'BLUE',        // T4 Expectant — expected to die given MASCAL conditions
+  //   casualty_status: 'WIA',
+  //   injury_mechanism: 'Vehicle rollover',
+  //   primary_injury: 'Massive internal haemorrhage, bilateral flail chest, suspected C-spine fracture. Non-survivable given simultaneous multiple-casualty event.',
+  //   vital_signs: [
+  //     { hr: 130, bp: '65/40', spo2: 80, recorded_at: '2026-02-06T16:10:00Z' },
+  //     { hr: 138, bp: '58/35', spo2: 75, recorded_at: '2026-02-06T16:25:00Z' }
+  //   ],
+  //   prehospital_treatment: 'IV morphine 10mg, comfort measures. Triaged T4 due to concurrent MASCAL with 2x KIA.',
+  //   evac_priority: 'ROUTINE',     // T4 patients receive lowest evac priority
+  //   evac_stage: 'at_poi',
+  //   destination_facility_ref: null,
+  //   nine_line_data: null           // No MEDEVAC request — palliative care only
+  // },
 
   // German WIA
   {
