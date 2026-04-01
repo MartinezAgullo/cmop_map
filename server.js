@@ -10,6 +10,8 @@ const medicalRoutes   = require('./routes/medical');
 const scenariosRoutes = require('./routes/scenarios');
 const schemaRoutes    = require('./routes/schema');
 
+const http = require('http');
+
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
@@ -27,6 +29,28 @@ app.use('/api/entities',   entitiesRoutes);
 app.use('/api/medical',    medicalRoutes);
 app.use('/api/scenarios',  scenariosRoutes);
 app.use('/api/schema',     schemaRoutes);
+
+// ---------------------------------------------------------------------------
+// Planner proxy — forwards to medevac_planner task server (avoids CORS)
+// ---------------------------------------------------------------------------
+const PLANNER_BASE = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
+
+app.get('/api/planner/tasks/:taskId/routes', (req, res) => {
+  const target = `${PLANNER_BASE}/tasks/${req.params.taskId}/routes`;
+  http.get(target, (upstream) => {
+    let body = '';
+    upstream.on('data', chunk => { body += chunk; });
+    upstream.on('end', () => {
+      try {
+        res.status(upstream.statusCode).json(JSON.parse(body));
+      } catch {
+        res.status(502).json({ success: false, message: 'Invalid JSON from planner' });
+      }
+    });
+  }).on('error', (err) => {
+    res.status(502).json({ success: false, message: `Cannot reach planner: ${err.message}` });
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Health check

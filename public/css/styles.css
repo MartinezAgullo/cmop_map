@@ -758,6 +758,98 @@ body {
 }
 
 /* ====================================================================
+   MEDEVAC Routes panel
+   ==================================================================== */
+.routes-panel {
+  padding: 4px 0 6px;
+}
+
+.routes-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.routes-task-input {
+  flex: 1;
+  font-family: monospace;
+  font-size: 0.78em !important;
+}
+
+.btn-route-load {
+  padding: 6px 12px;
+  background: #e67e22;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82em;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  width: auto;          /* override .btn { width: 100% } */
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.btn-route-load:hover {
+  background: #ca6f1e;
+}
+
+.routes-clear-btn {
+  width: 100% !important;   /* re-apply full width explicitly for this one */
+  margin-top: 6px;
+  font-size: 0.82em;
+  padding: 5px 10px;
+}
+
+.routes-status {
+  font-size: 0.82em;
+  min-height: 16px;
+}
+
+.routes-loading { color: #888; }
+.routes-warn    { color: #e67e22; }
+.routes-error   { color: #e74c3c; }
+
+.routes-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.route-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.80em;
+  color: #333;
+  background: #f8f9fa;
+  padding: 5px 8px;
+  border-radius: 6px;
+}
+
+.route-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.route-summary-item span:nth-child(2) {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-eta {
+  font-weight: 700;
+  color: #555;
+  white-space: nowrap;
+}
+
+/* ====================================================================
    Responsive
    ==================================================================== */
 @media (max-width: 768px) {

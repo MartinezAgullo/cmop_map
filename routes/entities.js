@@ -13,6 +13,7 @@ const Entity  = require('../models/entity');
 // GET  /api/entities              — all entities
 // GET  /api/entities/:id          — single entity
 // GET  /api/entities/categoria/:c — filter by category
+// GET  /api/entities/alliance/:a  — filter by alliance (friendly|hostile|neutral|unknown)
 // GET  /api/entities/cerca/:lng/:lat?radio=N — spatial radius
 // GET  /api/entities/meta/categorias — enum values
 // POST /api/entities              — create (with optional medical)
@@ -48,6 +49,20 @@ router.get('/categoria/:categoria', async (req, res) => {
   } catch (err) {
     console.error('GET /entities/categoria:', err);
     res.status(500).json({ success: false, message: 'Failed to fetch by category', error: err.message });
+  }
+});
+
+router.get('/alliance/:alliance', async (req, res) => {
+  const valid = ['friendly', 'hostile', 'neutral', 'unknown'];
+  if (!valid.includes(req.params.alliance)) {
+    return res.status(400).json({ success: false, message: `Invalid alliance. Use one of: ${valid.join(', ')}` });
+  }
+  try {
+    const data = await Entity.getByAlliance(req.params.alliance);
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error('GET /entities/alliance:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch by alliance', error: err.message });
   }
 });
 

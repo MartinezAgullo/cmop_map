@@ -18,6 +18,10 @@ let markers          = [];
 let allEntities      = [];
 let filteredEntities = [];
 let selectedId       = null;
+let routeLayer       = null;   // L.LayerGroup for MEDEVAC route polylines
+
+// One color per vehicle slot (up to 6 simultaneous routes)
+const ROUTE_COLORS = ['#e67e22', '#2ecc71', '#9b59b6', '#1abc9c', '#e74c3c', '#f1c40f'];
 
 // ---------------------------------------------------------------------------
 // Icon resolution — category → candidate base filenames
@@ -199,6 +203,8 @@ function initMap() {
     maxZoom: 19
   }).addTo(map);
 
+  routeLayer = L.layerGroup().addTo(map);
+
   map.on('click', (e) => {
     if (document.getElementById('formModal').classList.contains('show')) {
       document.getElementById('latitud').value  = e.latlng.lat.toFixed(6);
@@ -297,6 +303,23 @@ function setupEventListeners() {
   });
 
   document.getElementById('loadScenarioBtn').addEventListener('click', loadSelectedScenario);
+
+  // MEDEVAC Routes panel
+  document.getElementById('loadRoutesBtn').addEventListener('click', () => {
+    const taskId = document.getElementById('routeTaskId').value.trim();
+    if (!taskId) {
+      document.getElementById('routesStatus').innerHTML = '<span class="routes-warn">Introduce un Task ID.</span>';
+      return;
+    }
+    loadMedevacRoutes(taskId);
+  });
+  document.getElementById('clearRoutesBtn').addEventListener('click', clearRoutes);
+  document.getElementById('routeTaskId').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const taskId = e.target.value.trim();
+      if (taskId) loadMedevacRoutes(taskId);
+    }
+  });
 
   // Dynamic tipo_elemento dropdown in modal
   document.getElementById('categoria').addEventListener('change', (e) => {
@@ -824,4 +847,160 @@ function showMessage(text, type) {
   el.textContent = text;
   el.className   = `message message-${type} show`;
   setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// ---------------------------------------------------------------------------
+// MEDEVAC Routes
+// ---------------------------------------------------------------------------
+
+function clearRoutes() {
+  if (routeLayer) routeLayer.clearLayers();
+  document.getElementById('routesStatus').innerHTML = '';
+  document.getElementById('clearRoutesBtn').style.display = 'none';
+}
+
+async function loadMedevacRoutes(taskId) {
+  const statusEl = document.getElementById('routesStatus');
+  statusEl.innerHTML = '<span class="routes-loading">Cargando…</span>';
+
+  try {
+    const res  = await fetch(`/api/planner/tasks/${encodeURIComponent(taskId)}/routes`);
+    const data = await res.json();
+
+    if (res.status === 425) {
+      statusEl.innerHTML = '<span class="routes-warn">⏳ El plan aún está en ejecución.</span>';
+      return;
+    }
+    if (!res.ok || !data.routes) {
+      statusEl.innerHTML = `<span class="routes-error">Error: ${data.message || res.status}</span>`;
+      return;
+    }
+
+    clearRoutes();
+    const routes = data.routes;
+
+    if (routes.length === 0) {
+      statusEl.innerHTML = '<span class="routes-warn">No hay rutas en este plan.</span>';
+      return;
+    }
+
+    const bounds = [];
+
+    routes.forEach((route, idx) => {
+      const color = ROUTE_COLORS[idx % ROUTE_COLORS.length];
+
+      // Use real GeoJSON if available, otherwise build straight-line fallback
+      const pickupGeo  = route.pickup_leg  || _straightLine(route.asset_position,    route.casualty_position);
+      const deliveryGeo = route.delivery_leg || _straightLine(route.casualty_position, route.destination_position);
+
+      // Pickup leg — dashed, lighter
+      if (pickupGeo) {
+        const pickupLine = L.geoJSON(pickupGeo, {
+          style: { color, weight: 3, opacity: 0.7, dashArray: '8 6' }
+        });
+        pickupLine.bindPopup(_routePopup(route, 'pickup'));
+        pickupLine.addTo(routeLayer);
+        _collectBounds(pickupGeo, bounds);
+      }
+
+      // Delivery leg — solid, full opacity
+      if (deliveryGeo) {
+        const deliveryLine = L.geoJSON(deliveryGeo, {
+          style: { color, weight: 4, opacity: 1 }
+        });
+        deliveryLine.bindPopup(_routePopup(route, 'delivery'));
+        deliveryLine.addTo(routeLayer);
+        _collectBounds(deliveryGeo, bounds);
+      }
+
+      // Waypoint marker at the casualty POI
+      const poiCoord = _firstCoord(deliveryGeo);
+      if (poiCoord) {
+        L.circleMarker(poiCoord, {
+          radius: 6, color, fillColor: color,
+          fillOpacity: 0.9, weight: 2
+        }).bindPopup(_routePopup(route, 'poi')).addTo(routeLayer);
+      }
+    });
+
+    // Fit map to routes
+    if (bounds.length > 0) {
+      map.fitBounds(L.latLngBounds(bounds).pad(0.12));
+    }
+
+    document.getElementById('clearRoutesBtn').style.display = 'block';
+    statusEl.innerHTML = _routesSummaryHTML(routes);
+
+  } catch (err) {
+    console.error('loadMedevacRoutes error:', err);
+    statusEl.innerHTML = `<span class="routes-error">Error de conexión: ${err.message}</span>`;
+  }
+}
+
+function _routePopup(route, leg) {
+  const pickup   = route.pickup_eta_minutes   != null ? `${route.pickup_eta_minutes} min` : '—';
+  const delivery = route.delivery_eta_minutes != null ? `${route.delivery_eta_minutes} min` : '—';
+  const total    = route.total_eta_minutes    != null ? `${route.total_eta_minutes} min` : '—';
+  const legLabel = leg === 'pickup'   ? '🔵 Trayecto de recogida'
+                 : leg === 'delivery' ? '🔴 Trayecto de entrega'
+                 :                     '📍 Punto de recogida';
+  return `
+    <div class="popup-content">
+      <div class="popup-title">${route.plan_key || ''} — ${route.asset_name || '?'}</div>
+      <div class="popup-categoria">${legLabel}</div>
+      <div class="popup-info">
+        <p>🚑 <strong>Vehículo:</strong> ${route.asset_name || '?'}</p>
+        <p>🩸 <strong>Casualty:</strong> ${route.casualty_name || '?'}</p>
+        <p>🏥 <strong>Destino:</strong> ${route.destination_name || '?'}</p>
+        <p>⏱️ Recogida: ${pickup} | Entrega: ${delivery}</p>
+        <p><strong>ETA total: ${total}</strong></p>
+      </div>
+    </div>`;
+}
+
+function _routesSummaryHTML(routes) {
+  const items = routes.map((r, i) => {
+    const color = ROUTE_COLORS[i % ROUTE_COLORS.length];
+    return `<div class="route-summary-item">
+      <span class="route-color-dot" style="background:${color}"></span>
+      <span><strong>${r.asset_name || '?'}</strong> → ${r.casualty_name || '?'} → ${r.destination_name || '?'}</span>
+      <span class="route-eta">${r.total_eta_minutes != null ? r.total_eta_minutes + ' min' : ''}</span>
+    </div>`;
+  }).join('');
+  return `<div class="routes-summary">${items}</div>`;
+}
+
+function _straightLine(from, to) {
+  if (!from || !to) return null;
+  return {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [[from.lng, from.lat], [to.lng, to.lat]]
+      },
+      properties: { fallback: true }
+    }]
+  };
+}
+
+function _firstCoord(geojson) {
+  if (!geojson) return null;
+  const features = geojson.features || [];
+  const line = features.find(f => f.geometry?.type === 'LineString');
+  if (!line) return null;
+  const coords = line.geometry.coordinates;
+  if (!coords || coords.length === 0) return null;
+  // Return midpoint to mark the start of delivery (= POI = end of pickup)
+  const c = coords[0];
+  return [c[1], c[0]];  // [lat, lng]
+}
+
+function _collectBounds(geojson, bounds) {
+  if (!geojson) return;
+  (geojson.features || []).forEach(f => {
+    const coords = f.geometry?.coordinates || [];
+    coords.forEach(c => bounds.push([c[1], c[0]]));
+  });
 }

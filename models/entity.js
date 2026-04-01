@@ -92,6 +92,15 @@ class Entity {
     return rows;
   }
 
+  /** Filter by alliance enum value (friendly | hostile | neutral | unknown) */
+  static async getByAlliance(alliance) {
+    const { rows } = await pool.query(
+      `${this.baseSelect()} WHERE pi.alliance = $1 ORDER BY pi.nombre`,
+      [alliance]
+    );
+    return rows;
+  }
+
   /**
    * Spatial radius query.
    * Returns same shape as other reads (medical included) plus `distancia` (m).

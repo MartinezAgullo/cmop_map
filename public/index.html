@@ -85,9 +85,9 @@
                 <label class="filter-cb"><input type="checkbox" value="uav" /><span>UAV</span></label>
                 <label class="filter-cb"><input type="checkbox" value="aircraft" /><span>Aircraft</span></label>
                 <!-- Medical -->
-                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="casualty" /><span>🩸 Casualty</span></label>
-                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medical_facility" /><span>🏥 Med Facility</span></label>
-                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medevac_unit" /><span>🚁 MEDEVAC</span></label>
+                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="casualty" /><span>Casualty</span></label>
+                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medical_facility" /><span>Med Facility</span></label>
+                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medevac_unit" /><span>MEDEVAC</span></label>
                 <!-- Other military -->
                 <label class="filter-cb"><input type="checkbox" value="missile" /><span>Missile</span></label>
                 <label class="filter-cb"><input type="checkbox" value="fighter" /><span>Fighter</span></label>
@@ -199,10 +199,28 @@
             </div>
           </div>
 
+          <!-- MEDEVAC Routes -->
+          <div class="filter-section">
+            <div class="filter-section-header" data-toggle="routesBody">
+              <span>🚑  MEDEVAC Routes</span>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="filter-section-body collapsed" id="routesBody">
+              <div class="routes-panel">
+                <div class="routes-input-row">
+                  <input type="text" id="routeTaskId" placeholder="Task ID…" class="search-input routes-task-input"/>
+                  <button class="btn btn-route-load" id="loadRoutesBtn">Cargar</button>
+                </div>
+                <div id="routesStatus" class="routes-status"></div>
+                <button class="btn btn-secondary routes-clear-btn" id="clearRoutesBtn" style="display:none;">🗑️ Limpiar rutas</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Action buttons -->
           <div class="filter-actions">
             <button class="btn btn-primary" onclick="mostrarFormularioNuevoPunto()">➕ Nueva entidad</button>
-            <button class="btn btn-secondary" onclick="centrarMapa()">🎯 Centrar en España</button>
+            <!-- <button class="btn btn-secondary" onclick="centrarMapa()">🎯 Centrar en España</button> --> 
           </div>
         </div>
 
