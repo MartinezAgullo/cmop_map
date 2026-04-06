@@ -934,23 +934,21 @@ async function loadMedevacRoutes(taskId) {
       const pickupGeo  = route.pickup_leg  || _straightLine(route.asset_position,    route.casualty_position);
       const deliveryGeo = route.delivery_leg || _straightLine(route.casualty_position, route.destination_position);
 
-      // Pickup leg — dashed, lighter
+      // Pickup leg — dashed, lighter.  Only the best route is rendered.
       if (pickupGeo) {
-        const pickupLine = L.geoJSON(pickupGeo, {
+        L.geoJSON(pickupGeo, {
+          filter: (feature) => !feature.properties?.route_type || feature.properties.route_type === 'best',
           style: { color, weight: 3, opacity: 0.7, dashArray: '8 6' }
-        });
-        pickupLine.bindPopup(_routePopup(route, 'pickup'));
-        pickupLine.addTo(routeLayer);
+        }).bindPopup(_routePopup(route, 'pickup')).addTo(routeLayer);
         _collectBounds(pickupGeo, bounds);
       }
 
-      // Delivery leg — solid, full opacity
+      // Delivery leg — solid, full opacity.  Only the best route is rendered.
       if (deliveryGeo) {
-        const deliveryLine = L.geoJSON(deliveryGeo, {
+        L.geoJSON(deliveryGeo, {
+          filter: (feature) => !feature.properties?.route_type || feature.properties.route_type === 'best',
           style: { color, weight: 4, opacity: 1 }
-        });
-        deliveryLine.bindPopup(_routePopup(route, 'delivery'));
-        deliveryLine.addTo(routeLayer);
+        }).bindPopup(_routePopup(route, 'delivery')).addTo(routeLayer);
         _collectBounds(deliveryGeo, bounds);
       }
 

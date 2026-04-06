@@ -90,17 +90,17 @@ async function runMigrations() {
 app.listen(PORT, async () => {
   await runMigrations();
   console.log(`
-╔══════════════════════════════════════════════════╗
-║   🗺️  CMOP Map Server                           ║
-║                                                  ║
-║   🔌 Port:    ${PORT}                                ║
-║   🌐 URL:     http://localhost:${PORT}               ║
-║   📊 Entities:  http://localhost:${PORT}/api/entities  ║
-║   🏥 Medical:   http://localhost:${PORT}/api/medical   ║
-║   🎬 Scenarios: http://localhost:${PORT}/api/scenarios ║
-║   📋 Schema:    http://localhost:${PORT}/api/schema    ║
-║   💚 Env:     ${process.env.NODE_ENV || 'development'}                       ║
-╚══════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════╗
+║   🗺️  CMOP Map Server                                 ║
+║                                                      ║
+║   🔌 Port:    ${PORT}                                   ║
+║   🌐 URL:     http://localhost:${PORT}                  ║
+║   📊 Entities:  http://localhost:${PORT}/api/entities   ║
+║   🏥 Medical:   http://localhost:${PORT}/api/medical    ║
+║   🎬 Scenarios: http://localhost:${PORT}/api/scenarios  ║
+║   📋 Schema:    http://localhost:${PORT}/api/schema     ║
+║   💚 Env:     ${process.env.NODE_ENV || 'development'}                            ║
+╚══════════════════════════════════════════════════════╝
   `);
 });
 
