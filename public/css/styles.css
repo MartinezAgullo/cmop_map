@@ -488,6 +488,49 @@ body {
   height: 100%;
 }
 
+.map-coords {
+  position: absolute;
+  bottom: 24px;
+  right: 10px;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-family: monospace;
+  font-size: 0.78em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.map-ctx-menu {
+  position: absolute;
+  z-index: 2000;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+  padding: 4px 0;
+  min-width: 200px;
+}
+
+.map-ctx-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.88em;
+  color: #222;
+}
+
+.map-ctx-menu button:hover {
+  background: #f0f4ff;
+}
+
 /* ====================================================================
    Popups
    ==================================================================== */
@@ -796,11 +839,32 @@ body {
   background: #ca6f1e;
 }
 
-.routes-clear-btn {
-  width: 100% !important;   /* re-apply full width explicitly for this one */
+.routes-actions {
+  display: flex;
+  gap: 6px;
   margin-top: 6px;
+}
+
+.routes-clear-btn {
+  flex: 1;
   font-size: 0.82em;
   padding: 5px 10px;
+}
+
+.btn-route-refresh {
+  flex: 1;
+  padding: 5px 10px;
+  background: #2980b9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.82em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-route-refresh:hover {
+  background: #2471a3;
 }
 
 .routes-status {

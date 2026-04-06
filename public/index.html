@@ -212,7 +212,10 @@
                   <button class="btn btn-route-load" id="loadRoutesBtn">Cargar</button>
                 </div>
                 <div id="routesStatus" class="routes-status"></div>
-                <button class="btn btn-secondary routes-clear-btn" id="clearRoutesBtn" style="display:none;">🗑️ Limpiar rutas</button>
+                <div class="routes-actions" style="display:none;" id="routesActions">
+                  <button class="btn btn-route-refresh" id="refreshRoutesBtn">↺ Actualizar</button>
+                  <button class="btn btn-secondary routes-clear-btn" id="clearRoutesBtn">🗑️ Limpiar</button>
+                </div>
               </div>
             </div>
           </div>
@@ -240,6 +243,10 @@
          ================================================================ -->
     <main class="map-container">
       <div id="map"></div>
+      <div id="map-coords" class="map-coords"></div>
+      <div id="map-ctx-menu" class="map-ctx-menu" style="display:none;">
+        <button id="map-ctx-add">📍 Añadir nueva entidad aquí</button>
+      </div>
       <div class="loading" id="loading">
         <div class="spinner"></div>
         <p>Cargando…</p>

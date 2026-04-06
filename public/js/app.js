@@ -19,6 +19,7 @@ let allEntities      = [];
 let filteredEntities = [];
 let selectedId       = null;
 let routeLayer       = null;   // L.LayerGroup for MEDEVAC route polylines
+let _currentTaskId  = null;   // last successfully loaded task ID (for refresh)
 
 // One color per vehicle slot (up to 6 simultaneous routes)
 const ROUTE_COLORS = ['#e67e22', '#2ecc71', '#9b59b6', '#1abc9c', '#e74c3c', '#f1c40f'];
@@ -205,12 +206,48 @@ function initMap() {
 
   routeLayer = L.layerGroup().addTo(map);
 
+  // Real-time coordinate display
+  const coordsEl = document.getElementById('map-coords');
+  map.on('mousemove', (e) => {
+    coordsEl.textContent = `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+  });
+  map.on('mouseout', () => { coordsEl.textContent = ''; });
+
+  // Left-click: fill form if open, otherwise show context menu
+  const ctxMenu   = document.getElementById('map-ctx-menu');
+  const ctxAddBtn = document.getElementById('map-ctx-add');
+  let   _ctxLatLng = null;
+
+  function _hideCtxMenu() { ctxMenu.style.display = 'none'; }
+
   map.on('click', (e) => {
-    if (document.getElementById('formModal').classList.contains('show')) {
+    const formOpen = document.getElementById('formModal').classList.contains('show');
+    if (formOpen) {
       document.getElementById('latitud').value  = e.latlng.lat.toFixed(6);
       document.getElementById('longitud').value = e.latlng.lng.toFixed(6);
+      _hideCtxMenu();
+      return;
     }
+    // Position the context menu at the click point
+    _ctxLatLng = e.latlng;
+    const containerPoint = map.latLngToContainerPoint(e.latlng);
+    ctxMenu.style.left    = `${containerPoint.x + 4}px`;
+    ctxMenu.style.top     = `${containerPoint.y + 4}px`;
+    ctxMenu.style.display = 'block';
   });
+
+  ctxAddBtn.addEventListener('click', () => {
+    _hideCtxMenu();
+    if (!_ctxLatLng) return;
+    mostrarFormularioNuevoPunto();
+    document.getElementById('latitud').value  = _ctxLatLng.lat.toFixed(6);
+    document.getElementById('longitud').value = _ctxLatLng.lng.toFixed(6);
+  });
+
+  // Dismiss context menu on drag, zoom, or Escape
+  map.on('movestart', _hideCtxMenu);
+  map.on('zoomstart', _hideCtxMenu);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') _hideCtxMenu(); });
 }
 
 // ---------------------------------------------------------------------------
@@ -314,6 +351,9 @@ function setupEventListeners() {
     loadMedevacRoutes(taskId);
   });
   document.getElementById('clearRoutesBtn').addEventListener('click', clearRoutes);
+  document.getElementById('refreshRoutesBtn').addEventListener('click', () => {
+    if (_currentTaskId) loadMedevacRoutes(_currentTaskId);
+  });
   document.getElementById('routeTaskId').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       const taskId = e.target.value.trim();
@@ -856,7 +896,8 @@ function showMessage(text, type) {
 function clearRoutes() {
   if (routeLayer) routeLayer.clearLayers();
   document.getElementById('routesStatus').innerHTML = '';
-  document.getElementById('clearRoutesBtn').style.display = 'none';
+  document.getElementById('routesActions').style.display = 'none';
+  _currentTaskId = null;
 }
 
 async function loadMedevacRoutes(taskId) {
@@ -928,7 +969,8 @@ async function loadMedevacRoutes(taskId) {
       map.fitBounds(L.latLngBounds(bounds).pad(0.12));
     }
 
-    document.getElementById('clearRoutesBtn').style.display = 'block';
+    _currentTaskId = taskId;
+    document.getElementById('routesActions').style.display = 'flex';
     statusEl.innerHTML = _routesSummaryHTML(routes);
 
   } catch (err) {

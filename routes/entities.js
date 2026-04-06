@@ -10,6 +10,26 @@ const router  = express.Router();
 const Entity  = require('../models/entity');
 
 // ---------------------------------------------------------------------------
+// Planner threat notification — fire-and-forget, never blocks the response
+// ---------------------------------------------------------------------------
+const PLANNER_BASE = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
+
+function _notifyThreat(entity) {
+  const lat  = entity.lat  ?? entity.latitud;
+  const lng  = entity.lng  ?? entity.longitud;
+  const name = entity.name ?? entity.nombre ?? `Entity-${entity.id}`;
+  if (lat == null || lng == null) return;
+  fetch(`${PLANNER_BASE}/threats/notify`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ lat: Number(lat), lng: Number(lng), name, id: entity.id }),
+  }).catch(err => {
+    // Planner may not be running — log only, never block
+    console.warn(`[entities] Threat notify skipped (planner unreachable): ${err.message}`);
+  });
+}
+
+// ---------------------------------------------------------------------------
 // GET  /api/entities              — all entities
 // GET  /api/entities/:id          — single entity
 // GET  /api/entities/categoria/:c — filter by category
@@ -111,6 +131,7 @@ router.post('/', async (req, res) => {
     }
 
     const entity = await Entity.create(req.body);
+    if (entity.alliance === 'hostile') _notifyThreat(entity);
     res.status(201).json({ success: true, data: entity });
   } catch (err) {
     console.error('POST /entities:', err);
@@ -139,6 +160,7 @@ router.put('/:id', async (req, res) => {
     if (!entity) {
       return res.status(404).json({ success: false, message: 'Entity not found' });
     }
+    if (entity.alliance === 'hostile') _notifyThreat(entity);
     res.json({ success: true, data: entity });
   } catch (err) {
     console.error('PUT /entities/:id:', err);
