@@ -39,13 +39,13 @@ function listScenarios() {
  * Insert entities into puntos_interes.
  * Returns Map<elemento_identificado, id> for downstream FK resolution.
  *
- * 13 flat params per row:
+ * 14 flat params per row:
  *   nombre, descripcion, categoria, country, alliance,
- *   elemento_identificado, activo, tipo_elemento, prioridad,
- *   observaciones, altitud, lng, lat
+ *   elemento_identificado, activo, tipo_elemento,
+ *   observaciones, altitud, casevac_eligible, mobility, lng, lat
  */
 async function insertEntities(client, entities) {
-  const PARAMS_PER_ROW = 13;
+  const PARAMS_PER_ROW = 14;
 
   const values = entities.flatMap(e => [
     e.nombre,
@@ -56,9 +56,10 @@ async function insertEntities(client, entities) {
     e.elemento_identificado                                ?? null,
     e.activo !== undefined ? e.activo                      : true,
     e.tipo_elemento                                        ?? null,
-    e.prioridad                                            ?? 0,
     e.observaciones                                        ?? null,
     e.altitud                                              ?? null,
+    e.casevac_eligible                                     ?? false,
+    e.mobility                                             ?? null,
     e.lng,
     e.lat
   ]);
@@ -68,16 +69,16 @@ async function insertEntities(client, entities) {
     return `(
       $${b+1}, $${b+2}, $${b+3}::categoria_militar,
       $${b+4}, $${b+5}::alliance_enum,
-      $${b+6}, $${b+7}, $${b+8}, $${b+9}, $${b+10}, $${b+11},
-      ST_SetSRID(ST_MakePoint($${b+12}, $${b+13}), 4326)
+      $${b+6}, $${b+7}, $${b+8}, $${b+9}, $${b+10}, $${b+11}, $${b+12}::mobility_enum,
+      ST_SetSRID(ST_MakePoint($${b+13}, $${b+14}), 4326)
     )`;
   });
 
   const query = `
     INSERT INTO puntos_interes (
       nombre, descripcion, categoria, country, alliance,
-      elemento_identificado, activo, tipo_elemento, prioridad,
-      observaciones, altitud, geom
+      elemento_identificado, activo, tipo_elemento,
+      observaciones, altitud, casevac_eligible, mobility, geom
     )
     VALUES ${rows.join(',')}
     RETURNING id, elemento_identificado;

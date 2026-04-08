@@ -19,6 +19,7 @@ const ENUMS = `
     'aircraft',             -- Aeronave
     'helicopter',           -- Helicóptero
     'uav',                  -- UAV / Drone (subtypes: fixedwing, rotarywing via tipo_elemento)
+    'ugv',                  -- Unmanned Ground Vehicle
     'transportation',       -- Transporte (subtype: supply via tipo_elemento)
     'armoured',             -- Carro de combate / Blindado
     'artillery',            -- Artillería
@@ -41,6 +42,12 @@ const ENUMS = `
     'casualty',             -- Baja
     -- Fallback
     'default'
+  );
+
+  CREATE TYPE mobility_enum AS ENUM (
+    'air',    -- Aéreo
+    'ground', -- Terrestre
+    'sea'     -- Marítimo
   );
 
   CREATE TYPE alliance_enum AS ENUM (
@@ -100,10 +107,10 @@ const BASE_TABLE = `
     elemento_identificado VARCHAR(100),
     activo                BOOLEAN           DEFAULT true,
     tipo_elemento         VARCHAR(100),
-    prioridad             INTEGER           DEFAULT 0,
     observaciones         TEXT,
     altitud               NUMERIC(10, 2),
     casevac_eligible      BOOLEAN           DEFAULT false,
+    mobility              mobility_enum,
     geom                  GEOMETRY(Point, 4326) NOT NULL,
     created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP
@@ -229,6 +236,7 @@ const DROP_ALL = `
   DROP TYPE IF EXISTS evac_priority_enum;
   DROP TYPE IF EXISTS triage_color_enum;
   DROP TYPE IF EXISTS alliance_enum;
+  DROP TYPE IF EXISTS mobility_enum;
   DROP TYPE IF EXISTS categoria_militar;
 
   DROP FUNCTION IF EXISTS set_updated_at();

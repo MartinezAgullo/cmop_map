@@ -12,8 +12,11 @@
   <div class="app-container">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1>CMOP</h1>
-        <p>Common Medical Operational Picture</p>
+        <div class="sidebar-header-text">
+          <h1>CMOP</h1>
+          <p>Common Medical Operational Picture</p>
+        </div>
+        <button class="btn-theme" id="themeToggle" title="Toggle dark mode">🌙</button>
       </div>
 
       <div class="sidebar-content">
@@ -83,6 +86,7 @@
                 <label class="filter-cb"><input type="checkbox" value="mortar" /><span>Mortar</span></label>
                 <label class="filter-cb"><input type="checkbox" value="helicopter" /><span>Helicopter</span></label>
                 <label class="filter-cb"><input type="checkbox" value="uav" /><span>UAV</span></label>
+                <label class="filter-cb"><input type="checkbox" value="ugv" /><span>UGV</span></label>
                 <label class="filter-cb"><input type="checkbox" value="transportation" /><span>Transport</span></label>
                 <label class="filter-cb"><input type="checkbox" value="aircraft" /><span>Aircraft</span></label>
                 <!-- Medical -->
@@ -289,6 +293,7 @@
               <option value="aircraft">aircraft — Aeronave</option>
               <option value="helicopter">helicopter — Helicóptero</option>
               <option value="uav">uav — UAV/Drone</option>
+              <option value="ugv">ugv — Unmanned Ground Vehicle</option>
               <option value="transportation">transportation — Transporte</option>
               <option value="armoured">armoured — Carro de Combate / Blindado</option>
               <option value="artillery">artillery — Artillería</option>
@@ -326,6 +331,17 @@
           <label for="tipoElemento">Tipo Elemento *</label>
           <select id="tipoElemento" name="tipoElemento">
             <option value="">— Selecciona tipo —</option>
+          </select>
+        </div>
+
+        <!-- Mobility (only for medevac_unit, transportation, reconnaissance) -->
+        <div class="form-group" id="mobilityGroup" style="display:none;">
+          <label for="mobility">Mobility</label>
+          <select id="mobility" name="mobility">
+            <option value="">— Selecciona —</option>
+            <option value="air">Air — Aéreo</option>
+            <option value="ground">Ground — Terrestre</option>
+            <option value="sea">Sea — Marítimo</option>
           </select>
         </div>
 

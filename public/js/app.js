@@ -14,6 +14,7 @@
 // State
 // ---------------------------------------------------------------------------
 let map;
+let tileLayer        = null;
 let markers          = [];
 let allEntities      = [];
 let filteredEntities = [];
@@ -35,6 +36,7 @@ const CATEGORY_BASE_NAMES = {
   aircraft:       ['fixed_wing', 'air_and_space'],
   helicopter:     ['helicopter', 'rotary_wing'],
   uav:            ['uav'],
+  ugv:            ['ugv'],
   transportation: ['transportation'],
   armoured:       ['armoured', 'tank', 'armor_mechanized', 'ground'],
   artillery:      ['artillery'],
@@ -217,6 +219,23 @@ async function makeIcon(entity) {
 }
 
 // ---------------------------------------------------------------------------
+// Theme toggle
+// ---------------------------------------------------------------------------
+function initTheme() {
+  const btn = document.getElementById('themeToggle');
+  if (localStorage.getItem('cmop-theme') === 'dark') {
+    document.body.classList.add('dark');
+    btn.textContent = '☀️';
+  }
+  btn.addEventListener('click', () => {
+    const dark = document.body.classList.toggle('dark');
+    btn.textContent = dark ? '☀️' : '🌙';
+    localStorage.setItem('cmop-theme', dark ? 'dark' : 'light');
+    setTileLayer(dark ? 'dark' : 'light');
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
@@ -224,14 +243,30 @@ document.addEventListener('DOMContentLoaded', () => {
   initScenarios();
   loadEntities();
   setupEventListeners();
+  initTheme();
 });
+
+const TILE_LAYERS = {
+  light: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors'
+  },
+  dark: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors'
+  }
+};
+
+function setTileLayer(theme) {
+  if (tileLayer) map.removeLayer(tileLayer);
+  const cfg = TILE_LAYERS[theme];
+  tileLayer = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 19 });
+  tileLayer.addTo(map);
+}
 
 function initMap() {
   map = L.map('map').setView([39.47, -0.38], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 19
-  }).addTo(map);
+  setTileLayer(document.body.classList.contains('dark') ? 'dark' : 'light');
 
   routeLayer = L.layerGroup().addTo(map);
 
@@ -487,8 +522,10 @@ const TIPO_ELEMENTO_OPTIONS = {
   ]
 };
 
+const MOBILITY_CATEGORIES = ['medevac_unit', 'transportation', 'reconnaissance'];
+
 const CASEVAC_ELIGIBLE_CATEGORIES = [
-  'transportation', 'reconnaissance', 'helicopter', 'ground_vehicle', 'armoured'
+  'transportation', 'reconnaissance', 'helicopter', 'ground_vehicle', 'armoured', 'ugv'
 ];
 
 function updateTipoElementoOptions(categoria) {
@@ -513,6 +550,15 @@ function updateTipoElementoOptions(categoria) {
   } else {
     casevacGroup.style.display = 'none';
     casevacCheck.checked = false;
+  }
+
+  const mobilityGroup  = document.getElementById('mobilityGroup');
+  const mobilitySelect = document.getElementById('mobility');
+  if (MOBILITY_CATEGORIES.includes(categoria)) {
+    mobilityGroup.style.display = 'block';
+  } else {
+    mobilityGroup.style.display = 'none';
+    mobilitySelect.value = '';
   }
 }
 
@@ -699,26 +745,32 @@ function renderList() {
         </div>`;
     }
 
-    // Build categoria display with tipo_elemento
+    // Build categoria display with tipo_elemento and mobility
     let categoriaText = e.categoria;
-    if (e.tipo_elemento) {
-      categoriaText += ` · ${e.tipo_elemento}`;
-    }
+    if (e.tipo_elemento) categoriaText += ` · ${e.tipo_elemento}`;
+    if (e.mobility)      categoriaText += ` · ${e.mobility}`;
     categoriaText += ` · ${e.alliance || 'unknown'}`;
-    if (e.country) {
-      categoriaText += ` · ${e.country}`;
-    }
+    if (e.country) categoriaText += ` · ${e.country}`;
 
     const casevacBadge = e.casevac_eligible
       ? '<div class="medical-badge"><span class="casevac-badge">CASEVAC eligible</span></div>'
+      : '';
+
+    const callsign   = e.elemento_identificado;
+    const titleLine  = callsign
+      ? `<span class="punto-callsign">${callsign.toUpperCase()}</span>`
+      : e.nombre;
+    const subtitleLine = callsign
+      ? `<div class="punto-unit-name">${e.nombre}</div>`
       : '';
 
     return `
       <div class="punto-item${activeClass}${triageClass}" onclick="selectEntity(${e.id})">
         <div class="punto-nombre">
           <span class="pill" style="background:${allianceColor}"></span>
-          ${e.nombre}
+          ${titleLine}
         </div>
+        ${subtitleLine}
         <span class="punto-categoria">${categoriaText}</span>
         ${casevacBadge}
         ${medicalBadge}
@@ -756,13 +808,10 @@ function buildPopup(e) {
 
   // Build subtitle
   let categoriaDisplay = e.categoria;
-  if (e.tipo_elemento) {
-    categoriaDisplay += ` · ${e.tipo_elemento}`;
-  }
+  if (e.tipo_elemento) categoriaDisplay += ` · ${e.tipo_elemento}`;
+  if (e.mobility)      categoriaDisplay += ` · ${e.mobility}`;
   categoriaDisplay += ` · ${e.alliance || 'unknown'}`;
-  if (e.country) {
-    categoriaDisplay += ` · ${e.country}`;
-  }
+  if (e.country)       categoriaDisplay += ` · ${e.country}`;
 
   // Medical section
   let medicalHTML = '';
@@ -880,6 +929,11 @@ async function crearNuevaEntidad() {
 
     if (CASEVAC_ELIGIBLE_CATEGORIES.includes(categoria)) {
       payload.casevac_eligible = document.getElementById('casevacEligible').checked;
+    }
+
+    const mobility = document.getElementById('mobility').value;
+    if (MOBILITY_CATEGORIES.includes(categoria) && mobility) {
+      payload.mobility = mobility;
     }
 
     const res  = await fetch('/api/entities', {

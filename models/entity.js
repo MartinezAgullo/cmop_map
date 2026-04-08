@@ -32,10 +32,10 @@ class Entity {
         pi.elemento_identificado,
         pi.activo,
         pi.tipo_elemento,
-        pi.prioridad,
         pi.observaciones,
         pi.altitud,
         pi.casevac_eligible,
+        pi.mobility,
         ST_X(pi.geom) AS longitud,
         ST_Y(pi.geom) AS latitud,
         pi.created_at,
@@ -263,12 +263,13 @@ class Entity {
     const { rows } = await client.query(
       `INSERT INTO puntos_interes (
          nombre, descripcion, categoria, country, alliance,
-         elemento_identificado, activo, tipo_elemento, prioridad,
-         observaciones, altitud, casevac_eligible, geom
+         elemento_identificado, activo, tipo_elemento,
+         observaciones, altitud, casevac_eligible, mobility, geom
        )
        VALUES (
          $1, $2, $3::categoria_militar, $4, $5::alliance_enum,
-         $6, $7, $8, $9, $10, $11, $12,
+         $6, $7, $8,
+         $9, $10, $11, $12::mobility_enum,
          ST_SetSRID(ST_MakePoint($13, $14), 4326)
        )
        RETURNING id`,
@@ -281,10 +282,10 @@ class Entity {
         data.elemento_identificado ?? null,
         data.activo !== undefined ? data.activo : true,
         data.tipo_elemento ?? null,
-        data.prioridad ?? 0,
         data.observaciones ?? null,
         data.altitud ?? null,
         data.casevac_eligible ?? false,
+        data.mobility ?? null,
         data.longitud,
         data.latitud
       ]
@@ -304,10 +305,10 @@ class Entity {
          elemento_identificado  = COALESCE($6,  elemento_identificado),
          activo                 = COALESCE($7,  activo),
          tipo_elemento          = COALESCE($8,  tipo_elemento),
-         prioridad              = COALESCE($9,  prioridad),
-         observaciones          = COALESCE($10, observaciones),
-         altitud                = COALESCE($11, altitud),
-         casevac_eligible       = COALESCE($12, casevac_eligible),
+         observaciones          = COALESCE($9,  observaciones),
+         altitud                = COALESCE($10, altitud),
+         casevac_eligible       = COALESCE($11, casevac_eligible),
+         mobility               = COALESCE($12::mobility_enum, mobility),
          geom                   = COALESCE(
                                     ST_SetSRID(ST_MakePoint(
                                       CAST($13 AS DOUBLE PRECISION),
@@ -327,10 +328,10 @@ class Entity {
         data.elemento_identificado ?? null,
         data.activo ?? null,
         data.tipo_elemento ?? null,
-        data.prioridad ?? null,
         data.observaciones ?? null,
         data.altitud ?? null,
         data.casevac_eligible ?? null,
+        data.mobility ?? null,
         data.longitud ?? null,
         data.latitud ?? null,
         id

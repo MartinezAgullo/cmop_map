@@ -36,15 +36,18 @@ body {
   padding: 20px;
   background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
   color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
-.sidebar-header h1 {
+.sidebar-header-text h1 {
   font-size: 1.8em;
   margin-bottom: 4px;
   letter-spacing: 2px;
 }
 
-.sidebar-header p {
+.sidebar-header-text p {
   font-size: 0.82em;
   opacity: 0.8;
 }
@@ -53,6 +56,26 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+}
+
+/* ====================================================================
+   Theme toggle button
+   ==================================================================== */
+.btn-theme {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 1em;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-theme:hover {
+  background: rgba(255,255,255,0.25);
 }
 
 /* ====================================================================
@@ -456,6 +479,19 @@ body {
   flex-shrink: 0;
 }
 
+.punto-callsign {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.punto-unit-name {
+  font-size: 0.78em;
+  color: #888;
+  margin-bottom: 3px;
+  padding-left: 18px;
+}
+
 .punto-categoria {
   display: inline-block;
   padding: 2px 9px;
@@ -477,14 +513,15 @@ body {
 
 .casevac-badge {
   display: inline-block;
-  margin-left: 6px;
   padding: 1px 6px;
-  background: #e67e22;
-  color: #fff;
-  border-radius: 8px;
-  font-size: 0.68em;
-  font-weight: 600;
-  vertical-align: middle;
+  background: rgba(230, 126, 34, 0.15);
+  color: #d05800;
+  border: 1px solid rgba(230, 126, 34, 0.4);
+  border-radius: 4px;
+  font-size: 0.70em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* ====================================================================
@@ -842,7 +879,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  width: auto;          /* override .btn { width: 100% } */
+  width: auto;
   flex-shrink: 0;
   transition: background 0.2s;
 }
@@ -945,4 +982,211 @@ body {
   .checkbox-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ====================================================================
+   Dark BMS theme  (toggled via body.dark)
+   ==================================================================== */
+body.dark {
+  background: #090d12;
+  color: #cdd9e5;
+}
+
+body.dark .sidebar {
+  background: #0d1117;
+  border-right: 1px solid #21262d;
+  box-shadow: none;
+}
+
+body.dark .sidebar-header {
+  background: #010409;
+  border-bottom: 2px solid #316dca;
+  background-image: none;
+}
+
+body.dark .sidebar-header-text h1 { color: #4d94ff; }
+body.dark .sidebar-header-text p  { color: #545d68; opacity: 1; }
+
+body.dark .sidebar-content {
+  scrollbar-color: #30363d transparent;
+}
+
+body.dark .scenario-block {
+  background: #161b22;
+  border-color: #21262d;
+}
+
+body.dark .scenario-block label { color: #768390; }
+
+body.dark .scenario-row select {
+  background: #0d1117;
+  border-color: #30363d;
+  color: #cdd9e5;
+}
+
+body.dark .btn-scenario {
+  background: #316dca;
+}
+body.dark .btn-scenario:hover { background: #4d94ff; }
+
+body.dark .stats {
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+}
+body.dark .stats h3       { color: #768390; }
+body.dark .stat-item      { border-color: #21262d; }
+body.dark .stat-label     { color: #768390; }
+body.dark .stat-value     { color: #4d94ff; }
+
+body.dark .filter-section { border-color: #21262d; }
+
+body.dark .filter-section-header {
+  background: #161b22;
+  color: #768390;
+}
+body.dark .filter-section-header:hover {
+  background: #1c2128;
+  color: #cdd9e5;
+}
+
+body.dark .filter-section-body { background: #0d1117; }
+
+body.dark .btn-clear {
+  border-color: #30363d;
+  color: #545d68;
+}
+
+body.dark .filter-cb       { color: #768390; }
+body.dark .filter-cb:hover { background: #1c2128; color: #cdd9e5; }
+body.dark .filter-cb input[type="checkbox"] { accent-color: #4d94ff; }
+
+body.dark .filter-cb--medical {
+  background: rgba(185, 28, 28, 0.08);
+  border-color: rgba(185, 28, 28, 0.2);
+}
+body.dark .filter-cb--medical:hover { background: rgba(185, 28, 28, 0.15); }
+
+body.dark .subfilter {
+  background: #161b22;
+  border-color: #21262d;
+  border-left-color: #316dca;
+}
+body.dark .subfilter-header { color: #545d68; }
+
+body.dark .search-input {
+  background: #161b22;
+  border-color: #30363d;
+  color: #cdd9e5;
+}
+body.dark .search-input:focus    { border-color: #316dca; }
+body.dark .search-input::placeholder { color: #545d68; }
+
+body.dark .btn-primary {
+  background: #316dca;
+  background-image: none;
+  border: 1px solid #4d94ff;
+  box-shadow: none;
+}
+body.dark .btn-primary:hover  { background: #4d94ff; transform: none; box-shadow: none; }
+body.dark .btn-secondary      { background: #161b22; border: 1px solid #30363d; color: #768390; margin-top: 8px; }
+body.dark .btn-secondary:hover { background: #1c2128; color: #cdd9e5; transform: none; }
+
+body.dark .punto-item         { background: #161b22; border-left-color: #316dca; }
+body.dark .punto-item:hover   { background: #1c2128; transform: none; box-shadow: none; }
+body.dark .punto-item.active  { background: #212830; border-left-color: #4d94ff; }
+
+body.dark .punto-nombre    { color: #cdd9e5; }
+body.dark .punto-unit-name { color: #545d68; }
+body.dark .punto-categoria {
+  background: #1c2128;
+  color: #545d68;
+  border-radius: 4px;
+}
+body.dark .medical-badge { color: #545d68; }
+body.dark .casevac-badge {
+  background: rgba(208, 88, 0, 0.2);
+  color: #f97316;
+  border-color: rgba(208, 88, 0, 0.4);
+}
+
+body.dark .map-ctx-menu         { background: #161b22; border-color: #30363d; box-shadow: 0 4px 16px rgba(0,0,0,0.6); }
+body.dark .map-ctx-menu button  { color: #cdd9e5; }
+body.dark .map-ctx-menu button:hover { background: #1c2128; color: #4d94ff; }
+
+body.dark .custom-popup .leaflet-popup-content-wrapper {
+  background: #161b22;
+  border: 1px solid #30363d;
+  color: #cdd9e5;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.7);
+}
+body.dark .custom-popup .leaflet-popup-tip { background: #161b22; }
+
+body.dark .popup-title    { color: #cdd9e5; }
+body.dark .popup-categoria {
+  background: #1c2128;
+  color: #545d68;
+  border-radius: 4px;
+}
+body.dark .popup-info         { color: #768390; }
+body.dark .popup-info strong  { color: #cdd9e5; }
+body.dark .popup-medical      { border-top-color: #21262d; }
+body.dark .popup-medical h4   { color: #4d94ff; }
+body.dark .popup-medical .med-row   { border-color: #21262d; }
+body.dark .popup-medical .med-label { color: #545d68; }
+body.dark .popup-medical .med-value { color: #cdd9e5; }
+
+body.dark .btn-danger {
+  background: rgba(185, 28, 28, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(185, 28, 28, 0.4);
+}
+body.dark .btn-danger:hover { background: #b91c1c; color: white; border-color: #b91c1c; }
+
+body.dark .loading {
+  background: #161b22;
+  border: 1px solid #30363d;
+  color: #768390;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+body.dark .spinner {
+  border-color: #21262d;
+  border-top-color: #4d94ff;
+}
+
+body.dark .message-success { background: rgba(46,160,67,0.15);  border-color: rgba(46,160,67,0.4);  color: #3fb950; }
+body.dark .message-error   { background: rgba(185,28,28,0.15);  border-color: rgba(185,28,28,0.4);  color: #f87171; }
+body.dark .message-info    { background: rgba(49,109,202,0.15); border-color: rgba(49,109,202,0.4); color: #4d94ff; }
+
+body.dark .modal-content {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.7);
+}
+body.dark .modal-header h2   { color: #cdd9e5; }
+body.dark .close-btn         { color: #545d68; }
+body.dark .close-btn:hover   { color: #cdd9e5; }
+body.dark .form-group label  { color: #768390; }
+body.dark .form-group input,
+body.dark .form-group textarea,
+body.dark .form-group select {
+  background: #161b22;
+  border-color: #30363d;
+  color: #cdd9e5;
+}
+body.dark .form-group input:focus,
+body.dark .form-group textarea:focus,
+body.dark .form-group select:focus { border-color: #316dca; }
+
+body.dark .route-summary-item { background: #161b22; border: 1px solid #21262d; color: #768390; }
+body.dark .route-eta          { color: #cdd9e5; }
+body.dark .btn-route-load     { background: #d05800; }
+body.dark .btn-route-load:hover { background: #f97316; }
+body.dark .btn-route-refresh  { background: rgba(49,109,202,0.2); color: #4d94ff; border: 1px solid rgba(49,109,202,0.4); }
+body.dark .btn-route-refresh:hover { background: #316dca; color: #fff; }
+body.dark .routes-loading     { color: #545d68; }
+
+/* Dark map: invert OSM tiles + restore hue → dark bg, all roads fully visible */
+body.dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7);
 }
