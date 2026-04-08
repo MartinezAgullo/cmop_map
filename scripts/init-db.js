@@ -18,7 +18,8 @@ const ENUMS = `
     'bomber',               -- Bombardero
     'aircraft',             -- Aeronave
     'helicopter',           -- Helicóptero
-    'uav',                  -- UAV / Drone
+    'uav',                  -- UAV / Drone (subtypes: fixedwing, rotarywing via tipo_elemento)
+    'transportation',       -- Transporte (subtype: supply via tipo_elemento)
     'armoured',             -- Carro de combate / Blindado
     'artillery',            -- Artillería
     'ship',                 -- Buque

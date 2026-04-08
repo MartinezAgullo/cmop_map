@@ -35,6 +35,7 @@ const CATEGORY_BASE_NAMES = {
   aircraft:       ['fixed_wing', 'air_and_space'],
   helicopter:     ['helicopter', 'rotary_wing'],
   uav:            ['uav'],
+  transportation: ['transportation'],
   armoured:       ['armoured', 'tank', 'armor_mechanized', 'ground'],
   artillery:      ['artillery'],
   ship:           ['ship', 'sea_surface'],
@@ -85,13 +86,26 @@ const MEDEVAC_OTHER = [
 // ---------------------------------------------------------------------------
 const iconCache = new Map();
 
+const COUNTRY_ALIASES = {
+  north_korea:        'pkr',
+  corea_del_norte:    'pkr',
+  korea_del_norte:    'pkr',
+  dprk:               'pkr',
+  south_korea:        'pok',
+  corea_del_sur:      'pok',
+  korea_del_sur:      'pok',
+  republic_of_korea:  'pok',
+  rok:                'pok',
+};
+
 function normalizeCountry(country) {
   if (!country) return '';
-  return country
+  const normalized = country
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[\s\-_]+/g, '_')
     .replace(/[^a-z0-9_]/g, '');
+  return COUNTRY_ALIASES[normalized] ?? normalized;
 }
 
 function buildFilenameCandidates(category, country, entity) {
@@ -114,6 +128,21 @@ function buildFilenameCandidates(category, country, entity) {
       tipo = tipo.replace('medical_role_', 'medical_facility_role_');
     }
     bases = [tipo, ...bases];
+  }
+
+  // UAV: use fixedwing / rotarywing subtype when present
+  if (category === 'uav' && entity?.tipo_elemento) {
+    const tipo = entity.tipo_elemento.toLowerCase();
+    if (tipo === 'fixedwing' || tipo === 'rotarywing') {
+      bases = [`uav_${tipo}`, 'uav'];
+    }
+  }
+
+  // Transportation: supply subtype
+  if (category === 'transportation' && entity?.tipo_elemento) {
+    if (entity.tipo_elemento.toLowerCase() === 'supply') {
+      bases = ['transportation_supply', 'transportation'];
+    }
   }
 
   // Infantry, reconnaissance, engineer, mortar: use tipo_elemento
@@ -448,6 +477,13 @@ const TIPO_ELEMENTO_OPTIONS = {
     { value: 'medevac_ambulance', label: 'Ambulance' },
     { value: 'medevac_mechanised', label: 'Mechanised MEDEVAC' },
     { value: 'medevac_mortuary', label: 'Mortuary Affairs' }
+  ],
+  uav: [
+    { value: 'fixedwing',   label: 'Fixed-Wing UAV — UAV Ala Fija' },
+    { value: 'rotarywing',  label: 'Rotary-Wing UAV — UAV Ala Rotatoria' }
+  ],
+  transportation: [
+    { value: 'supply', label: 'Supply Transport — Transporte de Suministros' }
   ]
 };
 
