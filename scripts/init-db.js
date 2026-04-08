@@ -103,6 +103,7 @@ const BASE_TABLE = `
     prioridad             INTEGER           DEFAULT 0,
     observaciones         TEXT,
     altitud               NUMERIC(10, 2),
+    casevac_eligible      BOOLEAN           DEFAULT false,
     geom                  GEOMETRY(Point, 4326) NOT NULL,
     created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP

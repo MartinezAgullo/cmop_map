@@ -475,6 +475,18 @@ body {
   color: #555;
 }
 
+.casevac-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: #e67e22;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 0.68em;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
 /* ====================================================================
    Map
    ==================================================================== */

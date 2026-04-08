@@ -487,6 +487,10 @@ const TIPO_ELEMENTO_OPTIONS = {
   ]
 };
 
+const CASEVAC_ELIGIBLE_CATEGORIES = [
+  'transportation', 'reconnaissance', 'helicopter', 'ground_vehicle', 'armoured'
+];
+
 function updateTipoElementoOptions(categoria) {
   const group  = document.getElementById('tipoElementoGroup');
   const select = document.getElementById('tipoElemento');
@@ -494,14 +498,22 @@ function updateTipoElementoOptions(categoria) {
   if (!TIPO_ELEMENTO_OPTIONS[categoria]) {
     group.style.display = 'none';
     select.innerHTML = '<option value="">— Selecciona tipo —</option>';
-    return;
+  } else {
+    group.style.display = 'block';
+    select.innerHTML = '<option value="">— Selecciona tipo —</option>' +
+      TIPO_ELEMENTO_OPTIONS[categoria]
+        .map(opt => `<option value="${opt.value}">${opt.label}</option>`)
+        .join('');
   }
 
-  group.style.display = 'block';
-  select.innerHTML = '<option value="">— Selecciona tipo —</option>' +
-    TIPO_ELEMENTO_OPTIONS[categoria]
-      .map(opt => `<option value="${opt.value}">${opt.label}</option>`)
-      .join('');
+  const casevacGroup = document.getElementById('casevacGroup');
+  const casevacCheck = document.getElementById('casevacEligible');
+  if (CASEVAC_ELIGIBLE_CATEGORIES.includes(categoria)) {
+    casevacGroup.style.display = 'block';
+  } else {
+    casevacGroup.style.display = 'none';
+    casevacCheck.checked = false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -697,6 +709,10 @@ function renderList() {
       categoriaText += ` · ${e.country}`;
     }
 
+    const casevacBadge = e.casevac_eligible
+      ? '<div class="medical-badge"><span class="casevac-badge">CASEVAC eligible</span></div>'
+      : '';
+
     return `
       <div class="punto-item${activeClass}${triageClass}" onclick="selectEntity(${e.id})">
         <div class="punto-nombre">
@@ -704,6 +720,7 @@ function renderList() {
           ${e.nombre}
         </div>
         <span class="punto-categoria">${categoriaText}</span>
+        ${casevacBadge}
         ${medicalBadge}
       </div>`;
   }).join('');
@@ -799,6 +816,7 @@ function buildPopup(e) {
       <div class="popup-info">
         ${e.descripcion ? `<p>${e.descripcion}</p>` : ''}
         ${e.observaciones ? `<p><strong>Obs:</strong> ${e.observaciones}</p>` : ''}
+        ${e.casevac_eligible ? '<p><strong>CASEVAC eligible</strong></p>' : ''}
       </div>
       ${medicalHTML}
       <div class="popup-actions">
@@ -858,6 +876,10 @@ async function crearNuevaEntidad() {
 
     if (tipoElemento) {
       payload.tipo_elemento = tipoElemento;
+    }
+
+    if (CASEVAC_ELIGIBLE_CATEGORIES.includes(categoria)) {
+      payload.casevac_eligible = document.getElementById('casevacEligible').checked;
     }
 
     const res  = await fetch('/api/entities', {

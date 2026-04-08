@@ -35,6 +35,7 @@ class Entity {
         pi.prioridad,
         pi.observaciones,
         pi.altitud,
+        pi.casevac_eligible,
         ST_X(pi.geom) AS longitud,
         ST_Y(pi.geom) AS latitud,
         pi.created_at,
@@ -263,12 +264,12 @@ class Entity {
       `INSERT INTO puntos_interes (
          nombre, descripcion, categoria, country, alliance,
          elemento_identificado, activo, tipo_elemento, prioridad,
-         observaciones, altitud, geom
+         observaciones, altitud, casevac_eligible, geom
        )
        VALUES (
          $1, $2, $3::categoria_militar, $4, $5::alliance_enum,
-         $6, $7, $8, $9, $10, $11,
-         ST_SetSRID(ST_MakePoint($12, $13), 4326)
+         $6, $7, $8, $9, $10, $11, $12,
+         ST_SetSRID(ST_MakePoint($13, $14), 4326)
        )
        RETURNING id`,
       [
@@ -283,6 +284,7 @@ class Entity {
         data.prioridad ?? 0,
         data.observaciones ?? null,
         data.altitud ?? null,
+        data.casevac_eligible ?? false,
         data.longitud,
         data.latitud
       ]
@@ -305,15 +307,16 @@ class Entity {
          prioridad              = COALESCE($9,  prioridad),
          observaciones          = COALESCE($10, observaciones),
          altitud                = COALESCE($11, altitud),
+         casevac_eligible       = COALESCE($12, casevac_eligible),
          geom                   = COALESCE(
                                     ST_SetSRID(ST_MakePoint(
-                                      CAST($12 AS DOUBLE PRECISION),
-                                      CAST($13 AS DOUBLE PRECISION)
+                                      CAST($13 AS DOUBLE PRECISION),
+                                      CAST($14 AS DOUBLE PRECISION)
                                     ), 4326),
                                     geom
                                   ),
          updated_at             = CURRENT_TIMESTAMP
-       WHERE id = $14
+       WHERE id = $15
        RETURNING id`,
       [
         data.nombre ?? null,
@@ -327,6 +330,7 @@ class Entity {
         data.prioridad ?? null,
         data.observaciones ?? null,
         data.altitud ?? null,
+        data.casevac_eligible ?? null,
         data.longitud ?? null,
         data.latitud ?? null,
         id

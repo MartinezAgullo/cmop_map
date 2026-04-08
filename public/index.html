@@ -83,6 +83,7 @@
                 <label class="filter-cb"><input type="checkbox" value="mortar" /><span>Mortar</span></label>
                 <label class="filter-cb"><input type="checkbox" value="helicopter" /><span>Helicopter</span></label>
                 <label class="filter-cb"><input type="checkbox" value="uav" /><span>UAV</span></label>
+                <label class="filter-cb"><input type="checkbox" value="transportation" /><span>Transport</span></label>
                 <label class="filter-cb"><input type="checkbox" value="aircraft" /><span>Aircraft</span></label>
                 <!-- Medical -->
                 <label class="filter-cb filter-cb--medical"><input type="checkbox" value="casualty" /><span>Casualty</span></label>
@@ -178,24 +179,13 @@
                 <span class="chevron">▾</span>
               </div>
             </div>
-            <div class="filter-section-body" id="allianceBody">
+            <div class="filter-section-body collapsed" id="allianceBody">
               <div class="checkbox-grid" id="allianceCheckboxes">
                 <label class="filter-cb"><input type="checkbox" value="friendly" /><span class="alliance-dot" style="--dot-color:#00AEEF"></span><span>Friendly</span></label>
                 <label class="filter-cb"><input type="checkbox" value="hostile" /><span class="alliance-dot" style="--dot-color:#FF0000"></span><span>Hostile</span></label>
                 <label class="filter-cb"><input type="checkbox" value="neutral" /><span class="alliance-dot" style="--dot-color:#ADFF2F"></span><span>Neutral</span></label>
                 <label class="filter-cb"><input type="checkbox" value="unknown" /><span class="alliance-dot" style="--dot-color:#A9A9A9"></span><span>Unknown</span></label>
               </div>
-            </div>
-          </div>
-
-          <!-- Search -->
-          <div class="filter-section">
-            <div class="filter-section-header" data-toggle="searchBody">
-              <span>🔍 Buscar</span>
-              <span class="chevron">▾</span>
-            </div>
-            <div class="filter-section-body" id="searchBody">
-              <input type="text" id="buscarNombre" placeholder="Escribe un nombre…" class="search-input"/>
             </div>
           </div>
 
@@ -217,6 +207,17 @@
                   <button class="btn btn-secondary routes-clear-btn" id="clearRoutesBtn">🗑️ Limpiar</button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <div class="filter-section">
+            <div class="filter-section-header" data-toggle="searchBody">
+              <span>🔍 Buscar</span>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="filter-section-body collapsed" id="searchBody">
+              <input type="text" id="buscarNombre" placeholder="Escribe un nombre…" class="search-input"/>
             </div>
           </div>
 
@@ -320,12 +321,20 @@
           </select>
         </div>
 
-        <!-- Tipo Elemento (dynamic, shown only for medical_facility, medevac_unit) -->
+        <!-- Tipo Elemento (dynamic, shown only for categories with subtypes) -->
         <div class="form-group" id="tipoElementoGroup" style="display:none;">
           <label for="tipoElemento">Tipo Elemento *</label>
           <select id="tipoElemento" name="tipoElemento">
             <option value="">— Selecciona tipo —</option>
           </select>
+        </div>
+
+        <!-- CASEVAC eligible (only for vehicle categories that can carry personnel) -->
+        <div class="form-group" id="casevacGroup" style="display:none;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="casevacEligible" name="casevacEligible" />
+            CASEVAC eligible — puede realizar evacuaciones improvisadas
+          </label>
         </div>
 
         <div class="form-group">
