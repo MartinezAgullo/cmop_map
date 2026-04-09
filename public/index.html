@@ -93,6 +93,7 @@
                 <label class="filter-cb filter-cb--medical"><input type="checkbox" value="casualty" /><span>Casualty</span></label>
                 <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medical_facility" /><span>Med Facility</span></label>
                 <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medevac_unit" /><span>MEDEVAC</span></label>
+                <label class="filter-cb filter-cb--medical"><input type="checkbox" id="casevacFilter" /><span>CASEVAC eligible</span></label>
                 <!-- Other military -->
                 <label class="filter-cb"><input type="checkbox" value="missile" /><span>Missile</span></label>
                 <label class="filter-cb"><input type="checkbox" value="fighter" /><span>Fighter</span></label>
@@ -351,6 +352,42 @@
             <input type="checkbox" id="casevacEligible" name="casevacEligible" />
             CASEVAC eligible — puede realizar evacuaciones improvisadas
           </label>
+        </div>
+
+        <!-- Casualty medical details (only when categoria = casualty) -->
+        <div id="casualtyMedicalGroup" style="display:none;border-top:1px solid #444;padding-top:10px;margin-top:4px;">
+          <div class="form-group">
+            <label for="casualtyStatus">Estado Baja *</label>
+            <select id="casualtyStatus" name="casualtyStatus">
+              <option value="WIA">WIA — Herido en Acción</option>
+              <option value="KIA">KIA — Muerto en Acción</option>
+              <option value="UNKNOWN">UNKNOWN — Desconocido</option>
+            </select>
+          </div>
+
+          <!-- Triage (hidden for KIA; KIA always gets BLACK triage server-side) -->
+          <div id="triageGroup">
+            <div class="form-group">
+              <label for="triageColor">Triage *</label>
+              <select id="triageColor" name="triageColor">
+                <option value="RED">🔴 RED — T1 Inmediate</option>
+                <option value="YELLOW">🟡 YELLOW — T2 Urgent</option>
+                <option value="GREEN">🟢 GREEN — T3 Minimal</option>
+                <option value="BLUE">🔵 BLUE — T4 Expectant</option>
+                <option value="UNKNOWN" selected>⚪ UNKNOWN</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="injuryMechanism">Mecanismo de lesión</label>
+              <input type="text" id="injuryMechanism" name="injuryMechanism" placeholder="GSW, blast, MVA…" />
+            </div>
+
+            <div class="form-group">
+              <label for="primaryInjury">Lesión principal</label>
+              <input type="text" id="primaryInjury" name="primaryInjury" placeholder="Describe la lesión principal…" />
+            </div>
+          </div>
         </div>
 
         <div class="form-group">

@@ -339,6 +339,8 @@ function setupEventListeners() {
     });
   });
 
+  document.getElementById('casevacFilter').addEventListener('change', filterEntities);
+
   // Triage subfilter checkboxes
   document.querySelectorAll('#triageCheckboxes input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', filterEntities);
@@ -366,6 +368,7 @@ function setupEventListeners() {
   document.getElementById('clearCategories').addEventListener('click', (e) => {
     e.stopPropagation();
     document.querySelectorAll('#categoryCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+    document.getElementById('casevacFilter').checked = false;
     clearSubfilter('triageCheckboxes');
     clearSubfilter('medFacilityCheckboxes');
     clearSubfilter('medevacCheckboxes');
@@ -429,6 +432,9 @@ function setupEventListeners() {
   document.getElementById('categoria').addEventListener('change', (e) => {
     updateTipoElementoOptions(e.target.value);
   });
+
+  // Casualty status — toggle triage fields when KIA is selected
+  document.getElementById('casualtyStatus').addEventListener('change', _updateCasualtyStatusUI);
 }
 
 function clearSubfilter(containerId) {
@@ -560,6 +566,21 @@ function updateTipoElementoOptions(categoria) {
     mobilityGroup.style.display = 'none';
     mobilitySelect.value = '';
   }
+
+  const casualtyMedGroup = document.getElementById('casualtyMedicalGroup');
+  if (categoria === 'casualty') {
+    casualtyMedGroup.style.display = 'block';
+    // Ensure triage group visibility matches current status selection
+    _updateCasualtyStatusUI();
+  } else {
+    casualtyMedGroup.style.display = 'none';
+  }
+}
+
+function _updateCasualtyStatusUI() {
+  const status = document.getElementById('casualtyStatus').value;
+  const triageGroup = document.getElementById('triageGroup');
+  triageGroup.style.display = status === 'KIA' ? 'none' : 'block';
 }
 
 // ---------------------------------------------------------------------------
@@ -643,11 +664,14 @@ async function filterEntities() {
   const selectedMedRoles   = getCheckedValues('medFacilityCheckboxes');
   const selectedMedevac    = getCheckedValues('medevacCheckboxes');
   const search             = document.getElementById('buscarNombre').value.toLowerCase();
+  const casevacOnly        = document.getElementById('casevacFilter').checked;
 
   filteredEntities = allEntities.filter(e => {
-    // Category filter (empty = all)
-    if (selectedCategories.length > 0) {
-      if (!selectedCategories.includes(e.categoria)) return false;
+    // Category filter (empty = all). CASEVAC eligible acts as an OR alternative.
+    if (selectedCategories.length > 0 || casevacOnly) {
+      const matchesCategory = selectedCategories.includes(e.categoria);
+      const matchesCasevac  = casevacOnly && e.casevac_eligible;
+      if (!matchesCategory && !matchesCasevac) return false;
     }
 
     // Alliance filter (empty = all)
@@ -905,6 +929,8 @@ function mostrarFormularioNuevoPunto() {
 function cerrarFormularioNuevoPunto() {
   document.getElementById('formModal').classList.remove('show');
   document.getElementById('nuevoPuntoForm').reset();
+  // Re-run the category update to restore correct visibility state after reset
+  updateTipoElementoOptions('');
 }
 
 async function crearNuevaEntidad() {
@@ -943,13 +969,36 @@ async function crearNuevaEntidad() {
     });
     const data = await res.json();
 
-    if (data.success) {
-      showMessage('Entidad creada', 'success');
-      cerrarFormularioNuevoPunto();
-      await loadEntities();
-    } else {
+    if (!data.success) {
       showMessage(data.message || 'Error al crear', 'error');
+      return;
     }
+
+    // For casualties, also create the medical record
+    if (categoria === 'casualty') {
+      const casualtyStatus  = document.getElementById('casualtyStatus').value;
+      const medPayload = { casualty_status: casualtyStatus };
+
+      if (casualtyStatus === 'KIA') {
+        medPayload.triage_color = 'BLACK';
+      } else {
+        medPayload.triage_color = document.getElementById('triageColor').value;
+        const injMech    = document.getElementById('injuryMechanism').value.trim();
+        const primInjury = document.getElementById('primaryInjury').value.trim();
+        if (injMech)    medPayload.injury_mechanism = injMech;
+        if (primInjury) medPayload.primary_injury   = primInjury;
+      }
+
+      await fetch(`/api/medical/${data.data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(medPayload)
+      });
+    }
+
+    showMessage('Entidad creada', 'success');
+    cerrarFormularioNuevoPunto();
+    await loadEntities();
   } catch (err) {
     console.error(err);
     showMessage('Error de conexión', 'error');

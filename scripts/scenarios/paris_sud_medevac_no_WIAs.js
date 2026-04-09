@@ -107,9 +107,9 @@ const entities = [
   // ---------------------------------------------------------------
   // UGV assets
   // ---------------------------------------------------------------
-  { nombre: 'UGV Alano 1', descripcion: 'Spanish UGV Alano', categoria: 'ugv', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-UGV-1', activo: true, casevac_eligible: true, observaciones: 'Modelo Alano. Capacidad para operar de manera autónoma. Capacidad de carga de 700 kg. 20 km/h', altitud: null, lng: 2.325228, lat: 48.597472 },
-  { nombre: 'UGV Alano 2', descripcion: 'Spanish UGV Alano', categoria: 'ugv', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-UGV-2', activo: true, casevac_eligible: true, observaciones: 'Modelo Alano. Capacidad para operar de manera autónoma. Capacidad de carga de 700 kg. 20 km/h', altitud: null, lng: 2.338209, lat: 48.587545 },
-  { nombre: 'UGV THeMIS', descripcion: 'German UGV THeMIS', categoria: 'ugv', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-UGV-1', activo: true, casevac_eligible: true, observaciones: 'Modelo THeMIS. Capacidad para operar de manera autónoma. Capacidad de carga de 800 kg. 25 km/h', altitud: null, lng: 2.372252, lat: 48.608309 },
+  { nombre: 'UGV Alano 1', descripcion: 'Spanish UGV Alano', categoria: 'ugv', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-UGV-1', activo: true, casevac_eligible: true, observaciones: 'Alano model. Autonomous operation capable. Payload 700 kg. 20 km/h', altitud: null, lng: 2.325228, lat: 48.597472 },
+  { nombre: 'UGV Alano 2', descripcion: 'Spanish UGV Alano', categoria: 'ugv', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-UGV-2', activo: true, casevac_eligible: true, observaciones: 'Alano model. Autonomous operation capable. Payload 700 kg. 20 km/h', altitud: null, lng: 2.338209, lat: 48.587545 },
+  { nombre: 'UGV THeMIS', descripcion: 'German UGV THeMIS', categoria: 'ugv', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-UGV-1', activo: true, casevac_eligible: true, observaciones: 'THeMIS model. Autonomous operation capable. Payload 800 kg. 25 km/h', altitud: null, lng: 2.372252, lat: 48.608309 },
 ];
 
 const medicalDetails = [];
