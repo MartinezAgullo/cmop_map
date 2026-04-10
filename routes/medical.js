@@ -211,7 +211,6 @@ router.get('/:entity_id/nine-line', async (req, res) => {
          pi.alliance,
          md.nine_line_data,
          md.triage_color,
-         md.evac_priority,
          md.evac_stage,
          md.updated_at
        FROM puntos_interes pi
@@ -233,7 +232,6 @@ router.get('/:entity_id/nine-line', async (req, res) => {
         categoria:      row.categoria,
         alliance:       row.alliance,
         triage_color:   row.triage_color,
-        evac_priority:  row.evac_priority,
         evac_stage:     row.evac_stage,
         nine_line_data: row.nine_line_data || null,
         updated_at:     row.updated_at
@@ -254,7 +252,7 @@ router.get('/:entity_id/nine-line', async (req, res) => {
  * Body: any subset of medical_details fields (snake_case).
  *
  *   PUT /api/medical/42
- *   { "evac_stage": "in_transit", "evac_priority": "URGENT" }
+ *   { "evac_stage": "in_transit" }
  *
  * If the entity has no medical record yet, one is created (upsert).
  * If nine_line_data is included, it is validated (non-strict) before saving.

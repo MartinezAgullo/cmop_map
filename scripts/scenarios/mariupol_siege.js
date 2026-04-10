@@ -126,7 +126,7 @@ const medicalDetails = [
       { hr: 95, bp: '110/70', spo2: 96, recorded_at: '2026-02-03T14:20:00Z' }
     ],
     prehospital_treatment: 'Wounds packed, IV access, 500ml crystalloid',
-    evac_priority: 'PRIORITY',
+
     evac_stage: 'at_poi',
     destination_facility_ref: 'UKR-MED-R1-1',
     nine_line_data: {
@@ -156,7 +156,7 @@ const medicalDetails = [
       { hr: 115, bp: '90/58', spo2: 93, recorded_at: '2026-02-03T14:22:00Z' }
     ],
     prehospital_treatment: 'IO access, TXA 1g IV, wound packed',
-    evac_priority: 'URGENT',
+
     evac_stage: 'in_transit',
     destination_facility_ref: 'UKR-MED-R2-1',
     nine_line_data: {
@@ -185,7 +185,7 @@ const medicalDetails = [
       { hr: 88, bp: '125/80', spo2: 97, recorded_at: '2026-02-03T14:30:00Z' }
     ],
     prehospital_treatment: 'Cervical collar, supine position',
-    evac_priority: 'PRIORITY',
+
     evac_stage: 'delivered',
     destination_facility_ref: 'UKR-MED-R1-1',
     nine_line_data: null
@@ -198,7 +198,7 @@ const medicalDetails = [
     primary_injury: 'Catastrophic trauma, KIA on scene',
     vital_signs: null,
     prehospital_treatment: 'None — KIA',
-    evac_priority: 'ROUTINE',
+
     evac_stage: 'at_poi',
     destination_facility_ref: null,
     nine_line_data: null
@@ -216,7 +216,7 @@ const medicalDetails = [
       { hr: 145, bp: '55/35', spo2: 74, recorded_at: '2026-02-03T14:55:00Z' }
     ],
     prehospital_treatment: 'IV morphine for pain management, comfort measures only',
-    evac_priority: 'ROUTINE',     // T4 patients receive lowest evac priority
+
     evac_stage: 'at_poi',
     destination_facility_ref: 'UKR-MED-R1-1',
     nine_line_data: null           // No MEDEVAC request — palliative care only
@@ -233,7 +233,7 @@ const medicalDetails = [
       { hr: 100, bp: '105/65', spo2: 94, recorded_at: '2026-02-03T14:18:00Z' }
     ],
     prehospital_treatment: 'Tourniquet applied, IV access',
-    evac_priority: 'PRIORITY',
+
     evac_stage: 'at_poi',
     destination_facility_ref: null,  // no friendly facility for hostile casualties
     nine_line_data: null
@@ -248,7 +248,7 @@ const medicalDetails = [
       { hr: 135, bp: '80/50', spo2: 89, recorded_at: '2026-02-03T14:25:00Z' }
     ],
     prehospital_treatment: 'Airway secured, IV fluids started',
-    evac_priority: 'URGENT',
+
     evac_stage: 'at_poi',
     destination_facility_ref: null,
     nine_line_data: null
@@ -261,7 +261,7 @@ const medicalDetails = [
     primary_injury: 'KIA — blast overpressure + fragmentation',
     vital_signs: null,
     prehospital_treatment: 'None — KIA',
-    evac_priority: 'ROUTINE',
+
     evac_stage: 'at_poi',
     destination_facility_ref: null,
     nine_line_data: null

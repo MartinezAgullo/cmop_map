@@ -50,7 +50,6 @@ class Entity {
             'primary_injury',            md.primary_injury,
             'vital_signs',               md.vital_signs,
             'prehospital_treatment',     md.prehospital_treatment,
-            'evac_priority',             md.evac_priority,
             'evac_stage',                md.evac_stage,
             'destination_facility',      CASE WHEN df.id IS NOT NULL THEN
                                            jsonb_build_object('id', df.id, 'nombre', df.nombre)
@@ -89,6 +88,14 @@ class Entity {
     const { rows } = await pool.query(
       `${this.baseSelect()} WHERE pi.categoria = $1 ORDER BY pi.nombre`,
       [categoria]
+    );
+    return rows;
+  }
+
+  /** All active entities with casevac_eligible = true */
+  static async getCasevacEligible() {
+    const { rows } = await pool.query(
+      `${this.baseSelect()} WHERE pi.casevac_eligible = true AND pi.activo = true ORDER BY pi.nombre`
     );
     return rows;
   }
@@ -144,7 +151,7 @@ class Entity {
    *   {
    *     triage_color, injury_mechanism, primary_injury,
    *     vital_signs,  prehospital_treatment,
-   *     evac_priority, evac_stage,
+   *     evac_stage,
    *     destination_facility_id,   ← raw FK (integer)
    *     nine_line_data             ← object, stored as JSONB
    *   }
@@ -349,7 +356,7 @@ class Entity {
     await client.query(
       `INSERT INTO medical_details (
          entity_id, triage_color, casualty_status, injury_mechanism, primary_injury,
-         vital_signs, prehospital_treatment, evac_priority, evac_stage,
+         vital_signs, prehospital_treatment, evac_stage,
          destination_facility_id, nine_line_data
        )
        VALUES (
@@ -359,10 +366,9 @@ class Entity {
          $4, $5,
          $6::jsonb,
          $7,
-         $8::evac_priority_enum,
-         $9::evac_stage_enum,
-         $10,
-         $11::jsonb
+         $8::evac_stage_enum,
+         $9,
+         $10::jsonb
        )
        ON CONFLICT (entity_id) DO UPDATE SET
          triage_color            = COALESCE(EXCLUDED.triage_color,            medical_details.triage_color),
@@ -371,7 +377,6 @@ class Entity {
          primary_injury          = COALESCE(EXCLUDED.primary_injury,          medical_details.primary_injury),
          vital_signs             = COALESCE(EXCLUDED.vital_signs,             medical_details.vital_signs),
          prehospital_treatment   = COALESCE(EXCLUDED.prehospital_treatment,   medical_details.prehospital_treatment),
-         evac_priority           = COALESCE(EXCLUDED.evac_priority,           medical_details.evac_priority),
          evac_stage              = COALESCE(EXCLUDED.evac_stage,              medical_details.evac_stage),
          destination_facility_id = COALESCE(EXCLUDED.destination_facility_id, medical_details.destination_facility_id),
          nine_line_data          = COALESCE(EXCLUDED.nine_line_data,          medical_details.nine_line_data),
@@ -384,7 +389,6 @@ class Entity {
         medical.primary_injury ?? null,
         medical.vital_signs ? JSON.stringify(medical.vital_signs) : null,
         medical.prehospital_treatment ?? null,
-        medical.evac_priority ?? null,
         medical.evac_stage ?? null,
         medical.destination_facility_id ?? null,
         medical.nine_line_data ? JSON.stringify(medical.nine_line_data) : null

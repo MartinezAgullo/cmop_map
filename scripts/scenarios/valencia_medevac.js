@@ -93,7 +93,7 @@ const medicalDetails = [
       { hr: 125, bp: '85/55',  spo2: 93, recorded_at: '2026-02-02T18:05:00Z' }
     ],
     prehospital_treatment: 'Bilateral tourniquet (CoTCCC), IO access, 1L Hetastarch',
-    evac_priority: 'URGENT',
+
     evac_stage: 'at_poi',
     destination_facility_ref: 'MED-R1-ALPHA',   // → Aid Post Alpha (first stop)
     nine_line_data: {
@@ -119,7 +119,7 @@ const medicalDetails = [
       { hr: 100, bp: '105/68', spo2: 96, recorded_at: '2026-02-02T18:02:00Z' }
     ],
     prehospital_treatment: 'IV access (18G AC), 500ml crystalloid, wound packed',
-    evac_priority: 'PRIORITY',
+
     evac_stage: 'in_transit',
     destination_facility_ref: 'MED-R1-ALPHA',
     nine_line_data: {
@@ -140,7 +140,7 @@ const medicalDetails = [
       { hr: 78,  bp: '118/76', spo2: 98, recorded_at: '2026-02-02T18:01:00Z' }
     ],
     prehospital_treatment: 'Wound cleaned and dressed at POI',
-    evac_priority: 'ROUTINE',
+
     evac_stage: 'delivered',                     // already at Aid Post
     destination_facility_ref: 'MED-R1-ALPHA',
     nine_line_data: null                         // not yet extracted

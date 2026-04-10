@@ -104,6 +104,16 @@ router.get('/cerca/:longitud/:latitud', async (req, res) => {
   }
 });
 
+router.get('/casevac', async (req, res) => {
+  try {
+    const data = await Entity.getCasevacEligible();
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error('GET /entities/casevac:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch casevac-eligible entities', error: err.message });
+  }
+});
+
 // /meta/categorias must be declared before /:id to avoid Express matching
 // "meta" as an id.  It is already above.  Same logic: /:id is last.
 router.get('/:id', async (req, res) => {

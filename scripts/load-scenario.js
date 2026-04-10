@@ -99,14 +99,14 @@ async function insertEntities(client, entities) {
  *   destination_facility_ref → also resolved via refMap         (nullable)
  *
  * 10 flat params per row:
- *   entity_id, triage_color, injury_mechanism, primary_injury,
- *   vital_signs, prehospital_treatment, evac_priority, evac_stage,
+ *   entity_id, triage_color, casualty_status, injury_mechanism, primary_injury,
+ *   vital_signs, prehospital_treatment, evac_stage,
  *   destination_facility_id, nine_line_data
  */
 async function insertMedicalDetails(client, medicalDetails, refMap) {
   if (!medicalDetails || medicalDetails.length === 0) return;
 
-  const PARAMS_PER_ROW = 11;
+  const PARAMS_PER_ROW = 10;
 
   const values = medicalDetails.flatMap(m => {
     const entityId = refMap.get(m.entity_ref);
@@ -128,7 +128,6 @@ async function insertMedicalDetails(client, medicalDetails, refMap) {
       m.primary_injury          ?? null,
       m.vital_signs             ? JSON.stringify(m.vital_signs)    : null,
       m.prehospital_treatment   ?? null,
-      m.evac_priority           ?? 'UNKNOWN',
       m.evac_stage              ?? 'unknown',
       destId,
       m.nine_line_data          ? JSON.stringify(m.nine_line_data) : null
@@ -144,17 +143,16 @@ async function insertMedicalDetails(client, medicalDetails, refMap) {
       $${b+4}, $${b+5},
       $${b+6}::jsonb,
       $${b+7},
-      $${b+8}::evac_priority_enum,
-      $${b+9}::evac_stage_enum,
-      $${b+10},
-      $${b+11}::jsonb
+      $${b+8}::evac_stage_enum,
+      $${b+9},
+      $${b+10}::jsonb
     )`;
   });
 
   const query = `
     INSERT INTO medical_details (
       entity_id, triage_color, casualty_status, injury_mechanism, primary_injury,
-      vital_signs, prehospital_treatment, evac_priority, evac_stage,
+      vital_signs, prehospital_treatment, evac_stage,
       destination_facility_id, nine_line_data
     )
     VALUES ${rows.join(',')}

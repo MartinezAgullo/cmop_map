@@ -764,7 +764,6 @@ function renderList() {
         <div class="medical-badge">
           ${statusBadge}
           <span class="triage-pill ${e.medical.triage_color || 'UNKNOWN'}">${e.medical.triage_color || '?'}</span>
-          ${e.medical.evac_priority || ''}
           · ${e.medical.evac_stage || 'unknown'}
         </div>`;
     }
@@ -852,10 +851,6 @@ function buildPopup(e) {
           <span class="med-label">Status</span>
           <span class="med-value"><strong>${m.casualty_status}</strong></span>
         </div>` : ''}
-        <div class="med-row">
-          <span class="med-label">Priority</span>
-          <span class="med-value">${m.evac_priority || '—'}</span>
-        </div>
         <div class="med-row">
           <span class="med-label">Stage</span>
           <span class="med-value">${m.evac_stage || '—'}</span>
@@ -977,7 +972,7 @@ async function crearNuevaEntidad() {
     // For casualties, also create the medical record
     if (categoria === 'casualty') {
       const casualtyStatus  = document.getElementById('casualtyStatus').value;
-      const medPayload = { casualty_status: casualtyStatus };
+      const medPayload = { casualty_status: casualtyStatus, evac_stage: 'at_poi' };
 
       if (casualtyStatus === 'KIA') {
         medPayload.triage_color = 'BLACK';

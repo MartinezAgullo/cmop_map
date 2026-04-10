@@ -142,7 +142,7 @@ const medicalDetails = [
     primary_injury: 'Fatal head trauma',
     vital_signs: null,
     prehospital_treatment: 'None — immediate death',
-    evac_priority: 'ROUTINE',
+
     evac_stage: 'at_poi',
     destination_facility_ref: null,
     nine_line_data: null
@@ -155,7 +155,7 @@ const medicalDetails = [
     primary_injury: 'Fatal crush injury',
     vital_signs: null,
     prehospital_treatment: 'None — immediate death',
-    evac_priority: 'ROUTINE',
+
     evac_stage: 'at_poi',
     destination_facility_ref: null,
     nine_line_data: null
@@ -173,7 +173,7 @@ const medicalDetails = [
   //     { hr: 118, bp: '92/60', spo2: 91, recorded_at: '2026-02-06T16:22:00Z' }
   //   ],
   //   prehospital_treatment: 'Needle decompression right 2nd ICS, chest seal applied, high-flow O2, IV morphine 5mg, two large-bore IV lines',
-  //   evac_priority: 'URGENT',
+
   //   evac_stage: 'at_poi',
   //   destination_facility_ref: null,
   //   nine_line_data: {
@@ -206,7 +206,7 @@ const medicalDetails = [
   //     { hr: 138, bp: '58/35', spo2: 75, recorded_at: '2026-02-06T16:25:00Z' }
   //   ],
   //   prehospital_treatment: 'IV morphine 10mg, comfort measures. Triaged T4 due to concurrent MASCAL with 2x KIA.',
-  //   evac_priority: 'ROUTINE',     // T4 patients receive lowest evac priority
+
   //   evac_stage: 'at_poi',
   //   destination_facility_ref: null,
   //   nine_line_data: null           // No MEDEVAC request — palliative care only
@@ -223,7 +223,7 @@ const medicalDetails = [
       { hr: 95, bp: '115/75', spo2: 97, recorded_at: '2026-02-06T16:30:00Z' }
     ],
     prehospital_treatment: 'Wounds cleaned, dressed. IV access established.',
-    evac_priority: 'PRIORITY',
+
     evac_stage: 'in_transit',
     destination_facility_ref: 'FRA-MED-R2',
     nine_line_data: {
@@ -253,7 +253,7 @@ const medicalDetails = [
       { hr: 105, bp: '110/70', spo2: 96, recorded_at: '2026-02-06T16:45:00Z' }
     ],
     prehospital_treatment: 'Splinted, IV morphine, IV fluids',
-    evac_priority: 'PRIORITY',
+
     evac_stage: 'at_poi',
     destination_facility_ref: 'FRA-MED-R2',
     nine_line_data: {
@@ -285,7 +285,7 @@ const medicalDetails = [
       { hr: 112, bp: '100/65', spo2: 95, recorded_at: '2026-02-06T17:10:00Z' }
     ],
     prehospital_treatment: 'Tourniquet applied proximal to wound, IV access, 1L NaCl bolus',
-    evac_priority: 'PRIORITY',
+
     evac_stage: 'at_poi',
     destination_facility_ref: null,
     nine_line_data: {
@@ -315,7 +315,7 @@ const medicalDetails = [
       { hr: 110, bp: '105/65', spo2: 98, recorded_at: '2026-02-06T17:00:00Z' }
     ],
     prehospital_treatment: 'Oral rehydration, cooling measures',
-    evac_priority: 'ROUTINE',
+
     evac_stage: 'delivered',
     destination_facility_ref: 'ESP-MED-R1',
     nine_line_data: null
@@ -332,7 +332,7 @@ const medicalDetails = [
       { hr: 80, bp: '120/78', spo2: 99, recorded_at: '2026-02-06T16:20:00Z' }
     ],
     prehospital_treatment: 'Wound cleaned, sutured at Role-1',
-    evac_priority: 'ROUTINE',
+
     evac_stage: 'delivered',
     destination_facility_ref: 'ESP-MED-R1',
     nine_line_data: null
@@ -347,7 +347,7 @@ const medicalDetails = [
       { hr: 75, bp: '118/76', spo2: 99, recorded_at: '2026-02-06T16:35:00Z' }
     ],
     prehospital_treatment: 'RICE protocol, wrapped, crutches issued',
-    evac_priority: 'ROUTINE',
+
     evac_stage: 'delivered',
     destination_facility_ref: 'ESP-MED-R1',
     nine_line_data: null
