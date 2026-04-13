@@ -24,8 +24,29 @@ function _notifyThreat(entity) {
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ lat: Number(lat), lng: Number(lng), name, id: entity.id }),
   }).catch(err => {
-    // Planner may not be running — log only, never block
     console.warn(`[entities] Threat notify skipped (planner unreachable): ${err.message}`);
+  });
+}
+
+function _notifyNewCasualty(entity) {
+  const lat  = entity.lat  ?? entity.latitud;
+  const lng  = entity.lng  ?? entity.longitud;
+  const name = entity.name ?? entity.nombre ?? `Entity-${entity.id}`;
+  if (lat == null || lng == null) return;
+  const medical = entity.medical ?? {};
+  fetch(`${PLANNER_BASE}/casualties/notify`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      id:           entity.id,
+      name,
+      lat:          Number(lat),
+      lng:          Number(lng),
+      triage_color: medical.triage_color ?? null,
+      evac_priority: medical.evac_priority ?? null,
+    }),
+  }).catch(err => {
+    console.warn(`[entities] Casualty notify skipped (planner unreachable): ${err.message}`);
   });
 }
 
@@ -142,6 +163,7 @@ router.post('/', async (req, res) => {
 
     const entity = await Entity.create(req.body);
     if (entity.alliance === 'hostile') _notifyThreat(entity);
+    if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
     res.status(201).json({ success: true, data: entity });
   } catch (err) {
     console.error('POST /entities:', err);
