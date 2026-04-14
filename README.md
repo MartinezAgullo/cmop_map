@@ -12,10 +12,12 @@ CMOP (Common Medical Operational Picture) map service. Geospatial layer for mili
 cmop_map/
 ├── config/
 │   └── database.js              # pg Pool — reads .env
+├── lib/
+│   └── sse-broker.js            # Singleton SSE broadcast module (connected clients registry)
 ├── models/
 │   └── entity.js                # All queries: puntos_interes + medical_details (LEFT JOIN)
 ├── routes/
-│   ├── entities.js              # CRUD for entities (/api/entities)
+│   ├── entities.js              # CRUD for entities (/api/entities) — broadcasts SSE on PUT
 │   ├── medical.js               # Medical-specific ops (/api/medical)
 │   ├── scenarios.js             # List & load scenarios (/api/scenarios)
 │   └── schema.js                # Schema introspection (/api/schema) — for MCP servers
@@ -32,12 +34,22 @@ cmop_map/
 │   ├── icons/                   # NATO APP-6 SVGs: friendly/ hostile/ neutral/ unknown/
 │   │   └── README.md            # Icon resolution algorithm docs
 │   ├── index.html
-│   └── js/app.js                # Frontend: scenario selector, map, icon resolution, medical popups
+│   └── js/app.js                # Frontend: scenario selector, map, icon resolution, medical popups,
+│                                #           SSE client, simulation controls
 ├── docker-compose.yml
-├── server.js                    # Express entry point. Mounts routes, serves static.
+├── server.js                    # Express entry point. Mounts routes, SSE, planner proxy.
 ├── package.json
 └── .env
 ```
+
+### Real-time layer
+
+Entity position changes are pushed to connected browsers without page refresh via **Server-Sent Events (SSE)**:
+
+- `lib/sse-broker.js` — singleton that keeps a `Set` of open SSE connections and exposes `broadcast(payload)`.
+- Every `PUT /api/entities/:id` broadcasts an `entity_updated` event `{ type, id, lat, lng }`.
+- The browser's `EventSource` on `/api/events` calls `marker.setLatLng()` directly — no full re-render.
+- Internal services (e.g. `medevac_planner`) can push arbitrary events via `POST /api/events/notify`.
 
 ### Key design decisions
 
@@ -135,6 +147,43 @@ node scripts/load-scenario.js --list
 ```
 
 Stop: `Ctrl+C` then `docker compose down`
+
+---
+
+## Movement simulation
+
+Once a MEDEVAC plan has been computed by `medevac_planner` and its routes loaded in the MEDEVAC Routes panel, the map can animate vehicles and casualties along their GeoJSON routes in real time.
+
+### Controls
+
+| Button | State | Action |
+|--------|-------|--------|
+| **▶ Simular** | idle | Start simulation from the beginning |
+| **⏹ Detener** | running | Pause simulation; vehicles freeze at current position |
+| **▶ Reanudar** | paused | Resume from current position (works on updated routes after threat reroute) |
+| **↩ Reiniciar** | paused | Stop, restore original positions, restart from scratch |
+
+The "Reiniciar" button is only visible while paused.
+
+### How it works
+
+The simulation engine runs in `medevac_planner/task_server.py` as an asyncio background task:
+
+1. **Interpolation** — vehicle positions are computed geometrically along each GeoJSON `LineString` using haversine arc-length parameterisation. No GPS involved.
+2. **Speed** — ETAs from the planner encode the vehicle type: ground vehicles (`~40 km/h`), helicopters (`~150 km/h`). The `PLANNER_SIMULATION_SPEED` multiplier compresses wall-clock time (e.g. `30` = 30× speed for demos).
+3. **1 Hz updates** — the planner writes each vehicle's new `(latitud, longitud)` to the CMOP DB via `PUT /api/entities/:id` every second. The SSE broker pushes `entity_updated` to all connected browsers, which call `marker.setLatLng()`.
+4. **Milestones** — on arrival at the casualty (`pickup_done`), `evac_stage` is set to `in_transit` and the casualty begins co-moving with the vehicle. On arrival at the facility, `evac_stage` is set to `delivered`.
+5. **Threat reroute + resume** — when a threat is added and routes are recomputed, the planner fetches the vehicle's live DB position and uses it as the new route start. Pressing "Reanudar" after the reroute therefore places the vehicle at position 0 of the new route, which is exactly where it was when paused.
+
+### Demo flow
+
+```
+1. Load scenario → trigger medevac_planner → load routes in MEDEVAC Routes panel
+2. Click ▶ Simular — vehicles animate toward casualties, then toward facilities
+3. Click ⏹ Detener — vehicles freeze
+4. Add hostile entity in cmop_map — planner auto-reroutes around the threat
+5. Click ▶ Reanudar — vehicles continue from their paused position along the NEW route
+```
 
 ---
 
@@ -338,6 +387,64 @@ Load scenario (truncates tables).
   }
 }
 ```
+
+---
+
+### Real-time events (`/api/events`)
+
+#### **GET** `/api/events`
+
+Open an SSE stream. The connection stays alive; the server pushes events as JSON on each line.
+
+```
+data: {"type":"connected"}
+
+data: {"type":"entity_updated","id":3,"lat":48.862,"lng":2.347}
+
+data: {"type":"simulation_stopped","task_id":"abc123","reason":"cancelled"}
+```
+
+Event types:
+
+| `type` | When | Fields |
+|--------|------|--------|
+| `connected` | On stream open | — |
+| `entity_updated` | After any `PUT /api/entities/:id` | `id`, `lat`, `lng` |
+| `evac_stage_updated` | At pickup / delivery milestones | `id`, `evac_stage` |
+| `route_updated` | After threat-triggered reroute | `task_id` |
+| `simulation_stopped` | On stop or completion | `task_id`, `reason` (`cancelled`\|`completed`) |
+
+#### **POST** `/api/events/notify`
+
+Push an arbitrary event to all connected SSE clients. Used internally by `medevac_planner`.
+
+**Request:** any JSON object with a `type` field.
+
+---
+
+### Planner proxy (`/api/planner`)
+
+Thin proxies to `medevac_planner` task server (default `:8400`). Avoids CORS issues.
+
+#### **GET** `/api/planner/tasks/:taskId/routes`
+
+Fetch GeoJSON routes for a completed plan.
+
+#### **POST** `/api/planner/tasks/:taskId/simulate`
+
+Start movement simulation for a plan.
+
+#### **DELETE** `/api/planner/tasks/:taskId/simulate`
+
+Stop (pause) a running simulation.
+
+#### **POST** `/api/planner/tasks/:taskId/simulate/resume`
+
+Resume a paused simulation from vehicles' current DB positions.
+
+#### **POST** `/api/planner/tasks/:taskId/simulate/restart`
+
+Cancel simulation, restore original positions, restart from the beginning.
 
 ---
 
