@@ -641,6 +641,25 @@ body {
   border-top: 1px solid #eee;
 }
 
+.popup-doctrine {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+  font-size: 0.82em;
+  line-height: 1.5;
+}
+
+.doctrine-violation {
+  color: #b22222;
+  font-weight: 600;
+  margin: 2px 0;
+}
+
+.doctrine-warning {
+  color: #8a6000;
+  margin: 2px 0;
+}
+
 .popup-medical h4 {
   font-size: 0.82em;
   text-transform: uppercase;
@@ -1171,6 +1190,9 @@ body.dark .popup-categoria {
 body.dark .popup-info         { color: #768390; }
 body.dark .popup-info strong  { color: #cdd9e5; }
 body.dark .popup-medical      { border-top-color: #21262d; }
+body.dark .popup-doctrine     { border-top-color: #21262d; }
+body.dark .doctrine-violation { color: #ff6b6b; }
+body.dark .doctrine-warning   { color: #f0a500; }
 body.dark .popup-medical h4   { color: #4d94ff; }
 body.dark .popup-medical .med-row   { border-color: #21262d; }
 body.dark .popup-medical .med-label { color: #545d68; }

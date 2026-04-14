@@ -1320,6 +1320,17 @@ function _routePopup(route, leg) {
   const legLabel = leg === 'pickup'   ? '🔵 Trayecto de recogida'
                  : leg === 'delivery' ? '🔴 Trayecto de entrega'
                  :                     '📍 Punto de recogida';
+
+  const notes = Array.isArray(route.doctrinal_notes) ? route.doctrinal_notes : [];
+  const violations = notes.filter(n => n.startsWith('VIOLATION'));
+  const warnings   = notes.filter(n => !n.startsWith('VIOLATION'));
+
+  const doctrineHTML = (violations.length + warnings.length) === 0 ? '' : `
+    <div class="popup-doctrine">
+      ${violations.map(v => `<div class="doctrine-violation">⛔ ${v}</div>`).join('')}
+      ${warnings.map(w => `<div class="doctrine-warning">⚠️ ${w}</div>`).join('')}
+    </div>`;
+
   return `
     <div class="popup-content">
       <div class="popup-title">${route.plan_key || ''} — ${route.asset_name || '?'}</div>
@@ -1331,6 +1342,7 @@ function _routePopup(route, leg) {
         <p>⏱️ Recogida: ${pickup} | Entrega: ${delivery}</p>
         <p><strong>ETA total: ${total}</strong></p>
       </div>
+      ${doctrineHTML}
     </div>`;
 }
 
