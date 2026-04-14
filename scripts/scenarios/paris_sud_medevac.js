@@ -114,16 +114,16 @@ const entities = [
   // { nombre: 'FRA-CAS-3 (WIA)', descripcion: 'French WIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-3', activo: true, tipo_elemento: 'casualty', observaciones: 'Third occupant from vehicle rollover. Massive internal injuries. Triaged T4 given MASCAL conditions.', altitud: null, lng: 2.3535, lat: 48.5983 },
 
   // German WIA
-  { nombre: 'GER-CAS-1 (WIA)', descripcion: 'German WIA — blast injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Shrapnel wounds, stable', altitud: null, lng: 2.368, lat: 48.606 },
+  // { nombre: 'GER-CAS-1 (WIA)', descripcion: 'German WIA — blast injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Shrapnel wounds, stable', altitud: null, lng: 2.368, lat: 48.606 },
   { nombre: 'GER-CAS-2 (WIA)', descripcion: 'German WIA — crush injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-2', activo: true, tipo_elemento: 'casualty', observaciones: 'Lower limb trauma', altitud: null, lng: 2.372, lat: 48.607 },
 
   // Italian WIA
-  { nombre: 'ITA-CAS-1 (WIA)', descripcion: 'Italian WIA — heat exhaustion', categoria: 'casualty', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Heat exhaustion, dehydration', altitud: null, lng: 2.348, lat: 48.615 },
+  // { nombre: 'ITA-CAS-1 (WIA)', descripcion: 'Italian WIA — heat exhaustion', categoria: 'casualty', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Heat exhaustion, dehydration', altitud: null, lng: 2.348, lat: 48.615 },
   { nombre: 'ITA-CAS-2 (WIA)', descripcion: 'Italian WIA — fragmentation wound', categoria: 'casualty', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-CAS-2', activo: true, tipo_elemento: 'casualty', observaciones: 'Fragmentation wound to left thigh, tourniquet applied', altitud: null, lng: 2.3493, lat: 48.6141 },
 
   // Spanish WIA
-  { nombre: 'ESP-CAS-1 (WIA)', descripcion: 'Spanish WIA — laceration', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Facial laceration, conscious', altitud: null, lng: 2.328, lat: 48.587 },
-  { nombre: 'ESP-CAS-2 (WIA)', descripcion: 'Spanish WIA — sprain', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-CAS-2', activo: true, tipo_elemento: 'casualty', observaciones: 'Ankle sprain during dismount', altitud: null, lng: 2.332, lat: 48.585 },
+  // { nombre: 'ESP-CAS-1 (WIA)', descripcion: 'Spanish WIA — laceration', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Facial laceration, conscious', altitud: null, lng: 2.328, lat: 48.587 },
+  //{ nombre: 'ESP-CAS-2 (WIA)', descripcion: 'Spanish WIA — sprain', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-CAS-2', activo: true, tipo_elemento: 'casualty', observaciones: 'Ankle sprain during dismount', altitud: null, lng: 2.332, lat: 48.585 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -213,36 +213,36 @@ const medicalDetails = [
   // },
 
   // German WIA
-  {
-    entity_ref: 'GER-CAS-1',
-    triage_color: 'YELLOW',
-    casualty_status: 'WIA',
-    injury_mechanism: 'Blast (training ordnance)',
-    primary_injury: 'Multiple superficial shrapnel wounds — chest, arms',
-    vital_signs: [
-      { hr: 95, bp: '115/75', spo2: 97, recorded_at: '2026-02-06T16:30:00Z' }
-    ],
-    prehospital_treatment: 'Wounds cleaned, dressed. IV access established.',
+  // {
+  //   entity_ref: 'GER-CAS-1',
+  //   triage_color: 'YELLOW',
+  //   casualty_status: 'WIA',
+  //   injury_mechanism: 'Blast (training ordnance)',
+  //   primary_injury: 'Multiple superficial shrapnel wounds — chest, arms',
+  //   vital_signs: [
+  //     { hr: 95, bp: '115/75', spo2: 97, recorded_at: '2026-02-06T16:30:00Z' }
+  //   ],
+  //   prehospital_treatment: 'Wounds cleaned, dressed. IV access established.',
 
-    evac_stage: 'in_transit',
-    destination_facility_ref: 'FRA-MED-R2',
-    nine_line_data: {
-      line1_location: '48.606,2.368',
-      line2_callsign: 'GETANKPL MEDIC',
-      line2_frequency: 'FM 45.100',
-      line3_precedence: 'C',
-      line3_count: 1,
-      line4_special_eqpt: 'A',
-      line5_litter: 0,
-      line5_ambulatory: 1,
-      line6_security: 'N',
-      line7_marking: 'A',
-      line7_marking_detail: 'orange VS-17 panel',
-      line8_nationality: 'German Military',
-      line9_nbc: null,
-      remarks: 'Stable, en route to Role-2 by ground ambulance.'
-    }
-  },
+  //   evac_stage: 'in_transit',
+  //   destination_facility_ref: 'FRA-MED-R2',
+  //   nine_line_data: {
+  //     line1_location: '48.606,2.368',
+  //     line2_callsign: 'GETANKPL MEDIC',
+  //     line2_frequency: 'FM 45.100',
+  //     line3_precedence: 'C',
+  //     line3_count: 1,
+  //     line4_special_eqpt: 'A',
+  //     line5_litter: 0,
+  //     line5_ambulatory: 1,
+  //     line6_security: 'N',
+  //     line7_marking: 'A',
+  //     line7_marking_detail: 'orange VS-17 panel',
+  //     line8_nationality: 'German Military',
+  //     line9_nbc: null,
+  //     remarks: 'Stable, en route to Role-2 by ground ambulance.'
+  //   }
+  // },
   {
     entity_ref: 'GER-CAS-2',
     triage_color: 'YELLOW',
@@ -305,53 +305,53 @@ const medicalDetails = [
       remarks: 'Tourniquet time noted. Requires surgical haemorrhage control urgently.'
     }
   },
-  {
-    entity_ref: 'ITA-CAS-1',
-    triage_color: 'GREEN',
-    casualty_status: 'WIA',
-    injury_mechanism: 'Heat exhaustion',
-    primary_injury: 'Severe dehydration, heat exhaustion',
-    vital_signs: [
-      { hr: 110, bp: '105/65', spo2: 98, recorded_at: '2026-02-06T17:00:00Z' }
-    ],
-    prehospital_treatment: 'Oral rehydration, cooling measures',
+  // {
+  //   entity_ref: 'ITA-CAS-1',
+  //   triage_color: 'GREEN',
+  //   casualty_status: 'WIA',
+  //   injury_mechanism: 'Heat exhaustion',
+  //   primary_injury: 'Severe dehydration, heat exhaustion',
+  //   vital_signs: [
+  //     { hr: 110, bp: '105/65', spo2: 98, recorded_at: '2026-02-06T17:00:00Z' }
+  //   ],
+  //   prehospital_treatment: 'Oral rehydration, cooling measures',
 
-    evac_stage: 'delivered',
-    destination_facility_ref: 'ESP-MED-R1',
-    nine_line_data: null
-  },
+  //   evac_stage: 'delivered',
+  //   destination_facility_ref: 'ESP-MED-R1',
+  //   nine_line_data: null
+  // },
 
   // Spanish WIA
-  {
-    entity_ref: 'ESP-CAS-1',
-    triage_color: 'GREEN',
-    casualty_status: 'WIA',
-    injury_mechanism: 'Laceration (equipment)',
-    primary_injury: 'Left cheek laceration, 4cm, superficial',
-    vital_signs: [
-      { hr: 80, bp: '120/78', spo2: 99, recorded_at: '2026-02-06T16:20:00Z' }
-    ],
-    prehospital_treatment: 'Wound cleaned, sutured at Role-1',
+  // {
+  //   entity_ref: 'ESP-CAS-1',
+  //   triage_color: 'GREEN',
+  //   casualty_status: 'WIA',
+  //   injury_mechanism: 'Laceration (equipment)',
+  //   primary_injury: 'Left cheek laceration, 4cm, superficial',
+  //   vital_signs: [
+  //     { hr: 80, bp: '120/78', spo2: 99, recorded_at: '2026-02-06T16:20:00Z' }
+  //   ],
+  //   prehospital_treatment: 'Wound cleaned, sutured at Role-1',
 
-    evac_stage: 'delivered',
-    destination_facility_ref: 'ESP-MED-R1',
-    nine_line_data: null
-  },
-  {
-    entity_ref: 'ESP-CAS-2',
-    triage_color: 'GREEN',
-    casualty_status: 'WIA',
-    injury_mechanism: 'Sprain (dismount)',
-    primary_injury: 'Right ankle sprain, Grade II',
-    vital_signs: [
-      { hr: 75, bp: '118/76', spo2: 99, recorded_at: '2026-02-06T16:35:00Z' }
-    ],
-    prehospital_treatment: 'RICE protocol, wrapped, crutches issued',
+  //   evac_stage: 'delivered',
+  //   destination_facility_ref: 'ESP-MED-R1',
+  //   nine_line_data: null
+  // },
+  // {
+  //   entity_ref: 'ESP-CAS-2',
+  //   triage_color: 'GREEN',
+  //   casualty_status: 'WIA',
+  //   injury_mechanism: 'Sprain (dismount)',
+  //   primary_injury: 'Right ankle sprain, Grade II',
+  //   vital_signs: [
+  //     { hr: 75, bp: '118/76', spo2: 99, recorded_at: '2026-02-06T16:35:00Z' }
+  //   ],
+  //   prehospital_treatment: 'RICE protocol, wrapped, crutches issued',
 
-    evac_stage: 'delivered',
-    destination_facility_ref: 'ESP-MED-R1',
-    nine_line_data: null
-  }
+  //   evac_stage: 'delivered',
+  //   destination_facility_ref: 'ESP-MED-R1',
+  //   nine_line_data: null
+  // }
 ];
 
 module.exports = { meta, entities, medicalDetails };
