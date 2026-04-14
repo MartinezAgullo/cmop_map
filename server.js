@@ -88,6 +88,15 @@ app.post('/api/planner/tasks/:taskId/simulate/resume',   (req, res) => _proxyToP
 app.post('/api/planner/tasks/:taskId/simulate/restart',  (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/restart'));
 
 // ---------------------------------------------------------------------------
+// Planner config (surface selected settings to the frontend)
+// ---------------------------------------------------------------------------
+app.get('/api/config', (_req, res) => {
+  res.json({
+    threatRadiusM: parseInt(process.env.PLANNER_THREAT_EXCLUSION_RADIUS_M, 10) || 500,
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Health check
 // ---------------------------------------------------------------------------
 app.get('/health', (req, res) => {

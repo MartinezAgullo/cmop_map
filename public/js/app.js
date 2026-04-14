@@ -21,11 +21,23 @@ let allEntities      = [];
 let filteredEntities = [];
 let selectedId       = null;
 let routeLayer       = null;   // L.LayerGroup for MEDEVAC route polylines
+let threatCirclesLayer = null; // L.LayerGroup for threat risk-area circles
+let threatRadiusM    = 500;    // populated from /api/config at startup
 let _currentTaskId  = null;   // last successfully loaded task ID (for refresh)
 let _simState       = 'idle'; // 'idle' | 'running' | 'paused'
 
 // One color per vehicle slot (up to 6 simultaneous routes)
-const ROUTE_COLORS = ['#e67e22', '#2ecc71', '#9b59b6', '#1abc9c', '#e74c3c', '#f1c40f'];
+// Dark-mode palette: vivid mid-tones that pop on a dark tile layer
+const ROUTE_COLORS_DARK  = ['#e67e22', '#2ecc71', '#9b59b6', '#1abc9c', '#e74c3c', '#f1c40f'];
+// Light-mode palette: darker shades of the same hues for contrast on a light tile layer
+const ROUTE_COLORS_LIGHT = ['#b94600', '#1a7a43', '#6c3483', '#0e6655', '#922b21', '#b7770d'];
+
+function getRouteColors() {
+  return document.body.classList.contains('dark') ? ROUTE_COLORS_DARK : ROUTE_COLORS_LIGHT;
+}
+
+// Keep ROUTE_COLORS as an alias used by the legend builder
+const ROUTE_COLORS = ROUTE_COLORS_DARK;
 
 // ---------------------------------------------------------------------------
 // Icon resolution — category → candidate base filenames
@@ -234,13 +246,19 @@ function initTheme() {
     btn.textContent = dark ? '☀️' : '🌙';
     localStorage.setItem('cmop-theme', dark ? 'dark' : 'light');
     setTileLayer(dark ? 'dark' : 'light');
+    if (_currentTaskId) loadMedevacRoutes(_currentTaskId);
   });
 }
 
 // ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    if (cfg.threatRadiusM) threatRadiusM = cfg.threatRadiusM;
+  } catch (_) { /* keep default */ }
+
   initMap();
   initScenarios();
   loadEntities();
@@ -272,6 +290,7 @@ function initMap() {
   setTileLayer(document.body.classList.contains('dark') ? 'dark' : 'light');
 
   routeLayer = L.layerGroup().addTo(map);
+  threatCirclesLayer = L.layerGroup().addTo(map);
 
   // Real-time coordinate display
   const coordsEl = document.getElementById('map-coords');
@@ -805,6 +824,25 @@ function renderList() {
 }
 
 // ---------------------------------------------------------------------------
+// Threat risk-area circles
+// ---------------------------------------------------------------------------
+function renderThreatCircles() {
+  threatCirclesLayer.clearLayers();
+  for (const e of filteredEntities) {
+    if ((e.alliance || '').toLowerCase() !== 'hostile') continue;
+    L.circle([e.latitud, e.longitud], {
+      radius:      threatRadiusM,
+      color:       '#FF0000',
+      weight:      1.5,
+      opacity:     0.8,
+      fillColor:   '#FF0000',
+      fillOpacity: 0.10,
+      interactive: false,
+    }).addTo(threatCirclesLayer);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Map markers
 // ---------------------------------------------------------------------------
 async function renderMarkers() {
@@ -822,6 +860,8 @@ async function renderMarkers() {
     markers.push(marker);
     markersById[e.id] = marker;
   }
+
+  renderThreatCircles();
 
   if (markers.length > 0) {
     map.fitBounds(new L.featureGroup(markers).getBounds().pad(0.1));
@@ -1224,7 +1264,7 @@ async function loadMedevacRoutes(taskId) {
     const bounds = [];
 
     routes.forEach((route, idx) => {
-      const color = ROUTE_COLORS[idx % ROUTE_COLORS.length];
+      const color = getRouteColors()[idx % ROUTE_COLORS_DARK.length];
 
       // Use real GeoJSON if available, otherwise build straight-line fallback
       const pickupGeo  = route.pickup_leg  || _straightLine(route.asset_position,    route.casualty_position);
@@ -1296,7 +1336,7 @@ function _routePopup(route, leg) {
 
 function _routesSummaryHTML(routes) {
   const items = routes.map((r, i) => {
-    const color = ROUTE_COLORS[i % ROUTE_COLORS.length];
+    const color = getRouteColors()[i % ROUTE_COLORS_DARK.length];
     return `<div class="route-summary-item">
       <span class="route-color-dot" style="background:${color}"></span>
       <span><strong>${r.asset_name || '?'}</strong> → ${r.casualty_name || '?'} → ${r.destination_name || '?'}</span>
