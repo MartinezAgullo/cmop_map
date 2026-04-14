@@ -900,6 +900,46 @@ body {
   padding: 5px 10px;
 }
 
+.btn-simulate {
+  flex: 1;
+  padding: 5px 10px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.82em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-simulate:hover {
+  background: #1e8449;
+}
+
+.btn-restart {
+  flex: 1;
+  padding: 5px 10px;
+  background: #d35400;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.82em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-restart:hover {
+  background: #b94600;
+}
+
+.btn-simulate.btn-simulate-stop {
+  background: #c0392b;
+}
+
+.btn-simulate.btn-simulate-stop:hover {
+  background: #a93226;
+}
+
 .btn-route-refresh {
   flex: 1;
   padding: 5px 10px;
@@ -1184,6 +1224,12 @@ body.dark .btn-route-load     { background: #d05800; }
 body.dark .btn-route-load:hover { background: #f97316; }
 body.dark .btn-route-refresh  { background: rgba(49,109,202,0.2); color: #4d94ff; border: 1px solid rgba(49,109,202,0.4); }
 body.dark .btn-route-refresh:hover { background: #316dca; color: #fff; }
+body.dark .btn-simulate                    { background: rgba(39,174,96,0.2); color: #3ddc84; border: 1px solid rgba(39,174,96,0.4); }
+body.dark .btn-simulate:hover              { background: #27ae60; color: #fff; }
+body.dark .btn-restart       { background: rgba(211,84,0,0.2); color: #ff8c42; border: 1px solid rgba(211,84,0,0.4); }
+body.dark .btn-restart:hover { background: #d35400; color: #fff; }
+body.dark .btn-simulate.btn-simulate-stop  { background: rgba(192,57,43,0.2); color: #ff6b6b; border: 1px solid rgba(192,57,43,0.4); }
+body.dark .btn-simulate.btn-simulate-stop:hover { background: #c0392b; color: #fff; }
 body.dark .routes-loading     { color: #545d68; }
 
 /* Dark map: invert OSM tiles + restore hue → dark bg, all roads fully visible */

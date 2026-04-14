@@ -5,9 +5,10 @@
 // All responses now transparently include `medical: { ... } | null`.
 // ---------------------------------------------------------------------------
 
-const express = require('express');
-const router  = express.Router();
-const Entity  = require('../models/entity');
+const express    = require('express');
+const router     = express.Router();
+const Entity     = require('../models/entity');
+const sseBroker  = require('../lib/sse-broker');
 
 // ---------------------------------------------------------------------------
 // Planner threat notification — fire-and-forget, never blocks the response
@@ -193,6 +194,12 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Entity not found' });
     }
     if (entity.alliance === 'hostile') _notifyThreat(entity);
+    sseBroker.broadcast({
+      type: 'entity_updated',
+      id:   entity.id,
+      lat:  entity.latitud,
+      lng:  entity.longitud,
+    });
     res.json({ success: true, data: entity });
   } catch (err) {
     console.error('PUT /entities/:id:', err);

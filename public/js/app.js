@@ -16,11 +16,13 @@
 let map;
 let tileLayer        = null;
 let markers          = [];
+let markersById      = {};     // { entityId: L.Marker } — for surgical position updates
 let allEntities      = [];
 let filteredEntities = [];
 let selectedId       = null;
 let routeLayer       = null;   // L.LayerGroup for MEDEVAC route polylines
 let _currentTaskId  = null;   // last successfully loaded task ID (for refresh)
+let _simState       = 'idle'; // 'idle' | 'running' | 'paused'
 
 // One color per vehicle slot (up to 6 simultaneous routes)
 const ROUTE_COLORS = ['#e67e22', '#2ecc71', '#9b59b6', '#1abc9c', '#e74c3c', '#f1c40f'];
@@ -244,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadEntities();
   setupEventListeners();
   initTheme();
+  initSSE();
 });
 
 const TILE_LAYERS = {
@@ -806,7 +809,8 @@ function renderList() {
 // ---------------------------------------------------------------------------
 async function renderMarkers() {
   markers.forEach(m => map.removeLayer(m));
-  markers = [];
+  markers    = [];
+  markersById = {};
 
   for (const e of filteredEntities) {
     const icon   = await makeIcon(e);
@@ -816,10 +820,145 @@ async function renderMarkers() {
 
     marker.on('click', () => selectEntity(e.id));
     markers.push(marker);
+    markersById[e.id] = marker;
   }
 
   if (markers.length > 0) {
     map.fitBounds(new L.featureGroup(markers).getBounds().pad(0.1));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Live position updates via SSE
+// ---------------------------------------------------------------------------
+
+function updateMarkerPosition(id, lat, lng) {
+  const marker = markersById[id];
+  if (marker) {
+    marker.setLatLng([lat, lng]);
+    const entity = allEntities.find(e => e.id === id);
+    if (entity) { entity.latitud = lat; entity.longitud = lng; }
+  }
+}
+
+function _setSimState(state) {
+  _simState = state;
+  const btn        = document.getElementById('simulateBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  if (!btn) return;
+
+  btn.classList.remove('btn-simulate-stop');
+
+  if (state === 'running') {
+    btn.textContent = '⏹ Detener';
+    btn.classList.add('btn-simulate-stop');
+    if (restartBtn) restartBtn.style.display = 'none';
+  } else if (state === 'paused') {
+    btn.textContent = '▶ Reanudar';
+    if (restartBtn) restartBtn.style.display = '';
+  } else {
+    btn.textContent = '▶ Simular';
+    if (restartBtn) restartBtn.style.display = 'none';
+  }
+}
+
+function initSSE() {
+  const evtSource = new EventSource('/api/events');
+  evtSource.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'entity_updated') {
+        updateMarkerPosition(msg.id, msg.lat, msg.lng);
+      } else if (msg.type === 'route_updated' && _currentTaskId) {
+        loadMedevacRoutes(_currentTaskId);
+      } else if (msg.type === 'simulation_stopped') {
+        // 'cancelled' = user clicked Detener → show Reanudar/Reiniciar
+        // 'completed' = finished naturally → back to idle
+        _setSimState(msg.reason === 'cancelled' ? 'paused' : 'idle');
+      }
+    } catch (_) {}
+  };
+  evtSource.onerror = () => {
+    console.warn('[SSE] Connection lost — browser will reconnect automatically');
+  };
+}
+
+async function toggleSimulation() {
+  if (!_currentTaskId) {
+    showMessage('Carga primero un plan de rutas', 'error');
+    return;
+  }
+
+  if (_simState === 'running') {
+    // Detener
+    try {
+      const res = await fetch(
+        `/api/planner/tasks/${encodeURIComponent(_currentTaskId)}/simulate`,
+        { method: 'DELETE' }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showMessage(data.detail || data.message || 'No se pudo detener la simulación', 'error');
+      }
+      // Button resets via simulation_stopped SSE event
+    } catch (err) {
+      showMessage(`Error de conexión: ${err.message}`, 'error');
+    }
+
+  } else if (_simState === 'paused') {
+    // Reanudar
+    try {
+      const res = await fetch(
+        `/api/planner/tasks/${encodeURIComponent(_currentTaskId)}/simulate/resume`,
+        { method: 'POST' }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        _setSimState('running');
+        showMessage('Simulación reanudada', 'success');
+      } else {
+        showMessage(data.detail || data.message || 'No se pudo reanudar', 'error');
+      }
+    } catch (err) {
+      showMessage(`Error de conexión: ${err.message}`, 'error');
+    }
+
+  } else {
+    // Iniciar (idle)
+    try {
+      const res = await fetch(
+        `/api/planner/tasks/${encodeURIComponent(_currentTaskId)}/simulate`,
+        { method: 'POST' }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        _setSimState('running');
+        showMessage('Simulación iniciada', 'success');
+      } else {
+        showMessage(data.detail || data.message || 'No se pudo iniciar la simulación', 'error');
+      }
+    } catch (err) {
+      showMessage(`Error de conexión: ${err.message}`, 'error');
+    }
+  }
+}
+
+async function restartSimulation() {
+  if (!_currentTaskId) return;
+  try {
+    const res = await fetch(
+      `/api/planner/tasks/${encodeURIComponent(_currentTaskId)}/simulate/restart`,
+      { method: 'POST' }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      _setSimState('running');
+      showMessage('Simulación reiniciada', 'success');
+    } else {
+      showMessage(data.detail || data.message || 'No se pudo reiniciar', 'error');
+    }
+  } catch (err) {
+    showMessage(`Error de conexión: ${err.message}`, 'error');
   }
 }
 
@@ -1054,6 +1193,7 @@ function clearRoutes() {
   document.getElementById('routesStatus').innerHTML = '';
   document.getElementById('routesActions').style.display = 'none';
   _currentTaskId = null;
+  _setSimState('idle');
 }
 
 async function loadMedevacRoutes(taskId) {

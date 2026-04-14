@@ -10,7 +10,8 @@ const medicalRoutes   = require('./routes/medical');
 const scenariosRoutes = require('./routes/scenarios');
 const schemaRoutes    = require('./routes/schema');
 
-const http = require('http');
+const http      = require('http');
+const sseBroker = require('./lib/sse-broker');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,18 @@ app.use('/api/entities',   entitiesRoutes);
 app.use('/api/medical',    medicalRoutes);
 app.use('/api/scenarios',  scenariosRoutes);
 app.use('/api/schema',     schemaRoutes);
+
+// ---------------------------------------------------------------------------
+// SSE — real-time push to connected browsers
+// ---------------------------------------------------------------------------
+app.get('/api/events', sseBroker.handler);
+
+// Allows the Python planner (and other internal services) to push non-entity
+// events (e.g. evac_stage_updated) directly to all connected browsers.
+app.post('/api/events/notify', (req, res) => {
+  sseBroker.broadcast(req.body);
+  res.json({ ok: true });
+});
 
 // ---------------------------------------------------------------------------
 // Planner proxy — forwards to medevac_planner task server (avoids CORS)
@@ -51,6 +64,28 @@ app.get('/api/planner/tasks/:taskId/routes', (req, res) => {
     res.status(502).json({ success: false, message: `Cannot reach planner: ${err.message}` });
   });
 });
+
+// Proxy POST /simulate and DELETE /simulate to the medevac planner task server
+function _proxyToPlanner(method, req, res, suffix = '/simulate') {
+  const target   = `${PLANNER_BASE}/tasks/${req.params.taskId}${suffix}`;
+  const upstream = http.request(target, { method }, (upRes) => {
+    let body = '';
+    upRes.on('data', chunk => { body += chunk; });
+    upRes.on('end', () => {
+      try { res.status(upRes.statusCode).json(JSON.parse(body)); }
+      catch (_) { res.status(502).json({ success: false, message: 'Invalid JSON from planner' }); }
+    });
+  });
+  upstream.on('error', (err) => {
+    res.status(502).json({ success: false, message: `Cannot reach planner: ${err.message}` });
+  });
+  upstream.end();
+}
+
+app.post('/api/planner/tasks/:taskId/simulate',          (req, res) => _proxyToPlanner('POST',   req, res));
+app.delete('/api/planner/tasks/:taskId/simulate',        (req, res) => _proxyToPlanner('DELETE', req, res));
+app.post('/api/planner/tasks/:taskId/simulate/resume',   (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/resume'));
+app.post('/api/planner/tasks/:taskId/simulate/restart',  (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/restart'));
 
 // ---------------------------------------------------------------------------
 // Health check
@@ -79,8 +114,13 @@ app.use((err, _req, res, _next) => {
 // DB migrations (idempotent — safe to run on every startup)
 // ---------------------------------------------------------------------------
 async function runMigrations() {
-  // ADD VALUE is idempotent via IF NOT EXISTS — no-op if already present
-  await pool.query("ALTER TYPE triage_color_enum ADD VALUE IF NOT EXISTS 'BLUE' BEFORE 'BLACK';");
+  // Only run migrations if the enum type already exists (i.e. init-db.js has been run)
+  const { rows } = await pool.query(
+    "SELECT 1 FROM pg_type WHERE typname = 'triage_color_enum'"
+  );
+  if (rows.length > 0) {
+    await pool.query("ALTER TYPE triage_color_enum ADD VALUE IF NOT EXISTS 'BLUE' BEFORE 'BLACK';");
+  }
   console.log('✅ DB migrations applied');
 }
 
