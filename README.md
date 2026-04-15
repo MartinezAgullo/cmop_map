@@ -17,7 +17,7 @@ cmop_map/
 ├── models/
 │   └── entity.js                # All queries: puntos_interes + medical_details (LEFT JOIN)
 ├── routes/
-│   ├── entities.js              # CRUD for entities (/api/entities) — broadcasts SSE on PUT
+│   ├── entities.js              # CRUD for entities (/api/entities) — broadcasts SSE on POST, PUT, DELETE
 │   ├── medical.js               # Medical-specific ops (/api/medical)
 │   ├── scenarios.js             # List & load scenarios (/api/scenarios)
 │   └── schema.js                # Schema introspection (/api/schema) — for MCP servers
@@ -44,11 +44,13 @@ cmop_map/
 
 ### Real-time layer
 
-Entity position changes are pushed to connected browsers without page refresh via **Server-Sent Events (SSE)**:
+All entity mutations are pushed to connected browsers without page refresh via **Server-Sent Events (SSE)**:
 
 - `lib/sse-broker.js` — singleton that keeps a `Set` of open SSE connections and exposes `broadcast(payload)`.
-- Every `PUT /api/entities/:id` broadcasts an `entity_updated` event `{ type, id, lat, lng }`.
-- The browser's `EventSource` on `/api/events` calls `marker.setLatLng()` directly — no full re-render.
+- `POST /api/entities` (single + batch) broadcasts `entity_created` — new entities appear on the map immediately.
+- `PUT /api/entities/:id` broadcasts `entity_updated { id, lat, lng }` — marker position updates in place.
+- `DELETE /api/entities/:id` broadcasts `entity_deleted { id }` — marker is removed from the map immediately.
+- The browser `EventSource` on `/api/events` handles all three: `addEntityToMap`, `setLatLng`, `removeLayer`.
 - Internal services (e.g. `medevac_planner`) can push arbitrary events via `POST /api/events/notify`.
 
 ### Key design decisions
@@ -409,7 +411,9 @@ Event types:
 | `type` | When | Fields |
 |--------|------|--------|
 | `connected` | On stream open | — |
-| `entity_updated` | After any `PUT /api/entities/:id` | `id`, `lat`, `lng` |
+| `entity_created` | After `POST /api/entities` (single or batch) | `data` (full entity object) |
+| `entity_updated` | After `PUT /api/entities/:id` | `id`, `lat`, `lng` |
+| `entity_deleted` | After `DELETE /api/entities/:id` | `id` |
 | `evac_stage_updated` | At pickup / delivery milestones | `id`, `evac_stage` |
 | `route_updated` | After threat-triggered reroute | `task_id` |
 | `simulation_stopped` | On stop or completion | `task_id`, `reason` (`cancelled`\|`completed`) |

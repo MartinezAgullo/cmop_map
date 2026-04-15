@@ -909,6 +909,10 @@ function initSSE() {
       const msg = JSON.parse(event.data);
       if (msg.type === 'entity_updated') {
         updateMarkerPosition(msg.id, msg.lat, msg.lng);
+      } else if (msg.type === 'entity_created') {
+        _onEntityCreated(msg.data);
+      } else if (msg.type === 'entity_deleted') {
+        _onEntityDeleted(msg.id);
       } else if (msg.type === 'route_updated' && _currentTaskId) {
         loadMedevacRoutes(_currentTaskId);
       } else if (msg.type === 'simulation_stopped') {
@@ -921,6 +925,27 @@ function initSSE() {
   evtSource.onerror = () => {
     console.warn('[SSE] Connection lost — browser will reconnect automatically');
   };
+}
+
+async function _onEntityCreated(entity) {
+  if (!entity || allEntities.find(e => e.id === entity.id)) return; // already present
+  allEntities.push(entity);
+  updateStats();
+  await filterEntities(); // re-applies filters, re-renders list + markers
+}
+
+function _onEntityDeleted(id) {
+  const marker = markersById[id];
+  if (marker) {
+    map.removeLayer(marker);
+    delete markersById[id];
+    markers = markers.filter(m => m !== marker);
+  }
+  allEntities      = allEntities.filter(e => e.id !== id);
+  filteredEntities = filteredEntities.filter(e => e.id !== id);
+  updateStats();
+  renderList();
+  renderThreatCircles();
 }
 
 async function toggleSimulation() {

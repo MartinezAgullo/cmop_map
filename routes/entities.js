@@ -165,6 +165,7 @@ router.post('/', async (req, res) => {
     const entity = await Entity.create(req.body);
     if (entity.alliance === 'hostile') _notifyThreat(entity);
     if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
+    sseBroker.broadcast({ type: 'entity_created', data: entity });
     res.status(201).json({ success: true, data: entity });
   } catch (err) {
     console.error('POST /entities:', err);
@@ -180,6 +181,7 @@ router.post('/batch', async (req, res) => {
     }
 
     const data = await Entity.createBatch(entities);
+    data.forEach(entity => sseBroker.broadcast({ type: 'entity_created', data: entity }));
     res.status(201).json({ success: true, count: data.length, data });
   } catch (err) {
     console.error('POST /entities/batch:', err);
@@ -213,6 +215,7 @@ router.delete('/:id', async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ success: false, message: 'Entity not found' });
     }
+    sseBroker.broadcast({ type: 'entity_deleted', id: Number(req.params.id) });
     res.json({ success: true, message: 'Entity deleted' });
   } catch (err) {
     console.error('DELETE /entities/:id:', err);
