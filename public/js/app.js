@@ -455,6 +455,12 @@ function setupEventListeners() {
     updateTipoElementoOptions(e.target.value);
   });
 
+  // Re-evaluate CASEVAC eligibility visibility when alliance changes
+  document.getElementById('alliance').addEventListener('change', () => {
+    const categoria = document.getElementById('categoria').value;
+    updateTipoElementoOptions(categoria);
+  });
+
   // Casualty status — toggle triage fields when KIA is selected
   document.getElementById('casualtyStatus').addEventListener('change', _updateCasualtyStatusUI);
 }
@@ -573,7 +579,8 @@ function updateTipoElementoOptions(categoria) {
 
   const casevacGroup = document.getElementById('casevacGroup');
   const casevacCheck = document.getElementById('casevacEligible');
-  if (CASEVAC_ELIGIBLE_CATEGORIES.includes(categoria)) {
+  const alliance = document.getElementById('alliance').value;
+  if (CASEVAC_ELIGIBLE_CATEGORIES.includes(categoria) && alliance === 'friendly') {
     casevacGroup.style.display = 'block';
   } else {
     casevacGroup.style.display = 'none';
