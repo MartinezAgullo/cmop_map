@@ -88,6 +88,34 @@ app.post('/api/planner/tasks/:taskId/simulate/resume',   (req, res) => _proxyToP
 app.post('/api/planner/tasks/:taskId/simulate/restart',  (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/restart'));
 
 // ---------------------------------------------------------------------------
+// Vision Agent proxy — forwards /api/vision/* to vision_agent service
+// ---------------------------------------------------------------------------
+const VISION_BASE = (process.env.VISION_AGENT_URL || 'http://localhost:8500').replace(/\/$/, '');
+
+function _proxyToVision(req, res) {
+  // Strip the /api/vision prefix to get the vision_agent path
+  const visionPath = req.url.replace(/^\/api\/vision/, '') || '/';
+  const target = `${VISION_BASE}${visionPath}`;
+
+  const options = {
+    method: req.method,
+    headers: { ...req.headers, host: new URL(VISION_BASE).host },
+  };
+
+  const upstream = http.request(target, options, (upRes) => {
+    res.writeHead(upRes.statusCode, upRes.headers);
+    upRes.pipe(res, { end: true });
+  });
+  upstream.on('error', (err) => {
+    res.status(502).json({ success: false, message: `Cannot reach vision agent: ${err.message}` });
+  });
+
+  req.pipe(upstream, { end: true });
+}
+
+app.use('/api/vision', (req, res) => _proxyToVision(req, res));
+
+// ---------------------------------------------------------------------------
 // Planner config (surface selected settings to the frontend)
 // ---------------------------------------------------------------------------
 app.get('/api/config', (_req, res) => {
