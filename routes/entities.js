@@ -11,9 +11,10 @@ const Entity     = require('../models/entity');
 const sseBroker  = require('../lib/sse-broker');
 
 // ---------------------------------------------------------------------------
-// Planner threat notification — fire-and-forget, never blocks the response
+// Planner / PFC-agent notifications — fire-and-forget, never block the response
 // ---------------------------------------------------------------------------
-const PLANNER_BASE = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
+const PLANNER_BASE   = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
+const PFC_AGENT_BASE = (process.env.PFC_AGENT_BASE      || 'http://localhost:8600').replace(/\/$/, '');
 
 function _notifyThreat(entity) {
   const lat  = entity.lat  ?? entity.latitud;
@@ -35,19 +36,25 @@ function _notifyNewCasualty(entity) {
   const name = entity.name ?? entity.nombre ?? `Entity-${entity.id}`;
   if (lat == null || lng == null) return;
   const medical = entity.medical ?? {};
+  const body = JSON.stringify({
+    id:            entity.id,
+    name,
+    lat:           Number(lat),
+    lng:           Number(lng),
+    triage_color:  medical.triage_color  ?? null,
+    evac_priority: medical.evac_priority ?? null,
+  });
   fetch(`${PLANNER_BASE}/casualties/notify`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({
-      id:           entity.id,
-      name,
-      lat:          Number(lat),
-      lng:          Number(lng),
-      triage_color: medical.triage_color ?? null,
-      evac_priority: medical.evac_priority ?? null,
-    }),
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
   }).catch(err => {
     console.warn(`[entities] Casualty notify skipped (planner unreachable): ${err.message}`);
+  });
+  // Also notify pfc_agent so it can spawn a PFC session as a safety-net
+  // (in case the planner is slow or offline when the casualty is created).
+  fetch(`${PFC_AGENT_BASE}/casualties/notify`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
+  }).catch(err => {
+    console.warn(`[entities] PFC notify skipped (pfc_agent unreachable): ${err.message}`);
   });
 }
 
@@ -181,7 +188,11 @@ router.post('/batch', async (req, res) => {
     }
 
     const data = await Entity.createBatch(entities);
-    data.forEach(entity => sseBroker.broadcast({ type: 'entity_created', data: entity }));
+    data.forEach(entity => {
+      sseBroker.broadcast({ type: 'entity_created', data: entity });
+      if (entity.alliance === 'hostile') _notifyThreat(entity);
+      if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
+    });
     res.status(201).json({ success: true, count: data.length, data });
   } catch (err) {
     console.error('POST /entities/batch:', err);
@@ -196,6 +207,7 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Entity not found' });
     }
     if (entity.alliance === 'hostile') _notifyThreat(entity);
+    if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
     sseBroker.broadcast({
       type: 'entity_updated',
       id:   entity.id,
