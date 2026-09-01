@@ -13,6 +13,31 @@ const { execFileSync } = require('child_process');
 
 const SCENARIOS_DIR = path.join(__dirname, '..', 'scripts', 'scenarios');
 
+const PLANNER_BASE = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
+
+// ---------------------------------------------------------------------------
+
+/**
+ * Tell the planner a scenario was loaded.
+ *
+ * load-scenario.js TRUNCATEs puntos_interes and medical_details, so every
+ * entity id the planner holds — in its task store, its route files and its
+ * interactive briefing — is stale the moment this returns. Without this call
+ * the only fix is killing the planner and relaunching it by hand.
+ *
+ * Fire-and-forget, like _notifyThreat in routes/entities.js: a planner that is
+ * down must never make a scenario load fail.
+ */
+function _notifyScenarioLoaded(name) {
+  fetch(`${PLANNER_BASE}/scenario/loaded`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ scenario: name }),
+  }).catch(err => {
+    console.warn(`[scenarios] Planner notify skipped (planner unreachable): ${err.message}`);
+  });
+}
+
 // ---------------------------------------------------------------------------
 
 /** List all scenario modules and return their meta blocks */
@@ -49,6 +74,8 @@ router.post('/load/:name', (req, res) => {
       encoding: 'utf-8',
       timeout: 15000                // 15 s safety cap
     });
+
+    _notifyScenarioLoaded(name);
 
     res.json({ success: true, scenario: name, output: output.trim() });
   } catch (err) {

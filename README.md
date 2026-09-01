@@ -378,6 +378,14 @@ Load scenario (truncates tables).
 
 **Example:** `POST /api/scenarios/load/paris_sud_medevac`
 
+On success this also fires `POST /scenario/loaded` at `medevac_planner`
+(`MEDEVAC_PLANNER_URL`, default `:8400`). The truncate invalidates every entity
+id the planner holds, so that call is what makes it drop its plans, routes and
+running simulations and re-brief against the new map. Fire-and-forget: a planner
+that is down logs a warning and the load still succeeds. Note that the CLI path
+(`node scripts/load-scenario.js <name>`) does not notify anyone, which is what
+`launch.sh` wants — it loads the scenario before the planner is even up.
+
 **Response:**
 ```json
 {
