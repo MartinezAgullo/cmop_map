@@ -4,6 +4,22 @@ CMOP (Common Medical Operational Picture) map service. Geospatial layer for mili
 
 **Stack:** Node.js + Express · PostgreSQL/PostGIS (Docker) · Leaflet · vanilla JS
 
+![The CMOP web UI: triage ladder, MEDEVAC tab with computed routes and ETAs, and APP-6 symbology over a dark basemap](public/docs/screenshots/cmop-map-webui-halfscreen.png)
+
+---
+
+## Web UI
+
+The panel is a map legend, not a dashboard: colour is treated as a data type, so the chrome stays graphite and the only saturated pixels on screen belong to triage, alliance and route colours.
+
+- **Triage ladder** — a proportional bar over a six-column count scale (T1 / T2 / T3 / T4 / KIA / unknown). It is the census, the alarm and the triage filter in one object: click a band and both the roster and the map narrow to it. The same colours reappear as the left edge of every roster row and in the map legend, so one colour always means one thing.
+- **Three tabs** — Roster, Filters and MEDEVAC. The roster gets every pixel below the ladder and is sorted by clinical urgency: casualties first, down the triage scale, then units by name.
+- **Elapsed clocks** — casualty rows and popups carry a running time since the medical record was written. There is no injury timestamp in the schema yet, so a scenario load starts every clock together; live casualties pushed over SSE are the ones that diverge.
+- **Live feed** — the dot next to the scenario selector reports the SSE stream and the seconds since the last event.
+- **Language and theme** — `EN`/`ES` and `LIGHT`/`DARK`, both remembered in `localStorage`. Theme follows the operating system on a first visit. UI copy lives in `public/js/i18n.js`; nothing is hardcoded in `app.js`.
+
+Typography follows one rule: anything read character by character (callsigns, counts, coordinates, ETAs, task IDs, clocks) is set in IBM Plex Mono, labels in Barlow Semi Condensed, prose in IBM Plex Sans.
+
 ---
 
 ## Project structure
@@ -155,18 +171,18 @@ Stop: `Ctrl+C` then `docker compose down`
 
 ## Movement simulation
 
-Once a MEDEVAC plan has been computed by `medevac_planner` and its routes loaded in the MEDEVAC Routes panel, the map can animate vehicles and casualties along their GeoJSON routes in real time.
+Once a MEDEVAC plan has been computed by `medevac_planner` and its routes loaded in the MEDEVAC tab, the map can animate vehicles and casualties along their GeoJSON routes in real time.
 
 ### Controls
 
 | Button | State | Action |
 |--------|-------|--------|
-| **▶ Simular** | idle | Start simulation from the beginning |
-| **⏹ Detener** | running | Pause simulation; vehicles freeze at current position |
-| **▶ Reanudar** | paused | Resume from current position (works on updated routes after threat reroute) |
-| **↩ Reiniciar** | paused | Stop, restore original positions, restart from scratch |
+| **Run** | idle | Start simulation from the beginning |
+| **Stop** | running | Pause simulation; vehicles freeze at current position |
+| **Resume** | paused | Resume from current position (works on updated routes after threat reroute) |
+| **Restart** | paused | Stop, restore original positions, restart from scratch |
 
-The "Reiniciar" button is only visible while paused.
+The "Restart" button is only visible while paused. Labels follow the language toggle, so in Spanish these read Simular, Detener, Reanudar and Reiniciar.
 
 ### How it works
 
@@ -176,16 +192,16 @@ The simulation engine runs in `medevac_planner/task_server.py` as an asyncio bac
 2. **Speed** — ETAs from the planner encode the vehicle type: ground vehicles (`~40 km/h`), helicopters (`~150 km/h`). The `PLANNER_SIMULATION_SPEED` multiplier compresses wall-clock time (e.g. `30` = 30× speed for demos).
 3. **1 Hz updates** — the planner writes each vehicle's new `(latitud, longitud)` to the CMOP DB via `PUT /api/entities/:id` every second. The SSE broker pushes `entity_updated` to all connected browsers, which call `marker.setLatLng()`.
 4. **Milestones** — on arrival at the casualty (`pickup_done`), `evac_stage` is set to `in_transit` and the casualty begins co-moving with the vehicle. On arrival at the facility, `evac_stage` is set to `delivered`.
-5. **Threat reroute + resume** — when a threat is added and routes are recomputed, the planner fetches the vehicle's live DB position and uses it as the new route start. Pressing "Reanudar" after the reroute therefore places the vehicle at position 0 of the new route, which is exactly where it was when paused.
+5. **Threat reroute + resume** — when a threat is added and routes are recomputed, the planner fetches the vehicle's live DB position and uses it as the new route start. Pressing "Resume" after the reroute therefore places the vehicle at position 0 of the new route, which is exactly where it was when paused.
 
 ### Demo flow
 
 ```
-1. Load scenario → trigger medevac_planner → load routes in MEDEVAC Routes panel
-2. Click ▶ Simular — vehicles animate toward casualties, then toward facilities
-3. Click ⏹ Detener — vehicles freeze
+1. Load scenario → trigger medevac_planner → paste the task ID in the MEDEVAC tab and Load
+2. Click Run — vehicles animate toward casualties, then toward facilities
+3. Click Stop — vehicles freeze
 4. Add hostile entity in cmop_map — planner auto-reroutes around the threat
-5. Click ▶ Reanudar — vehicles continue from their paused position along the NEW route
+5. Click Resume — vehicles continue from their paused position along the NEW route
 ```
 
 ---
@@ -499,10 +515,10 @@ Get schema metadata for MCP servers.
 ### `categoria_militar` enum
 
 ```
-Military:     missile, fighter, bomber, aircraft, helicopter, uav,
-              armoured, artillery, ship, destroyer, submarine,
-              ground_vehicle, infantry, reconnaissance, engineer,
-              mortar, person, base, building, infrastructure
+Military:     missile, fighter, bomber, aircraft, helicopter, uav, ugv,
+              transportation, armoured, artillery, ship, destroyer,
+              submarine, ground_vehicle, infantry, reconnaissance,
+              engineer, mortar, person, base, building, infrastructure
 Medical:      medical_facility, medevac_unit
 Casualty:     casualty
 Fallback:     default
