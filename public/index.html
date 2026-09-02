@@ -275,40 +275,40 @@
             <option value="" data-i18n="form.categoryPick">Select a category</option>
 
             <optgroup label="Military" data-i18n-label="form.grpMilitary">
-              <option value="missile">missile</option>
-              <option value="fighter">fighter</option>
-              <option value="bomber">bomber</option>
-              <option value="aircraft">aircraft</option>
-              <option value="helicopter">helicopter</option>
-              <option value="uav">uav</option>
-              <option value="ugv">ugv</option>
-              <option value="transportation">transportation</option>
-              <option value="armoured">armoured</option>
-              <option value="artillery">artillery</option>
-              <option value="ship">ship</option>
-              <option value="destroyer">destroyer</option>
-              <option value="submarine">submarine</option>
-              <option value="ground_vehicle">ground_vehicle</option>
-              <option value="infantry">infantry</option>
-              <option value="reconnaissance">reconnaissance</option>
-              <option value="engineer">engineer</option>
-              <option value="mortar">mortar</option>
-              <option value="person">person</option>
-              <option value="base">base</option>
-              <option value="building">building</option>
-              <option value="infrastructure">infrastructure</option>
+              <option value="missile"></option>
+              <option value="fighter"></option>
+              <option value="bomber"></option>
+              <option value="aircraft"></option>
+              <option value="helicopter"></option>
+              <option value="uav"></option>
+              <option value="ugv"></option>
+              <option value="transportation"></option>
+              <option value="armoured"></option>
+              <option value="artillery"></option>
+              <option value="ship"></option>
+              <option value="destroyer"></option>
+              <option value="submarine"></option>
+              <option value="ground_vehicle"></option>
+              <option value="infantry"></option>
+              <option value="reconnaissance"></option>
+              <option value="engineer"></option>
+              <option value="mortar"></option>
+              <option value="person"></option>
+              <option value="base"></option>
+              <option value="building"></option>
+              <option value="infrastructure"></option>
             </optgroup>
 
             <optgroup label="Medical &amp; MEDEVAC" data-i18n-label="form.grpMedical">
-              <option value="medical_facility">medical_facility</option>
-              <option value="medevac_unit">medevac_unit</option>
+              <option value="medical_facility"></option>
+              <option value="medevac_unit"></option>
             </optgroup>
 
             <optgroup label="Casualties" data-i18n-label="form.grpCasualties">
-              <option value="casualty">casualty</option>
+              <option value="casualty"></option>
             </optgroup>
 
-            <option value="default">default</option>
+            <option value="default"></option>
           </select>
         </div>
 
@@ -348,14 +348,15 @@
 
           <div id="triageGroup">
             <div class="form-group">
-              <label for="triageColor" data-i18n="form.triage">Triage *</label>
-              <select id="triageColor" name="triageColor">
-                <option value="RED" data-i18n="triage.t1">T1 Immediate</option>
-                <option value="YELLOW" data-i18n="triage.t2">T2 Urgent</option>
-                <option value="GREEN" data-i18n="triage.t3">T3 Minimal</option>
-                <option value="BLUE" data-i18n="triage.t4">T4 Expectant</option>
-                <option value="UNKNOWN" selected data-i18n="triage.unknown">Unknown</option>
-              </select>
+              <label data-i18n="form.triage">Triage *</label>
+              <div class="checkbox-grid" id="triagePicker">
+                <label class="filter-cb triage-option" style="--c:var(--t-red)"><input type="radio" name="triagePick" value="RED" /><span data-i18n="triage.t1">T1 Immediate</span></label>
+                <label class="filter-cb triage-option" style="--c:var(--t-yellow)"><input type="radio" name="triagePick" value="YELLOW" /><span data-i18n="triage.t2">T2 Urgent</span></label>
+                <label class="filter-cb triage-option" style="--c:var(--t-green)"><input type="radio" name="triagePick" value="GREEN" /><span data-i18n="triage.t3">T3 Minimal</span></label>
+                <label class="filter-cb triage-option" style="--c:var(--t-blue)"><input type="radio" name="triagePick" value="BLUE" /><span data-i18n="triage.t4">T4 Expectant</span></label>
+                <label class="filter-cb triage-option" style="--c:var(--t-unknown)"><input type="radio" name="triagePick" value="UNKNOWN" checked /><span data-i18n="triage.unknown">Unknown</span></label>
+              </div>
+              <input type="hidden" id="triageColor" name="triageColor" value="UNKNOWN" />
             </div>
 
             <div class="form-group">

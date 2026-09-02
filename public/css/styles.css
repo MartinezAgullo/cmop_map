@@ -199,6 +199,7 @@ body {
   font-weight: 500;
   padding: 2px 0;
   cursor: pointer;
+  text-overflow: ellipsis;
 }
 
 .scenario-row select:focus { outline: none; }
@@ -612,7 +613,7 @@ body {
 
 .filter-cb:hover { color: var(--ink); border-color: var(--dim); }
 
-.filter-cb input[type="checkbox"] {
+.filter-cb input {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -664,12 +665,24 @@ body {
 
 .subfilter-options { display: flex; flex-wrap: wrap; gap: 4px; }
 
-/* Triage chips carry their own colour when selected */
+/* Every triage chip shows its colour at rest, not only once picked — the
+   colour is the doctrine, the words are the gloss. */
+.triage-option::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--c);
+}
+
 .triage-option:has(input:checked) {
   background: var(--c);
   border-color: var(--c);
   color: #fff;
 }
+
+/* on a filled chip the swatch flips to stay visible */
+.triage-option:has(input:checked)::before { background: rgba(255, 255, 255, .9); }
 
 .search-input {
   width: 100%;
@@ -1227,7 +1240,7 @@ body {
 
 .form-group { margin-bottom: 12px; }
 
-.form-group label {
+.form-group > label {
   display: block;
   margin-bottom: 4px;
   font-family: var(--font-mono);

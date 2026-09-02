@@ -103,6 +103,20 @@ const TRIAGE_META = {
   UNKNOWN: { tag: '?',   key: 'triage.unknown', fill: 'var(--t-unknown)', ink: 'var(--t-unknown-ink)' }
 };
 
+// Category enum → i18n key, for the create form's category dropdown.
+const CATEGORY_I18N_KEY = {
+  missile: 'cat.missile', fighter: 'cat.fighter', bomber: 'cat.bomber',
+  aircraft: 'cat.aircraft', helicopter: 'cat.helicopter', uav: 'cat.uav',
+  ugv: 'cat.ugv', transportation: 'cat.transport', armoured: 'cat.armoured',
+  artillery: 'cat.artillery', ship: 'cat.ship', destroyer: 'cat.destroyer',
+  submarine: 'cat.submarine', ground_vehicle: 'cat.ground_vehicle',
+  infantry: 'cat.infantry', reconnaissance: 'cat.recon', engineer: 'cat.engineer',
+  mortar: 'cat.mortar', person: 'cat.person', base: 'cat.base',
+  building: 'cat.building', infrastructure: 'cat.infrastructure',
+  medical_facility: 'cat.medical_facility', medevac_unit: 'cat.medevac_unit',
+  casualty: 'cat.casualty', default: 'cat.default'
+};
+
 // Medical facility "Other" tipo_elemento values
 const MED_FACILITY_OTHER = [
   'medical_role_2basic',
@@ -306,12 +320,30 @@ function _rerenderDynamicStrings() {
   const scnSelect = document.getElementById('scenarioSelect');
   if (scnSelect && scnSelect.options.length) scnSelect.options[0].textContent = t('scenario.pick');
 
+  renderCategoryOptions();
   updateStats();
   renderList();
   _setSimState(_simState);
   _updateLiveLabel();
   markers.forEach(m => m._cmopEntity && m.setPopupContent(buildPopup(m._cmopEntity)));
   if (_lastRoutes) document.getElementById('routesStatus').innerHTML = _routesSummaryHTML(_lastRoutes);
+}
+
+/**
+ * Category dropdown labels. The enum is the value the API stores, so it always
+ * stays visible; the readable name is appended in the active language whenever
+ * it says something the enum doesn't ("missile — Misil").
+ */
+function renderCategoryOptions() {
+  document.querySelectorAll('#categoria option[value]').forEach(opt => {
+    const value = opt.value;
+    if (!value) return;
+    const key = CATEGORY_I18N_KEY[value];
+    const label = key ? t(key) : value;
+    opt.textContent = label.toLowerCase() === value.toLowerCase()
+      ? value
+      : `${value} — ${label}`;
+  });
 }
 
 /** Tabs — the roster is no longer buried under the filter stack. */
@@ -338,6 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initTheme();
   initLang();
+  renderCategoryOptions();
   initTabs();
   initMap();
   initScenarios();
@@ -531,6 +564,18 @@ function setupEventListeners() {
 
   // Casualty status — toggle triage fields when KIA is selected
   document.getElementById('casualtyStatus').addEventListener('change', _updateCasualtyStatusUI);
+
+  // Triage colour picker → the hidden field crearNuevaEntidad() reads
+  document.getElementById('triagePicker').addEventListener('change', (e) => {
+    if (e.target.name === 'triagePick') document.getElementById('triageColor').value = e.target.value;
+  });
+
+  // Escape closes the create-entity dialog
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('formModal').classList.contains('show')) {
+      cerrarFormularioNuevoPunto();
+    }
+  });
 
   // Triage ladder — bands and counts both select the same band
   ['ladderBar', 'ladderScale'].forEach(id => {
@@ -1365,6 +1410,7 @@ function mostrarFormularioNuevoPunto() {
 function cerrarFormularioNuevoPunto() {
   document.getElementById('formModal').classList.remove('show');
   document.getElementById('nuevoPuntoForm').reset();
+  document.getElementById('triageColor').value = 'UNKNOWN';
   // Re-run the category update to restore correct visibility state after reset
   updateTipoElementoOptions('');
 }
