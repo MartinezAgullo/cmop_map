@@ -34,8 +34,9 @@ cmop_map/
 │   ├── icons/                   # NATO APP-6 SVGs: friendly/ hostile/ neutral/ unknown/
 │   │   └── README.md            # Icon resolution algorithm docs
 │   ├── index.html
-│   └── js/app.js                # Frontend: scenario selector, map, icon resolution, medical popups,
-│                                #           SSE client, simulation controls
+│   ├── js/i18n.js               # UI strings (en/es) + t() / applyI18n() — no copy lives in app.js
+│   └── js/app.js                # Frontend: scenario selector, map, icon resolution, triage ladder,
+│                                #           medical popups, SSE client, simulation controls
 ├── docker-compose.yml
 ├── server.js                    # Express entry point. Mounts routes, SSE, planner proxy.
 ├── package.json

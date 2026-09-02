@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CMOP — Common Medical Operational Picture</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="/css/styles.css"/>
@@ -11,238 +15,202 @@
 <body>
   <div class="app-container">
     <aside class="sidebar">
+
+      <!-- ============================================================
+           Header — wordmark, language, theme
+           ============================================================ -->
       <div class="sidebar-header">
-        <div class="sidebar-header-text">
+        <div class="wordmark">
           <h1>CMOP</h1>
-          <p>Common Medical Operational Picture</p>
         </div>
-        <button class="btn-theme" id="themeToggle" title="Toggle dark mode">🌙</button>
+        <div class="sidebar-toggles">
+          <div class="seg" id="langToggle" role="group" aria-label="Language">
+            <button type="button" data-lang="en" aria-pressed="true">EN</button>
+            <button type="button" data-lang="es" aria-pressed="false">ES</button>
+          </div>
+          <div class="seg" id="themeToggle" role="group" aria-label="Theme">
+            <button type="button" data-theme="light" aria-pressed="true" data-i18n="theme.light">LIGHT</button>
+            <button type="button" data-theme="dark" aria-pressed="false" data-i18n="theme.dark">DARK</button>
+          </div>
+        </div>
       </div>
 
-      <div class="sidebar-content">
+      <!-- ============================================================
+           Scenario + live feed state
+           ============================================================ -->
+      <div class="scenario-row">
+        <span class="lab" data-i18n="scenario.label">SCN</span>
+        <select id="scenarioSelect" aria-label="Scenario">
+          <option value="" data-i18n="scenario.loading">Loading scenarios…</option>
+        </select>
+        <button class="btn-scenario" id="loadScenarioBtn" data-i18n="scenario.load">Load</button>
+        <span class="live" id="liveIndicator"><i></i><em id="liveLabel">—</em></span>
+      </div>
 
-        <!-- ============================================================
-             Scenario selector
-             ============================================================ -->
-        <div class="scenario-block">
-          <label for="scenarioSelect">🎬 Escenario</label>
-          <div class="scenario-row">
-            <select id="scenarioSelect">
-              <option value="">Cargando escenarios…</option>
-            </select>
-            <button class="btn btn-scenario" id="loadScenarioBtn">Cargar</button>
-          </div>
+      <!-- ============================================================
+           Triage ladder — census, alarm and filter in one object.
+           Bands and counts are built by renderLadder() in app.js.
+           ============================================================ -->
+      <div class="ladder" id="ladder">
+        <div class="ladder-top">
+          <h2 data-i18n="ladder.title">Triage</h2>
+          <p class="tot" id="ladderTotals"></p>
         </div>
+        <div class="ladder-bar" id="ladderBar"></div>
+        <div class="ladder-scale" id="ladderScale"></div>
+      </div>
 
-        <!-- ============================================================
-             Stats
-             ============================================================ -->
-        <div class="stats">
-          <h3>📊 Estadísticas</h3>
-          <div class="stat-item">
-            <span class="stat-label">Entidades:</span>
-            <span class="stat-value" id="totalPuntos">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Categorías:</span>
-            <span class="stat-value" id="totalCategorias">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Casualties:</span>
-            <span class="stat-value stat-casualties" id="totalCasualties">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Triage:</span>
-            <span class="stat-value" id="triageCounts">
-              <span class="triage-pill RED">0</span>
-              <span class="triage-pill YELLOW">0</span>
-              <span class="triage-pill GREEN">0</span>
-            </span>
-          </div>
-        </div>
+      <!-- ============================================================
+           Tabs
+           ============================================================ -->
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" aria-selected="true"  data-pane="roster"  data-i18n="tab.roster">Roster</button>
+        <button type="button" role="tab" aria-selected="false" data-pane="filters" data-i18n="tab.filters">Filters</button>
+        <button type="button" role="tab" aria-selected="false" data-pane="medevac" data-i18n="tab.medevac">MEDEVAC</button>
+      </div>
 
-        <!-- ============================================================
-             Filters
-             ============================================================ -->
-        <div class="controls">
+      <div id="message" class="message"></div>
 
-          <!-- Category multi-select -->
-          <div class="filter-section">
-            <div class="filter-section-header" data-toggle="categoriesBody">
-              <span>🏷️ Categorías</span>
-              <div class="filter-section-actions">
-                <button class="btn-clear" id="clearCategories" title="Limpiar">Limpiar</button>
-                <span class="chevron">▾</span>
+      <div class="panes">
+
+        <!-- ---------- Roster ---------- -->
+        <section class="pane on" id="pane-roster" role="tabpanel">
+          <div class="roster-head">
+            <span id="rosterLabel" data-i18n="roster.sorted">Sorted by urgency</span>
+            <button type="button" id="clearAllFilters" data-i18n="roster.clear">Clear filters</button>
+          </div>
+          <div id="puntosList"></div>
+        </section>
+
+        <!-- ---------- Filters ---------- -->
+        <section class="pane" id="pane-filters" role="tabpanel">
+
+          <div class="fgroup">
+            <div class="fgroup-head"><h3 data-i18n="filter.search">Search</h3></div>
+            <input type="text" id="buscarNombre" class="search-input"
+                   data-i18n-ph="filter.searchPlaceholder" placeholder="Callsign, unit, country…"/>
+          </div>
+
+          <div class="fgroup">
+            <div class="fgroup-head">
+              <h3 data-i18n="filter.categories">Categories</h3>
+              <button type="button" class="btn-clear" id="clearCategories" data-i18n="action.clear">Clear</button>
+            </div>
+
+            <div class="checkbox-grid" id="categoryCheckboxes">
+              <!-- Medical first: this is a medical picture -->
+              <label class="filter-cb filter-cb--medical"><input type="checkbox" value="casualty" /><span data-i18n="cat.casualty">Casualty</span></label>
+              <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medical_facility" /><span data-i18n="cat.medical_facility">Med facility</span></label>
+              <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medevac_unit" /><span data-i18n="cat.medevac_unit">MEDEVAC</span></label>
+              <label class="filter-cb filter-cb--medical"><input type="checkbox" id="casevacFilter" /><span data-i18n="cat.casevac">CASEVAC eligible</span></label>
+
+              <label class="filter-cb"><input type="checkbox" value="infantry" /><span data-i18n="cat.infantry">Infantry</span></label>
+              <label class="filter-cb"><input type="checkbox" value="armoured" /><span data-i18n="cat.armoured">Armoured</span></label>
+              <label class="filter-cb"><input type="checkbox" value="artillery" /><span data-i18n="cat.artillery">Artillery</span></label>
+              <label class="filter-cb"><input type="checkbox" value="reconnaissance" /><span data-i18n="cat.recon">Recon</span></label>
+              <label class="filter-cb"><input type="checkbox" value="engineer" /><span data-i18n="cat.engineer">Engineer</span></label>
+              <label class="filter-cb"><input type="checkbox" value="mortar" /><span data-i18n="cat.mortar">Mortar</span></label>
+              <label class="filter-cb"><input type="checkbox" value="helicopter" /><span data-i18n="cat.helicopter">Helicopter</span></label>
+              <label class="filter-cb"><input type="checkbox" value="uav" /><span>UAV</span></label>
+              <label class="filter-cb"><input type="checkbox" value="ugv" /><span>UGV</span></label>
+              <label class="filter-cb"><input type="checkbox" value="transportation" /><span data-i18n="cat.transport">Transport</span></label>
+              <label class="filter-cb"><input type="checkbox" value="aircraft" /><span data-i18n="cat.aircraft">Aircraft</span></label>
+              <label class="filter-cb"><input type="checkbox" value="fighter" /><span data-i18n="cat.fighter">Fighter</span></label>
+              <label class="filter-cb"><input type="checkbox" value="bomber" /><span data-i18n="cat.bomber">Bomber</span></label>
+              <label class="filter-cb"><input type="checkbox" value="missile" /><span data-i18n="cat.missile">Missile</span></label>
+              <label class="filter-cb"><input type="checkbox" value="ship" /><span data-i18n="cat.ship">Ship</span></label>
+              <label class="filter-cb"><input type="checkbox" value="destroyer" /><span data-i18n="cat.destroyer">Destroyer</span></label>
+              <label class="filter-cb"><input type="checkbox" value="submarine" /><span data-i18n="cat.submarine">Submarine</span></label>
+              <label class="filter-cb"><input type="checkbox" value="ground_vehicle" /><span data-i18n="cat.ground_vehicle">Ground veh.</span></label>
+              <label class="filter-cb"><input type="checkbox" value="person" /><span data-i18n="cat.person">Person</span></label>
+              <label class="filter-cb"><input type="checkbox" value="base" /><span data-i18n="cat.base">Base</span></label>
+              <label class="filter-cb"><input type="checkbox" value="building" /><span data-i18n="cat.building">Building</span></label>
+              <label class="filter-cb"><input type="checkbox" value="infrastructure" /><span data-i18n="cat.infrastructure">Infrastructure</span></label>
+            </div>
+
+            <!-- Casualty triage subfilter -->
+            <div class="subfilter" id="subfilterCasualty" style="display:none;">
+              <div class="subfilter-header">
+                <span data-i18n="filter.triageLevel">Triage level</span>
+                <button type="button" class="btn-clear" id="clearTriageFilter" data-i18n="action.clear">Clear</button>
+              </div>
+              <div class="subfilter-options" id="triageCheckboxes">
+                <label class="filter-cb triage-option" style="--c:var(--t-red)"><input type="checkbox" value="RED" /><span data-i18n="triage.t1">T1 Immediate</span></label>
+                <label class="filter-cb triage-option" style="--c:var(--t-yellow)"><input type="checkbox" value="YELLOW" /><span data-i18n="triage.t2">T2 Urgent</span></label>
+                <label class="filter-cb triage-option" style="--c:var(--t-green)"><input type="checkbox" value="GREEN" /><span data-i18n="triage.t3">T3 Minimal</span></label>
+                <label class="filter-cb triage-option" style="--c:var(--t-blue)"><input type="checkbox" value="BLUE" /><span data-i18n="triage.t4">T4 Expectant</span></label>
+                <label class="filter-cb triage-option" style="--c:var(--t-black)"><input type="checkbox" value="BLACK" /><span data-i18n="triage.dead">Dead</span></label>
+                <label class="filter-cb triage-option" style="--c:var(--t-unknown)"><input type="checkbox" value="UNKNOWN" /><span data-i18n="triage.unknown">Unknown</span></label>
               </div>
             </div>
-            <div class="filter-section-body" id="categoriesBody">
-              <div class="checkbox-grid" id="categoryCheckboxes">
-                <!-- Military -->
-                <label class="filter-cb"><input type="checkbox" value="infantry" /><span>Infantry</span></label>
-                <label class="filter-cb"><input type="checkbox" value="armoured" /><span>Armoured</span></label>
-                <label class="filter-cb"><input type="checkbox" value="artillery" /><span>Artillery</span></label>
-                <label class="filter-cb"><input type="checkbox" value="reconnaissance" /><span>Recon</span></label>
-                <label class="filter-cb"><input type="checkbox" value="engineer" /><span>Engineer</span></label>
-                <label class="filter-cb"><input type="checkbox" value="mortar" /><span>Mortar</span></label>
-                <label class="filter-cb"><input type="checkbox" value="helicopter" /><span>Helicopter</span></label>
-                <label class="filter-cb"><input type="checkbox" value="uav" /><span>UAV</span></label>
-                <label class="filter-cb"><input type="checkbox" value="ugv" /><span>UGV</span></label>
-                <label class="filter-cb"><input type="checkbox" value="transportation" /><span>Transport</span></label>
-                <label class="filter-cb"><input type="checkbox" value="aircraft" /><span>Aircraft</span></label>
-                <!-- Medical -->
-                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="casualty" /><span>Casualty</span></label>
-                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medical_facility" /><span>Med Facility</span></label>
-                <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medevac_unit" /><span>MEDEVAC</span></label>
-                <label class="filter-cb filter-cb--medical"><input type="checkbox" id="casevacFilter" /><span>CASEVAC eligible</span></label>
-                <!-- Other military -->
-                <label class="filter-cb"><input type="checkbox" value="missile" /><span>Missile</span></label>
-                <label class="filter-cb"><input type="checkbox" value="fighter" /><span>Fighter</span></label>
-                <label class="filter-cb"><input type="checkbox" value="bomber" /><span>Bomber</span></label>
-                <label class="filter-cb"><input type="checkbox" value="ship" /><span>Ship</span></label>
-                <label class="filter-cb"><input type="checkbox" value="destroyer" /><span>Destroyer</span></label>
-                <label class="filter-cb"><input type="checkbox" value="submarine" /><span>Submarine</span></label>
-                <label class="filter-cb"><input type="checkbox" value="ground_vehicle" /><span>Ground Veh.</span></label>
-                <label class="filter-cb"><input type="checkbox" value="person" /><span>Person</span></label>
-                <label class="filter-cb"><input type="checkbox" value="base" /><span>Base</span></label>
-                <label class="filter-cb"><input type="checkbox" value="building" /><span>Building</span></label>
-                <label class="filter-cb"><input type="checkbox" value="infrastructure" /><span>Infrastructure</span></label>
+
+            <!-- Medical facility role subfilter -->
+            <div class="subfilter" id="subfilterMedFacility" style="display:none;">
+              <div class="subfilter-header">
+                <span data-i18n="filter.facilityRole">Facility role</span>
+                <button type="button" class="btn-clear" id="clearMedFacilityFilter" data-i18n="action.clear">Clear</button>
               </div>
-
-              <!-- Casualty triage subfilter -->
-              <div class="subfilter" id="subfilterCasualty" style="display:none;">
-                <div class="subfilter-header">
-                  <span>Triage Level</span>
-                  <button class="btn-clear" id="clearTriageFilter">Limpiar</button>
-                </div>
-                <div class="subfilter-options" id="triageCheckboxes">
-                  <label class="filter-cb triage-option">
-                    <input type="checkbox" value="RED" />
-                    <span class="triage-pill RED">T1 — Immediate</span>
-                  </label>
-                  <label class="filter-cb triage-option">
-                    <input type="checkbox" value="YELLOW" />
-                    <span class="triage-pill YELLOW">T2 — Urgent</span>
-                  </label>
-                  <label class="filter-cb triage-option">
-                    <input type="checkbox" value="GREEN" />
-                    <span class="triage-pill GREEN">T3 — Minimal</span>
-                  </label>
-                  <label class="filter-cb triage-option">
-                    <input type="checkbox" value="BLUE" />
-                    <span class="triage-pill BLUE">T4 — Expectant</span>
-                  </label>
-                  <label class="filter-cb triage-option">
-                    <input type="checkbox" value="BLACK" />
-                    <span class="triage-pill BLACK">Dead</span>
-                  </label>
-                  <label class="filter-cb triage-option">
-                    <input type="checkbox" value="UNKNOWN" />
-                    <span class="triage-pill UNKNOWN">Unknown</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- Medical facility role subfilter -->
-              <div class="subfilter" id="subfilterMedFacility" style="display:none;">
-                <div class="subfilter-header">
-                  <span>Facility Role</span>
-                  <button class="btn-clear" id="clearMedFacilityFilter">Limpiar</button>
-                </div>
-                <div class="subfilter-options" id="medFacilityCheckboxes">
-                  <label class="filter-cb"><input type="checkbox" value="medical_role_1" /><span>Role 1 — Aid Post</span></label>
-                  <label class="filter-cb"><input type="checkbox" value="medical_role_2" /><span>Role 2 — Surgical</span></label>
-                  <label class="filter-cb"><input type="checkbox" value="medical_role_3" /><span>Role 3 — Field Hospital</span></label>
-                  <label class="filter-cb"><input type="checkbox" value="medical_role_4" /><span>Role 4 — Definitive</span></label>
-                  <label class="filter-cb"><input type="checkbox" value="medical_other" /><span>Other (R2B/R2E/Multi)</span></label>
-                </div>
-              </div>
-
-              <!-- MEDEVAC role subfilter -->
-              <div class="subfilter" id="subfilterMedevac" style="display:none;">
-                <div class="subfilter-header">
-                  <span>MEDEVAC Role</span>
-                  <button class="btn-clear" id="clearMedevacFilter">Limpiar</button>
-                </div>
-                <div class="subfilter-options" id="medevacCheckboxes">
-                  <label class="filter-cb"><input type="checkbox" value="medevac_role_1" /><span>Role 1 — Immediate</span></label>
-                  <label class="filter-cb"><input type="checkbox" value="medevac_role_2" /><span>Role 2 — Forward</span></label>
-                  <label class="filter-cb"><input type="checkbox" value="medevac_role_3" /><span>Role 3 — Theater</span></label>
-                  <label class="filter-cb"><input type="checkbox" value="medevac_role_4" /><span>Role 4 — Definitive</span></label>
-                  <label class="filter-cb"><input type="checkbox" value="medevac_other" /><span>Other (FW/Amb/Mech/Mort)</span></label>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          <!-- Alliance filter -->
-          <div class="filter-section">
-            <div class="filter-section-header" data-toggle="allianceBody">
-              <span>🛡️ Alianza</span>
-              <div class="filter-section-actions">
-                <button class="btn-clear" id="clearAlliance" title="Limpiar">Limpiar</button>
-                <span class="chevron">▾</span>
+              <div class="subfilter-options" id="medFacilityCheckboxes">
+                <label class="filter-cb"><input type="checkbox" value="medical_role_1" /><span data-i18n="role.f1">Role 1 — Aid post</span></label>
+                <label class="filter-cb"><input type="checkbox" value="medical_role_2" /><span data-i18n="role.f2">Role 2 — Surgical</span></label>
+                <label class="filter-cb"><input type="checkbox" value="medical_role_3" /><span data-i18n="role.f3">Role 3 — Field hospital</span></label>
+                <label class="filter-cb"><input type="checkbox" value="medical_role_4" /><span data-i18n="role.f4">Role 4 — Definitive</span></label>
+                <label class="filter-cb"><input type="checkbox" value="medical_other" /><span data-i18n="role.fOther">Other (R2B/R2E/Multi)</span></label>
               </div>
             </div>
-            <div class="filter-section-body collapsed" id="allianceBody">
-              <div class="checkbox-grid" id="allianceCheckboxes">
-                <label class="filter-cb"><input type="checkbox" value="friendly" /><span class="alliance-dot" style="--dot-color:#00AEEF"></span><span>Friendly</span></label>
-                <label class="filter-cb"><input type="checkbox" value="hostile" /><span class="alliance-dot" style="--dot-color:#FF0000"></span><span>Hostile</span></label>
-                <label class="filter-cb"><input type="checkbox" value="neutral" /><span class="alliance-dot" style="--dot-color:#ADFF2F"></span><span>Neutral</span></label>
-                <label class="filter-cb"><input type="checkbox" value="unknown" /><span class="alliance-dot" style="--dot-color:#A9A9A9"></span><span>Unknown</span></label>
+
+            <!-- MEDEVAC role subfilter -->
+            <div class="subfilter" id="subfilterMedevac" style="display:none;">
+              <div class="subfilter-header">
+                <span data-i18n="filter.medevacRole">MEDEVAC role</span>
+                <button type="button" class="btn-clear" id="clearMedevacFilter" data-i18n="action.clear">Clear</button>
+              </div>
+              <div class="subfilter-options" id="medevacCheckboxes">
+                <label class="filter-cb"><input type="checkbox" value="medevac_role_1" /><span data-i18n="role.m1">Role 1 — Immediate</span></label>
+                <label class="filter-cb"><input type="checkbox" value="medevac_role_2" /><span data-i18n="role.m2">Role 2 — Forward</span></label>
+                <label class="filter-cb"><input type="checkbox" value="medevac_role_3" /><span data-i18n="role.m3">Role 3 — Theater</span></label>
+                <label class="filter-cb"><input type="checkbox" value="medevac_role_4" /><span data-i18n="role.m4">Role 4 — Definitive</span></label>
+                <label class="filter-cb"><input type="checkbox" value="medevac_other" /><span data-i18n="role.mOther">Other (FW/Amb/Mech/Mort)</span></label>
               </div>
             </div>
           </div>
 
-          <!-- MEDEVAC Routes -->
-          <div class="filter-section">
-            <div class="filter-section-header" data-toggle="routesBody">
-              <span>🚑  MEDEVAC Routes</span>
-              <span class="chevron">▾</span>
+          <div class="fgroup">
+            <div class="fgroup-head">
+              <h3 data-i18n="filter.alliance">Alliance</h3>
+              <button type="button" class="btn-clear" id="clearAlliance" data-i18n="action.clear">Clear</button>
             </div>
-            <div class="filter-section-body collapsed" id="routesBody">
-              <div class="routes-panel">
-                <div class="routes-input-row">
-                  <input type="text" id="routeTaskId" placeholder="Task ID…" class="search-input routes-task-input"/>
-                  <button class="btn btn-route-load" id="loadRoutesBtn">Cargar</button>
-                </div>
-                <div id="routesStatus" class="routes-status"></div>
-                <div class="routes-actions" style="display:none;" id="routesActions">
-                  <button class="btn btn-route-refresh" id="refreshRoutesBtn">↺ Actualizar</button>
-                  <button class="btn btn-simulate" id="simulateBtn" onclick="toggleSimulation()">▶ Simular</button>
-                  <button class="btn btn-restart" id="restartBtn" onclick="restartSimulation()" style="display:none;">↩ Reiniciar</button>
-                  <button class="btn btn-secondary routes-clear-btn" id="clearRoutesBtn">🗑️ Limpiar</button>
-                </div>
-              </div>
+            <div class="checkbox-grid" id="allianceCheckboxes">
+              <label class="filter-cb"><input type="checkbox" value="friendly" /><span class="alliance-dot" style="--dot-color:var(--a-friendly)"></span><span data-i18n="alliance.friendly">Friendly</span></label>
+              <label class="filter-cb"><input type="checkbox" value="hostile" /><span class="alliance-dot" style="--dot-color:var(--a-hostile)"></span><span data-i18n="alliance.hostile">Hostile</span></label>
+              <label class="filter-cb"><input type="checkbox" value="neutral" /><span class="alliance-dot" style="--dot-color:var(--a-neutral)"></span><span data-i18n="alliance.neutral">Neutral</span></label>
+              <label class="filter-cb"><input type="checkbox" value="unknown" /><span class="alliance-dot" style="--dot-color:var(--a-unknown)"></span><span data-i18n="alliance.unknown">Unknown</span></label>
             </div>
           </div>
+        </section>
 
-          <!-- Search -->
-          <div class="filter-section">
-            <div class="filter-section-header" data-toggle="searchBody">
-              <span>🔍 Buscar</span>
-              <span class="chevron">▾</span>
+        <!-- ---------- MEDEVAC ---------- -->
+        <section class="pane" id="pane-medevac" role="tabpanel">
+          <div class="fgroup">
+            <div class="fgroup-head"><h3 data-i18n="routes.plan">Plan</h3></div>
+
+            <div class="routes-input-row">
+              <input type="text" id="routeTaskId" class="search-input routes-task-input"
+                     data-i18n-ph="routes.taskPlaceholder" placeholder="Task ID…"/>
+              <button class="btn-route-load" id="loadRoutesBtn" data-i18n="routes.load">Load</button>
             </div>
-            <div class="filter-section-body collapsed" id="searchBody">
-              <input type="text" id="buscarNombre" placeholder="Escribe un nombre…" class="search-input"/>
+
+            <div id="routesStatus" class="routes-status"></div>
+
+            <div class="routes-actions" style="display:none;" id="routesActions">
+              <button class="btn-route-refresh" id="refreshRoutesBtn" data-i18n="routes.refresh">Refresh</button>
+              <button class="btn-simulate" id="simulateBtn" onclick="toggleSimulation()" data-i18n="sim.start">Run</button>
+              <button class="btn-restart" id="restartBtn" onclick="restartSimulation()" style="display:none;" data-i18n="sim.restart">Restart</button>
+              <button class="routes-clear-btn" id="clearRoutesBtn" data-i18n="routes.clear">Clear routes</button>
             </div>
           </div>
+        </section>
 
-          <!-- Action buttons -->
-          <div class="filter-actions">
-            <button class="btn btn-primary" onclick="mostrarFormularioNuevoPunto()">➕ Nueva entidad</button>
-            <!-- <button class="btn btn-secondary" onclick="centrarMapa()">🎯 Centrar en España</button> --> 
-          </div>
-        </div>
-
-        <div id="message" class="message"></div>
-
-        <!-- ============================================================
-             Entity list
-             ============================================================ -->
-        <div class="puntos-list" id="puntosList">
-          <p style="text-align:center;color:#999;">Cargando…</p>
-        </div>
       </div>
     </aside>
 
@@ -251,13 +219,31 @@
          ================================================================ -->
     <main class="map-container">
       <div id="map"></div>
-      <div id="map-coords" class="map-coords"></div>
-      <div id="map-ctx-menu" class="map-ctx-menu" style="display:none;">
-        <button id="map-ctx-add">📍 Añadir nueva entidad aquí</button>
+
+      <div class="map-tools">
+        <button type="button" onclick="mostrarFormularioNuevoPunto()" data-i18n="map.newEntity">New entity</button>
+        <button type="button" onclick="fitToEntities()" data-i18n="map.fit">Fit</button>
       </div>
+
+      <div class="map-legend">
+        <b data-i18n="ladder.title">Triage</b>
+        <span style="--c:var(--t-red)"><i></i>T1</span>
+        <span style="--c:var(--t-yellow)"><i></i>T2</span>
+        <span style="--c:var(--t-green)"><i></i>T3</span>
+        <span style="--c:var(--t-blue)"><i></i>T4</span>
+        <span style="--c:var(--t-black)"><i></i>KIA</span>
+        <span style="--c:var(--t-unknown)"><i></i>?</span>
+      </div>
+
+      <div id="map-coords" class="map-coords"></div>
+
+      <div id="map-ctx-menu" class="map-ctx-menu" style="display:none;">
+        <button id="map-ctx-add" data-i18n="map.addHere">Add new entity here</button>
+      </div>
+
       <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p>Cargando…</p>
+        <p data-i18n="action.loading">Loading</p>
       </div>
     </main>
   </div>
@@ -268,165 +254,158 @@
   <div class="form-modal" id="formModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>➕ Nueva entidad</h2>
-        <button class="close-btn" onclick="cerrarFormularioNuevoPunto()">&times;</button>
+        <h2 data-i18n="form.title">New entity</h2>
+        <button class="close-btn" onclick="cerrarFormularioNuevoPunto()" aria-label="Close">&times;</button>
       </div>
 
       <form id="nuevoPuntoForm">
         <div class="form-group">
-          <label for="nombre">Nombre *</label>
+          <label for="nombre" data-i18n="form.name">Name *</label>
           <input type="text" id="nombre" name="nombre" required />
         </div>
 
         <div class="form-group">
-          <label for="descripcion">Descripción</label>
+          <label for="descripcion" data-i18n="form.description">Description</label>
           <textarea id="descripcion" name="descripcion"></textarea>
         </div>
 
         <div class="form-group">
-          <label for="categoria">Categoría *</label>
+          <label for="categoria" data-i18n="form.category">Category *</label>
           <select id="categoria" name="categoria" required>
-            <option value="">Selecciona una categoría</option>
+            <option value="" data-i18n="form.categoryPick">Select a category</option>
 
-            <!-- Military -->
-            <optgroup label="── Military ──">
-              <option value="missile">missile — Misil</option>
-              <option value="fighter">fighter — Caza</option>
-              <option value="bomber">bomber — Bombardero</option>
-              <option value="aircraft">aircraft — Aeronave</option>
-              <option value="helicopter">helicopter — Helicóptero</option>
-              <option value="uav">uav — UAV/Drone</option>
-              <option value="ugv">ugv — Unmanned Ground Vehicle</option>
-              <option value="transportation">transportation — Transporte</option>
-              <option value="armoured">armoured — Carro de Combate / Blindado</option>
-              <option value="artillery">artillery — Artillería</option>
-              <option value="ship">ship — Buque</option>
-              <option value="destroyer">destroyer — Destructor</option>
-              <option value="submarine">submarine — Submarino</option>
-              <option value="ground_vehicle">ground_vehicle — Vehículo Terrestre</option>
-              <option value="infantry">infantry — Infantería</option>
-              <option value="reconnaissance">reconnaissance — Reconocimiento / Caballería</option>
-              <option value="engineer">engineer — Ingenieros</option>
-              <option value="mortar">mortar — Mortero</option>
-              <option value="person">person — Persona</option>
-              <option value="base">base — Base</option>
-              <option value="building">building — Edificio</option>
-              <option value="infrastructure">infrastructure — Infraestructura</option>
+            <optgroup label="Military" data-i18n-label="form.grpMilitary">
+              <option value="missile">missile</option>
+              <option value="fighter">fighter</option>
+              <option value="bomber">bomber</option>
+              <option value="aircraft">aircraft</option>
+              <option value="helicopter">helicopter</option>
+              <option value="uav">uav</option>
+              <option value="ugv">ugv</option>
+              <option value="transportation">transportation</option>
+              <option value="armoured">armoured</option>
+              <option value="artillery">artillery</option>
+              <option value="ship">ship</option>
+              <option value="destroyer">destroyer</option>
+              <option value="submarine">submarine</option>
+              <option value="ground_vehicle">ground_vehicle</option>
+              <option value="infantry">infantry</option>
+              <option value="reconnaissance">reconnaissance</option>
+              <option value="engineer">engineer</option>
+              <option value="mortar">mortar</option>
+              <option value="person">person</option>
+              <option value="base">base</option>
+              <option value="building">building</option>
+              <option value="infrastructure">infrastructure</option>
             </optgroup>
 
-            <!-- Medical & MEDEVAC -->
-            <optgroup label="── Medical & MEDEVAC ──">
-              <option value="medical_facility">medical_facility — Medical Facility</option>
-              <option value="medevac_unit">medevac_unit — MEDEVAC Asset</option>
+            <optgroup label="Medical &amp; MEDEVAC" data-i18n-label="form.grpMedical">
+              <option value="medical_facility">medical_facility</option>
+              <option value="medevac_unit">medevac_unit</option>
             </optgroup>
 
-            <!-- Casualties -->
-            <optgroup label="── Casualties ──">
-              <option value="casualty">casualty — Casualty</option>
+            <optgroup label="Casualties" data-i18n-label="form.grpCasualties">
+              <option value="casualty">casualty</option>
             </optgroup>
 
             <option value="default">default</option>
           </select>
         </div>
 
-        <!-- Tipo Elemento (dynamic, shown only for categories with subtypes) -->
         <div class="form-group" id="tipoElementoGroup" style="display:none;">
-          <label for="tipoElemento">Tipo Elemento *</label>
+          <label for="tipoElemento" data-i18n="form.elementType">Element type *</label>
           <select id="tipoElemento" name="tipoElemento">
-            <option value="">— Selecciona tipo —</option>
+            <option value="" data-i18n="form.elementTypePick">Select type</option>
           </select>
         </div>
 
-        <!-- Mobility (only for medevac_unit, transportation, reconnaissance) -->
         <div class="form-group" id="mobilityGroup" style="display:none;">
-          <label for="mobility">Mobility</label>
+          <label for="mobility" data-i18n="form.mobility">Mobility</label>
           <select id="mobility" name="mobility">
-            <option value="">— Selecciona —</option>
-            <option value="air">Air — Aéreo</option>
-            <option value="ground">Ground — Terrestre</option>
-            <option value="sea">Sea — Marítimo</option>
+            <option value="" data-i18n="form.pick">Select</option>
+            <option value="air" data-i18n="mobility.air">Air</option>
+            <option value="ground" data-i18n="mobility.ground">Ground</option>
+            <option value="sea" data-i18n="mobility.sea">Sea</option>
           </select>
         </div>
 
-        <!-- CASEVAC eligible (only for vehicle categories that can carry personnel) -->
         <div class="form-group" id="casevacGroup" style="display:none;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <label class="form-check">
             <input type="checkbox" id="casevacEligible" name="casevacEligible" />
-            CASEVAC eligible — puede realizar evacuaciones improvisadas
+            <span data-i18n="form.casevac">CASEVAC eligible — can carry out improvised evacuations</span>
           </label>
         </div>
 
-        <!-- Casualty medical details (only when categoria = casualty) -->
-        <div id="casualtyMedicalGroup" style="display:none;border-top:1px solid #444;padding-top:10px;margin-top:4px;">
+        <div id="casualtyMedicalGroup" class="form-section" style="display:none;">
           <div class="form-group">
-            <label for="casualtyStatus">Estado Baja *</label>
+            <label for="casualtyStatus" data-i18n="form.casualtyStatus">Casualty status *</label>
             <select id="casualtyStatus" name="casualtyStatus">
-              <option value="WIA">WIA — Herido en Acción</option>
-              <option value="KIA">KIA — Muerto en Acción</option>
-              <option value="UNKNOWN">UNKNOWN — Desconocido</option>
+              <option value="WIA" data-i18n="status.wia">WIA — Wounded in action</option>
+              <option value="KIA" data-i18n="status.kia">KIA — Killed in action</option>
+              <option value="UNKNOWN" data-i18n="status.unknown">UNKNOWN</option>
             </select>
           </div>
 
-          <!-- Triage (hidden for KIA; KIA always gets BLACK triage server-side) -->
           <div id="triageGroup">
             <div class="form-group">
-              <label for="triageColor">Triage *</label>
+              <label for="triageColor" data-i18n="form.triage">Triage *</label>
               <select id="triageColor" name="triageColor">
-                <option value="RED">🔴 RED — T1 Inmediate</option>
-                <option value="YELLOW">🟡 YELLOW — T2 Urgent</option>
-                <option value="GREEN">🟢 GREEN — T3 Minimal</option>
-                <option value="BLUE">🔵 BLUE — T4 Expectant</option>
-                <option value="UNKNOWN" selected>⚪ UNKNOWN</option>
+                <option value="RED" data-i18n="triage.t1">T1 Immediate</option>
+                <option value="YELLOW" data-i18n="triage.t2">T2 Urgent</option>
+                <option value="GREEN" data-i18n="triage.t3">T3 Minimal</option>
+                <option value="BLUE" data-i18n="triage.t4">T4 Expectant</option>
+                <option value="UNKNOWN" selected data-i18n="triage.unknown">Unknown</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label for="injuryMechanism">Mecanismo de lesión</label>
+              <label for="injuryMechanism" data-i18n="form.mechanism">Injury mechanism</label>
               <input type="text" id="injuryMechanism" name="injuryMechanism" placeholder="GSW, blast, MVA…" />
             </div>
 
             <div class="form-group">
-              <label for="primaryInjury">Lesión principal</label>
-              <input type="text" id="primaryInjury" name="primaryInjury" placeholder="Describe la lesión principal…" />
+              <label for="primaryInjury" data-i18n="form.primaryInjury">Primary injury</label>
+              <input type="text" id="primaryInjury" name="primaryInjury" data-i18n-ph="form.primaryInjuryPh" placeholder="Describe the primary injury…" />
             </div>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="country">Country</label>
+          <label for="country" data-i18n="form.country">Country</label>
           <input type="text" id="country" name="country" placeholder="Spain, France…"/>
         </div>
 
         <div class="form-group">
-          <label for="alliance">Alliance *</label>
+          <label for="alliance" data-i18n="form.alliance">Alliance *</label>
           <select id="alliance" name="alliance" required>
-            <option value="friendly">friendly</option>
-            <option value="hostile">hostile</option>
-            <option value="neutral">neutral</option>
-            <option value="unknown" selected>unknown</option>
+            <option value="friendly" data-i18n="alliance.friendly">Friendly</option>
+            <option value="hostile" data-i18n="alliance.hostile">Hostile</option>
+            <option value="neutral" data-i18n="alliance.neutral">Neutral</option>
+            <option value="unknown" selected data-i18n="alliance.unknown">Unknown</option>
           </select>
         </div>
 
-        <div style="display:flex;gap:10px;">
-          <div class="form-group" style="flex:1;">
-            <label for="latitud">Latitud *</label>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="latitud" data-i18n="form.lat">Latitude *</label>
             <input type="number" id="latitud" name="latitud" step="any" required />
           </div>
-          <div class="form-group" style="flex:1;">
-            <label for="longitud">Longitud *</label>
+          <div class="form-group">
+            <label for="longitud" data-i18n="form.lng">Longitude *</label>
             <input type="number" id="longitud" name="longitud" step="any" required />
           </div>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:10px;">
-          <button type="submit" class="btn btn-primary">Guardar</button>
-          <button type="button" class="btn btn-secondary" onclick="cerrarFormularioNuevoPunto()">Cancelar</button>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" data-i18n="form.save">Save entity</button>
+          <button type="button" class="btn btn-secondary" onclick="cerrarFormularioNuevoPunto()" data-i18n="action.cancel">Cancel</button>
         </div>
       </form>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>
