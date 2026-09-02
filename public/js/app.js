@@ -329,20 +329,32 @@ function _rerenderDynamicStrings() {
   if (_lastRoutes) document.getElementById('routesStatus').innerHTML = _routesSummaryHTML(_lastRoutes);
 }
 
+// The `categoria` enum values are English words, so English needs no gloss.
+const ENUM_LANG = 'en';
+
 /**
- * Category dropdown labels. The enum is the value the API stores, so it always
- * stays visible; the readable name is appended in the active language whenever
- * it says something the enum doesn't ("missile — Misil").
+ * Category dropdown labels. The enum is the value the API stores, so it is
+ * always what the option shows. A readable name is appended only when it can
+ * actually teach the reader something: the UI is in a language other than the
+ * one the enums are written in, and the name isn't just the enum re-spelled.
+ *
+ *   en  →  uav              ground_vehicle              missile
+ *   es  →  uav — UAV / Dron  ground_vehicle — Vehículo terrestre  missile — Misil
  */
 function renderCategoryOptions() {
+  const flat = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
   document.querySelectorAll('#categoria option[value]').forEach(opt => {
     const value = opt.value;
     if (!value) return;
+
     const key = CATEGORY_I18N_KEY[value];
-    const label = key ? t(key) : value;
-    opt.textContent = label.toLowerCase() === value.toLowerCase()
-      ? value
-      : `${value} — ${label}`;
+    const label = key ? t(key) : '';
+    // "medevac_unit — MEDEVAC" and "base — Base" add no letters the enum does
+    // not already carry; "uav — UAV / Dron" and "missile — Misil" do.
+    const worthShowing = label && getLang() !== ENUM_LANG && !flat(value).includes(flat(label));
+
+    opt.textContent = worthShowing ? `${value} — ${label}` : value;
   });
 }
 
