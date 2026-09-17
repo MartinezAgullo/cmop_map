@@ -205,7 +205,7 @@ const SCHEMA = {
   // POST /api/medical/:entity_id/nine-line
   // -------------------------------------------------------------------------
   nine_line_medevac: {
-    description: '9-Line MEDEVAC Request — NATO standard format for requesting medical evacuation. Stored as JSONB in medical_details.nine_line_data.',
+    description: '9-Line MEDEVAC Request — NATO standard format for requesting medical evacuation. Stored as JSONB in medical_details.nine_line_data. Only Lines 1, 2 and 3 are enforced by POST /api/medical/:entity_id/nine-line — in combat the remaining lines are often transmitted later, so `required` below reflects what the API actually rejects, not doctrinal completeness.',
     fields: [
       {
         key: 'line1_location',
@@ -259,7 +259,7 @@ const SCHEMA = {
         title: 'Special Equipment',
         type: 'string',
         description: 'Special equipment required at the pickup site.',
-        required: true,
+        required: false,
         enum_values: {
           'A': 'None',
           'B': 'Hoist',
@@ -273,7 +273,7 @@ const SCHEMA = {
         title: 'Litter Patients',
         type: 'number',
         description: 'Number of patients requiring litter (stretcher) transport.',
-        required: true
+        required: false
       },
       {
         key: 'line5_ambulatory',
@@ -281,7 +281,7 @@ const SCHEMA = {
         title: 'Ambulatory Patients',
         type: 'number',
         description: 'Number of patients who can walk.',
-        required: true
+        required: false
       },
       {
         key: 'line6_security',
@@ -311,7 +311,7 @@ const SCHEMA = {
         title: 'Method of Marking Pickup Site',
         type: 'string',
         description: 'How the pilot will identify the pickup site.',
-        required: true,
+        required: false,
         enum_values: {
           'A': 'Panels (specify colour in line7_marking_detail)',
           'B': 'Pyrotechnic signal',
@@ -338,7 +338,7 @@ const SCHEMA = {
         title: 'Patient Nationality and Status',
         type: 'string',
         description: 'Free-text nationality and military/civilian status of the patient(s) (e.g. "Spanish Military", "French Civilian", "EPW").',
-        required: true
+        required: false
       },
       {
         key: 'line9_nbc',

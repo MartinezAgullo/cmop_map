@@ -20,6 +20,40 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 // ---------------------------------------------------------------------------
 app.use(cors());
+
+// ---------------------------------------------------------------------------
+// Vision Agent proxy — forwards /api/vision/* to vision_agent service
+//
+// Mounted BEFORE express.json() on purpose.  A request body is a stream that
+// can only be read once: if the JSON parser drains it first, the pipe below
+// forwards zero bytes while still passing on the original Content-Length, and
+// the vision agent blocks waiting for a body that never arrives.
+// ---------------------------------------------------------------------------
+const VISION_BASE = (process.env.VISION_AGENT_URL || 'http://localhost:8500').replace(/\/$/, '');
+
+function _proxyToVision(req, res) {
+  // Express already strips the /api/vision mount path from req.url
+  const visionPath = req.url || '/';
+  const target = `${VISION_BASE}${visionPath}`;
+
+  const options = {
+    method: req.method,
+    headers: { ...req.headers, host: new URL(VISION_BASE).host },
+  };
+
+  const upstream = http.request(target, options, (upRes) => {
+    res.writeHead(upRes.statusCode, upRes.headers);
+    upRes.pipe(res, { end: true });
+  });
+  upstream.on('error', (err) => {
+    res.status(502).json({ success: false, message: `Cannot reach vision agent: ${err.message}` });
+  });
+
+  req.pipe(upstream, { end: true });
+}
+
+app.use('/api/vision', (req, res) => _proxyToVision(req, res));
+
 app.use(express.json());                          // replaces body-parser
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -39,7 +73,14 @@ app.get('/api/events', sseBroker.handler);
 // Allows the Python planner (and other internal services) to push non-entity
 // events (e.g. evac_stage_updated) directly to all connected browsers.
 app.post('/api/events/notify', (req, res) => {
-  sseBroker.broadcast(req.body);
+  // The browser switches on `type`, so a payload without one is dead weight
+  // on every open connection.  Note this endpoint is still unauthenticated —
+  // adding a shared secret means changing the Python services too.
+  const payload = req.body;
+  if (!payload || typeof payload !== 'object' || typeof payload.type !== 'string') {
+    return res.status(400).json({ ok: false, message: 'Body must be an object with a string `type`' });
+  }
+  sseBroker.broadcast(payload);
   res.json({ ok: true });
 });
 
@@ -86,34 +127,6 @@ app.post('/api/planner/tasks/:taskId/simulate',          (req, res) => _proxyToP
 app.delete('/api/planner/tasks/:taskId/simulate',        (req, res) => _proxyToPlanner('DELETE', req, res));
 app.post('/api/planner/tasks/:taskId/simulate/resume',   (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/resume'));
 app.post('/api/planner/tasks/:taskId/simulate/restart',  (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/restart'));
-
-// ---------------------------------------------------------------------------
-// Vision Agent proxy — forwards /api/vision/* to vision_agent service
-// ---------------------------------------------------------------------------
-const VISION_BASE = (process.env.VISION_AGENT_URL || 'http://localhost:8500').replace(/\/$/, '');
-
-function _proxyToVision(req, res) {
-  // Strip the /api/vision prefix to get the vision_agent path
-  const visionPath = req.url.replace(/^\/api\/vision/, '') || '/';
-  const target = `${VISION_BASE}${visionPath}`;
-
-  const options = {
-    method: req.method,
-    headers: { ...req.headers, host: new URL(VISION_BASE).host },
-  };
-
-  const upstream = http.request(target, options, (upRes) => {
-    res.writeHead(upRes.statusCode, upRes.headers);
-    upRes.pipe(res, { end: true });
-  });
-  upstream.on('error', (err) => {
-    res.status(502).json({ success: false, message: `Cannot reach vision agent: ${err.message}` });
-  });
-
-  req.pipe(upstream, { end: true });
-}
-
-app.use('/api/vision', (req, res) => _proxyToVision(req, res));
 
 // ---------------------------------------------------------------------------
 // Planner config (surface selected settings to the frontend)
@@ -164,8 +177,7 @@ async function runMigrations() {
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
-app.listen(PORT, async () => {
-  await runMigrations();
+app.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════════════╗
 ║   🗺️  CMOP Map Server                                 ║
@@ -179,6 +191,14 @@ app.listen(PORT, async () => {
 ║   💚 Env:     ${process.env.NODE_ENV || 'development'}                            ║
 ╚══════════════════════════════════════════════════════╝
   `);
+
+  // Best-effort: the migration only adds an enum value, and it already skips
+  // itself when init-db.js has not been run.  Awaiting it here without a catch
+  // turned an unreachable database into an unhandled rejection that killed the
+  // process — after the port was already bound.
+  runMigrations().catch(err => {
+    console.warn(`⚠️  DB migrations skipped: ${err.message}`);
+  });
 });
 
 module.exports = app;

@@ -19,8 +19,12 @@ const pool = require('../config/database');
 class Entity {
   // ---------------------------------------------------------------
   // Shared SELECT  (used by every read method)
+  //
+  // `extraSelect` appends expressions to the SELECT list (it must start with
+  // a comma).  It exists so a caller can add a computed column — getNearby's
+  // `distancia` — without losing the medical JOIN or the GIST index on geom.
   // ---------------------------------------------------------------
-  static baseSelect() {
+  static baseSelect(extraSelect = '') {
     return `
       SELECT
         pi.id,
@@ -50,6 +54,7 @@ class Entity {
             'primary_injury',            md.primary_injury,
             'vital_signs',               md.vital_signs,
             'prehospital_treatment',     md.prehospital_treatment,
+            'evac_priority',             md.evac_priority,
             'evac_stage',                md.evac_stage,
             'destination_facility',      CASE WHEN df.id IS NOT NULL THEN
                                            jsonb_build_object('id', df.id, 'nombre', df.nombre)
@@ -59,6 +64,7 @@ class Entity {
             'updated_at',                md.updated_at
           )
         ELSE NULL END AS medical
+        ${extraSelect}
       FROM puntos_interes pi
       LEFT JOIN medical_details md ON md.entity_id = pi.id
       LEFT JOIN puntos_interes df ON df.id = md.destination_facility_id
@@ -114,12 +120,18 @@ class Entity {
    * Returns same shape as other reads (medical included) plus `distancia` (m).
    */
   static async getNearby(longitud, latitud, radio = 50000) {
-    const { rows } = await pool.query(
-      `${this.baseSelect()},
+    // The distance goes through extraSelect so it lands in the SELECT list.
+    // Concatenated after baseSelect() it would land after the JOINs instead,
+    // where Postgres reads it as a lateral FROM item and the column never
+    // reaches the response.
+    const distancia = `,
        ST_Distance(
          pi.geom::geography,
          ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
-       ) AS distancia
+       ) AS distancia`;
+
+    const { rows } = await pool.query(
+      `${this.baseSelect(distancia)}
        WHERE ST_DWithin(
          pi.geom::geography,
          ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
@@ -149,9 +161,9 @@ class Entity {
    *
    * data.medical (optional) shape:
    *   {
-   *     triage_color, injury_mechanism, primary_injury,
+   *     triage_color, casualty_status, injury_mechanism, primary_injury,
    *     vital_signs,  prehospital_treatment,
-   *     evac_stage,
+   *     evac_priority, evac_stage,
    *     destination_facility_id,   ← raw FK (integer)
    *     nine_line_data             ← object, stored as JSONB
    *   }
@@ -219,6 +231,10 @@ class Entity {
   // ---------------------------------------------------------------
 
   static async createBatch(entities) {
+    // An empty batch would build `WHERE pi.id IN ()` further down — a syntax
+    // error.  Nothing to insert, nothing to return.
+    if (!entities || entities.length === 0) return [];
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -351,35 +367,45 @@ class Entity {
    * INSERT ... ON CONFLICT (entity_id) DO UPDATE
    * Handles both initial creation and subsequent partial updates.
    * Only the keys present in `medical` are written; others stay untouched.
+   *
+   * A NULL parameter means "the caller did not supply this field", so:
+   *   - on INSERT  the four columns that carry a schema DEFAULT fall back to
+   *     it explicitly.  A bare NULL in VALUES overrides a DEFAULT, which used
+   *     to leave fresh records with triage_color NULL instead of 'UNKNOWN'.
+   *   - on CONFLICT the existing value is kept.  These read the parameters
+   *     directly rather than EXCLUDED, because EXCLUDED carries the
+   *     defaulted-in value and would overwrite a real triage with 'UNKNOWN'.
    */
   static async _upsertMedical(client, entityId, medical) {
     await client.query(
       `INSERT INTO medical_details (
          entity_id, triage_color, casualty_status, injury_mechanism, primary_injury,
-         vital_signs, prehospital_treatment, evac_stage,
+         vital_signs, prehospital_treatment, evac_priority, evac_stage,
          destination_facility_id, nine_line_data
        )
        VALUES (
          $1,
-         $2::triage_color_enum,
-         $3::casualty_status_enum,
+         COALESCE($2::triage_color_enum,    'UNKNOWN'),
+         COALESCE($3::casualty_status_enum, 'UNKNOWN'),
          $4, $5,
          $6::jsonb,
          $7,
-         $8::evac_stage_enum,
-         $9,
-         $10::jsonb
+         COALESCE($8::evac_priority_enum,   'UNKNOWN'),
+         COALESCE($9::evac_stage_enum,      'unknown'),
+         $10,
+         $11::jsonb
        )
        ON CONFLICT (entity_id) DO UPDATE SET
-         triage_color            = COALESCE(EXCLUDED.triage_color,            medical_details.triage_color),
-         casualty_status         = COALESCE(EXCLUDED.casualty_status,         medical_details.casualty_status),
-         injury_mechanism        = COALESCE(EXCLUDED.injury_mechanism,        medical_details.injury_mechanism),
-         primary_injury          = COALESCE(EXCLUDED.primary_injury,          medical_details.primary_injury),
-         vital_signs             = COALESCE(EXCLUDED.vital_signs,             medical_details.vital_signs),
-         prehospital_treatment   = COALESCE(EXCLUDED.prehospital_treatment,   medical_details.prehospital_treatment),
-         evac_stage              = COALESCE(EXCLUDED.evac_stage,              medical_details.evac_stage),
-         destination_facility_id = COALESCE(EXCLUDED.destination_facility_id, medical_details.destination_facility_id),
-         nine_line_data          = COALESCE(EXCLUDED.nine_line_data,          medical_details.nine_line_data),
+         triage_color            = COALESCE($2::triage_color_enum,    medical_details.triage_color),
+         casualty_status         = COALESCE($3::casualty_status_enum, medical_details.casualty_status),
+         injury_mechanism        = COALESCE($4,                       medical_details.injury_mechanism),
+         primary_injury          = COALESCE($5,                       medical_details.primary_injury),
+         vital_signs             = COALESCE($6::jsonb,                medical_details.vital_signs),
+         prehospital_treatment   = COALESCE($7,                       medical_details.prehospital_treatment),
+         evac_priority           = COALESCE($8::evac_priority_enum,   medical_details.evac_priority),
+         evac_stage              = COALESCE($9::evac_stage_enum,      medical_details.evac_stage),
+         destination_facility_id = COALESCE($10,                      medical_details.destination_facility_id),
+         nine_line_data          = COALESCE($11::jsonb,               medical_details.nine_line_data),
          updated_at              = CURRENT_TIMESTAMP`,
       [
         entityId,
@@ -389,6 +415,7 @@ class Entity {
         medical.primary_injury ?? null,
         medical.vital_signs ? JSON.stringify(medical.vital_signs) : null,
         medical.prehospital_treatment ?? null,
+        medical.evac_priority ?? null,
         medical.evac_stage ?? null,
         medical.destination_facility_id ?? null,
         medical.nine_line_data ? JSON.stringify(medical.nine_line_data) : null

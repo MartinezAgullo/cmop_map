@@ -140,6 +140,22 @@ function validateNineLineData(data, strict = false) {
   return errors.length > 0 ? { valid: false, errors } : { valid: true };
 }
 
+/**
+ * Upper-case the coded 9-Line fields.
+ *
+ * validateNineLineData accepts "a" and "A" alike, so both paths that write
+ * nine_line_data must store the same thing — otherwise a value entered through
+ * PUT reads back lower-case and no consumer comparing against 'A' matches it.
+ * Returns a copy; the caller's object is left alone.
+ */
+function normaliseNineLineData(data) {
+  const out = { ...data };
+  for (const field of Object.keys(NINE_LINE_ENUMS)) {
+    if (typeof out[field] === 'string') out[field] = out[field].toUpperCase();
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Reads
 // ---------------------------------------------------------------------------
@@ -270,8 +286,9 @@ router.put('/:entity_id', async (req, res) => {
     }
 
     // Validate nine_line_data if present (non-strict: partial updates OK)
-    if (req.body.nine_line_data) {
-      const validation = validateNineLineData(req.body.nine_line_data, false);
+    const payload = { ...req.body };
+    if (payload.nine_line_data) {
+      const validation = validateNineLineData(payload.nine_line_data, false);
       if (!validation.valid) {
         return res.status(400).json({
           success: false,
@@ -279,12 +296,14 @@ router.put('/:entity_id', async (req, res) => {
           errors: validation.errors
         });
       }
+      // Same normalisation POST /nine-line applies, so both paths agree
+      payload.nine_line_data = normaliseNineLineData(payload.nine_line_data);
     }
 
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      await Entity._upsertMedical(client, id, req.body);
+      await Entity._upsertMedical(client, id, payload);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -393,12 +412,7 @@ router.post('/:entity_id/nine-line', async (req, res) => {
     }
 
     // Normalise enum codes to uppercase
-    const nineLineData = { ...req.body };
-    for (const field of Object.keys(NINE_LINE_ENUMS)) {
-      if (nineLineData[field] && typeof nineLineData[field] === 'string') {
-        nineLineData[field] = nineLineData[field].toUpperCase();
-      }
-    }
+    const nineLineData = normaliseNineLineData(req.body);
 
     // Upsert the medical record with only nine_line_data
     const client = await pool.connect();
@@ -428,6 +442,10 @@ router.post('/:entity_id/nine-line', async (req, res) => {
 router.delete('/:entity_id', async (req, res) => {
   try {
     const id = parseInt(req.params.entity_id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: 'entity_id must be an integer' });
+    }
+
     const { rowCount } = await pool.query(
       `DELETE FROM medical_details WHERE entity_id = $1`, [id]
     );

@@ -202,6 +202,16 @@ router.post('/batch', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
+    // A point needs both halves.  ST_MakePoint(lng, NULL) is NULL, so a
+    // half-supplied coordinate used to keep the old position silently.
+    const { longitud, latitud } = req.body;
+    if ((longitud == null) !== (latitud == null)) {
+      return res.status(400).json({
+        success: false,
+        message: 'longitud and latitud must be supplied together'
+      });
+    }
+
     const entity = await Entity.update(req.params.id, req.body);
     if (!entity) {
       return res.status(404).json({ success: false, message: 'Entity not found' });
