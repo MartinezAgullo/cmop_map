@@ -128,7 +128,21 @@ body {
   border-bottom: 1px solid var(--rule);
 }
 
-.wordmark { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.wordmark { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* Indra Group signs the product, beside the wordmark: the negative logotype on
+   the dark theme, Azul Amazonico (#004254) on the light one. */
+.brand {
+  display: flex;
+  align-items: center;
+  height: 18px;
+  padding-left: 12px;
+  border-left: 1px solid var(--rule);
+}
+.brand img { display: block; height: 15px; width: auto; opacity: .85; }
+.brand-dark { display: none !important; }
+body.dark .brand-dark { display: block !important; }
+body.dark .brand-light { display: none !important; }
 
 .wordmark h1 {
   font-family: var(--font-cond);
