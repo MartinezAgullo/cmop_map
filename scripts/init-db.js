@@ -111,6 +111,10 @@ const BASE_TABLE = `
     altitud               NUMERIC(10, 2),
     casevac_eligible      BOOLEAN           DEFAULT false,
     mobility              mobility_enum,
+    -- Casualties this platform can evacuate in one planning cycle. NULL where the
+    -- notion does not apply (a tank has no litter capacity), so it is nullable rather
+    -- than defaulted: a missing value means "not stated", not "one".
+    capacity              SMALLINT          CHECK (capacity IS NULL OR capacity >= 1),
     geom                  GEOMETRY(Point, 4326) NOT NULL,
     created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP

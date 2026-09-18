@@ -31,6 +31,7 @@ COPY package*.json ./
 COPY server.js ./
 COPY config ./config
 COPY models ./models
+COPY lib ./lib
 COPY routes ./routes
 COPY public ./public
 COPY scripts ./scripts

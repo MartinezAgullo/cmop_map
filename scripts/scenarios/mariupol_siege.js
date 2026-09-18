@@ -83,8 +83,8 @@ const entities = [
   // ---------------------------------------------------------------
   // MEDEVAC assets
   // ---------------------------------------------------------------
-  { nombre: 'UKR MEDEVAC-1', descripcion: 'Ukrainian MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_2', observaciones: 'Standby at Role-2', altitud: 0, lng: 37.512, lat: 47.086 },
-  { nombre: 'UKR MEDEVAC-2', descripcion: 'Ukrainian MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MEDEVAC-2', activo: true, tipo_elemento: 'medevac_role_1', observaciones: 'On ground at Azovstal',  altitud: 0, lng: 37.625, lat: 47.090 },
+  { nombre: 'UKR MEDEVAC-1', descripcion: 'Ukrainian MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_2', capacity: 1, observaciones: 'Standby at Role-2', altitud: 0, lng: 37.512, lat: 47.086 },
+  { nombre: 'UKR MEDEVAC-2', descripcion: 'Ukrainian MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MEDEVAC-2', activo: true, tipo_elemento: 'medevac_role_1', capacity: 1, observaciones: 'On ground at Azovstal',  altitud: 0, lng: 37.625, lat: 47.090 },
 
   // ---------------------------------------------------------------
   // Casualties

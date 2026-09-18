@@ -698,6 +698,10 @@ const CASEVAC_ELIGIBLE_CATEGORIES = [
   'transportation', 'reconnaissance', 'helicopter', 'ground_vehicle', 'armoured', 'ugv'
 ];
 
+// Anything that can carry a casualty declares how many it takes per planning cycle.
+// A dedicated MEDEVAC unit always can; the rest only when flagged CASEVAC eligible.
+const CAPACITY_CATEGORIES = ['medevac_unit', ...CASEVAC_ELIGIBLE_CATEGORIES];
+
 function updateTipoElementoOptions(categoria) {
   const group  = document.getElementById('tipoElementoGroup');
   const select = document.getElementById('tipoElemento');
@@ -721,6 +725,15 @@ function updateTipoElementoOptions(categoria) {
   } else {
     casevacGroup.style.display = 'none';
     casevacCheck.checked = false;
+  }
+
+  const capacityGroup = document.getElementById('capacityGroup');
+  const capacityInput = document.getElementById('capacity');
+  if (CAPACITY_CATEGORIES.includes(categoria)) {
+    capacityGroup.style.display = 'block';
+  } else {
+    capacityGroup.style.display = 'none';
+    capacityInput.value = '';
   }
 
   const mobilityGroup  = document.getElementById('mobilityGroup');
@@ -1370,11 +1383,12 @@ function buildPopup(e) {
       </div>`;
   }
 
-  const infoHTML = (e.descripcion || e.observaciones || e.casevac_eligible) ? `
+  const infoHTML = (e.descripcion || e.observaciones || e.casevac_eligible || e.capacity) ? `
       <div class="popup-info">
         ${e.descripcion ? `<p>${esc(e.descripcion)}</p>` : ''}
         ${e.observaciones ? `<p><strong>${t('popup.obs')}:</strong> ${esc(e.observaciones)}</p>` : ''}
         ${e.casevac_eligible ? `<p><span class="casevac-badge">${t('popup.casevac')}</span></p>` : ''}
+        ${e.capacity ? `<p><strong>${t('popup.capacity')}:</strong> ${e.capacity}</p>` : ''}
       </div>` : '';
 
   return `
@@ -1454,6 +1468,11 @@ async function crearNuevaEntidad() {
     const mobility = document.getElementById('mobility').value;
     if (MOBILITY_CATEGORIES.includes(categoria) && mobility) {
       payload.mobility = mobility;
+    }
+
+    const capacity = parseInt(document.getElementById('capacity').value, 10);
+    if (CAPACITY_CATEGORIES.includes(categoria) && capacity >= 1) {
+      payload.capacity = capacity;
     }
 
     const res  = await fetch('/api/entities', {

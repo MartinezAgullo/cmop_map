@@ -23,17 +23,14 @@
 // once litter capacity is taken into account. Seven evacuable casualties cannot
 // be moved in this planning cycle by construction.
 //
-// `capacity` (non-standard field)
-// -------------------------------
+// `capacity`
+// ----------
 // Number of casualties the asset can evacuate in one planning cycle: 1 for a
 // single-litter platform, 2 for a platform that can run two consecutive pickups.
-// The quantum-inspired planner in `optimizacion-annealing/latacc-medevac-integration`
-// reads it to split the fleet into U1 (one casualty) and U2 (two casualties, two
-// stages). NOTE: `scripts/load-scenario.js` inserts a fixed column list, so this
-// field is NOT persisted to PostGIS — it only reaches a consumer that reads this
-// file directly. The same value is therefore repeated in `observaciones`
-// ("Capacity: N litter(s)"), which IS persisted, so the planner can recover it
-// over the REST API as well.
+// It is a column on `puntos_interes`, so it survives into PostGIS and reaches the
+// planner over the REST API. The quantum-inspired planner in
+// `optimizacion-annealing/latacc-medevac-integration` reads it to split the fleet
+// into U1 (one casualty) and U2 (two casualties, two stages).
 //
 // Triage colours follow multinational STANAG coding:
 //   T1=RED (Immediate), T2=YELLOW (Urgent), T3=GREEN (Minimal),

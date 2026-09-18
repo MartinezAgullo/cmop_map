@@ -48,7 +48,7 @@ const entities = [
   // ---------------------------------------------------------------
   // MEDEVAC asset
   // ---------------------------------------------------------------
-  { nombre: 'ESP MEDEVAC-1', descripcion: 'Spanish MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_2', observaciones: 'On standby at Manises', altitud: 0, lng: -0.4760, lat: 39.4910 },
+  { nombre: 'ESP MEDEVAC-1', descripcion: 'Spanish MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_2', capacity: 1, observaciones: 'On standby at Manises', altitud: 0, lng: -0.4760, lat: 39.4910 },
 
   // ---------------------------------------------------------------
   // Air / ISR (context)

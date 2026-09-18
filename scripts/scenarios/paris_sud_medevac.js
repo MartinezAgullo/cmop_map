@@ -98,9 +98,9 @@ const entities = [
   // ---------------------------------------------------------------
   // MEDEVAC assets
   // ---------------------------------------------------------------
-  { nombre: 'ESP MEDEVAC-1', descripcion: 'Spanish MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', observaciones: 'Ground evacuation', altitud: null, lng: 2.305, lat: 48.58 },
-  { nombre: 'FRA MEDEVAC-2', descripcion: 'French MEDEVAC ambulance', categoria: 'medevac_unit', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-MEDEVAC-2', activo: true, tipo_elemento: 'medevac_role_2', mobility: 'ground', observaciones: 'Ground evacuation', altitud: null, lng: 2.255, lat: 48.60 },
-  { nombre: 'ITA MEDEVAC-1', descripcion: 'Italian MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', observaciones: 'Ground evacuation', altitud: null, lng: 2.34, lat: 48.595 },
+  { nombre: 'ESP MEDEVAC-1', descripcion: 'Spanish MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation', altitud: null, lng: 2.305, lat: 48.58 },
+  { nombre: 'FRA MEDEVAC-2', descripcion: 'French MEDEVAC ambulance', categoria: 'medevac_unit', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-MEDEVAC-2', activo: true, tipo_elemento: 'medevac_role_2', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation', altitud: null, lng: 2.255, lat: 48.60 },
+  { nombre: 'ITA MEDEVAC-1', descripcion: 'Italian MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation', altitud: null, lng: 2.34, lat: 48.595 },
 
   // ---------------------------------------------------------------
   // Casualties
