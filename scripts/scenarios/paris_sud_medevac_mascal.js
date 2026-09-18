@@ -38,6 +38,15 @@
 //
 // nine_line_data follows NATO 9-Line MEDEVAC Request structure (see schema.js)
 //
+// Road access
+// -----------
+// Every asset and casualty sits somewhere a ground vehicle can actually reach, checked
+// against Valhalla on the Paris extract. Two entities were moved for this reason:
+// ITA-MEDEVAC-1 (200 m north, it was parked on an isolated service road with no route in
+// or out) and FRA-CAS-8 (30 m north, it had landed inside a compound with no drivable
+// access). The point is that this instance measures the optimiser, not the road network;
+// a casualty deliberately out of vehicle reach belongs in a scenario of its own.
+//
 // Coordinates: South of Paris, France (48.5-48.62°N, 2.2-2.38°E)
 // Run with
 //   docker compose up -d
@@ -129,7 +138,7 @@ const entities = [
   // ---------------------------------------------------------------
   { nombre: 'ESP MEDEVAC-1', descripcion: 'Spanish MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation. Capacity: 1 litter', altitud: null, lng: 2.305, lat: 48.58 },
   { nombre: 'FRA MEDEVAC-2', descripcion: 'French MEDEVAC ambulance', categoria: 'medevac_unit', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-MEDEVAC-2', activo: true, tipo_elemento: 'medevac_role_2', mobility: 'ground', capacity: 2, observaciones: 'Ground evacuation. Capacity: 2 litters', altitud: null, lng: 2.255, lat: 48.60 },
-  { nombre: 'ITA MEDEVAC-1', descripcion: 'Italian MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', capacity: 2, observaciones: 'Ground evacuation. Capacity: 2 litters', altitud: null, lng: 2.34, lat: 48.595 },
+  { nombre: 'ITA MEDEVAC-1', descripcion: 'Italian MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', capacity: 2, observaciones: 'Ground evacuation. Capacity: 2 litters', altitud: null, lng: 2.34, lat: 48.596799 },
   { nombre: 'ESP MEDEVAC-3', descripcion: 'Spanish mechanised MEDEVAC', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-3', activo: true, tipo_elemento: 'medevac_role_2', mobility: 'ground', capacity: 2, observaciones: 'Pizarro ambulance variant. Capacity: 2 litters', altitud: null, lng: 2.318, lat: 48.588 },
   { nombre: 'DEU MEDEVAC-1', descripcion: 'German MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_2', mobility: 'ground', capacity: 2, observaciones: 'Boxer ambulance variant. Capacity: 2 litters', altitud: null, lng: 2.205, lat: 48.618 },
 
@@ -163,7 +172,7 @@ const entities = [
   { nombre: 'FRA-CAS-5 (KIA)', descripcion: 'French KIA - Fatal head trauma', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-5', activo: true, tipo_elemento: 'casualty', observaciones: 'Multi-vehicle collision (convoy)', altitud: null, lng: 2.345534, lat: 48.599202 },
   { nombre: 'FRA-CAS-6 (WIA)', descripcion: 'French WIA - Grade II ankle sprain', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-6', activo: true, tipo_elemento: 'casualty', observaciones: 'Multi-vehicle collision (convoy)', altitud: null, lng: 2.354143, lat: 48.600963 },
   { nombre: 'FRA-CAS-7 (WIA)', descripcion: 'French WIA - Penetrating thoracic trauma', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-7', activo: true, tipo_elemento: 'casualty', observaciones: 'Multi-vehicle collision (convoy)', altitud: null, lng: 2.345736, lat: 48.599593 },
-  { nombre: 'FRA-CAS-8 (WIA)', descripcion: 'French WIA - Fragmentation wound left thigh', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-8', activo: true, tipo_elemento: 'casualty', observaciones: 'Multi-vehicle collision (convoy)', altitud: null, lng: 2.353016, lat: 48.601755 },
+  { nombre: 'FRA-CAS-8 (WIA)', descripcion: 'French WIA - Fragmentation wound left thigh', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-8', activo: true, tipo_elemento: 'casualty', observaciones: 'Multi-vehicle collision (convoy)', altitud: null, lng: 2.353016, lat: 48.602025 },
   { nombre: 'FRA-CAS-9 (WIA)', descripcion: 'French WIA - Partial-thickness burns 18% TBSA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-9', activo: true, tipo_elemento: 'casualty', observaciones: 'Multi-vehicle collision (convoy)', altitud: null, lng: 2.353999, lat: 48.594957 },
   { nombre: 'GER-CAS-1 (WIA)', descripcion: 'German WIA - Traumatic above-knee amputation', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Blast (training ordnance premature detonation)', altitud: null, lng: 2.370964, lat: 48.610119 },
   { nombre: 'GER-CAS-2 (WIA)', descripcion: 'German WIA - Facial laceration 5cm', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-2', activo: true, tipo_elemento: 'casualty', observaciones: 'Blast (training ordnance premature detonation)', altitud: null, lng: 2.373597, lat: 48.605475 },
