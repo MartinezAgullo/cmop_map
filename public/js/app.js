@@ -1612,7 +1612,7 @@ async function loadMedevacRoutes(taskId) {
         L.geoJSON(pickupGeo, {
           filter: (feature) => !feature.properties?.route_type || ['best', 'direct_haversine'].includes(feature.properties.route_type),
           style: { color, weight: 3, opacity: 0.7, dashArray: '8 6' }
-        }).bindPopup(_routePopup(route, 'pickup')).addTo(routeLayer);
+        }).bindPopup(_routePopup(route, 'pickup'), { className: 'custom-popup' }).addTo(routeLayer);
         _collectBounds(pickupGeo, bounds);
       }
 
@@ -1621,7 +1621,7 @@ async function loadMedevacRoutes(taskId) {
         L.geoJSON(deliveryGeo, {
           filter: (feature) => !feature.properties?.route_type || ['best', 'direct_haversine'].includes(feature.properties.route_type),
           style: { color, weight: 4, opacity: 1 }
-        }).bindPopup(_routePopup(route, 'delivery')).addTo(routeLayer);
+        }).bindPopup(_routePopup(route, 'delivery'), { className: 'custom-popup' }).addTo(routeLayer);
         _collectBounds(deliveryGeo, bounds);
       }
 
@@ -1631,7 +1631,7 @@ async function loadMedevacRoutes(taskId) {
         L.circleMarker(poiCoord, {
           radius: 6, color, fillColor: color,
           fillOpacity: 0.9, weight: 2
-        }).bindPopup(_routePopup(route, 'poi')).addTo(routeLayer);
+        }).bindPopup(_routePopup(route, 'poi'), { className: 'custom-popup' }).addTo(routeLayer);
       }
     });
 
