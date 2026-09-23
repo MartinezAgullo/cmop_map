@@ -49,8 +49,27 @@
           <option value="" data-i18n="scenario.loading">Loading scenarios…</option>
         </select>
         <button class="btn-scenario" id="loadScenarioBtn" data-i18n="scenario.load">Load</button>
+        <button class="btn-scenario" id="randomToggleBtn" aria-expanded="false"
+                aria-controls="randomForm" data-i18n="random.toggle">Random</button>
         <span class="live" id="liveIndicator"><i></i><em id="liveLabel">—</em></span>
       </div>
+
+      <!-- Random MASCAL generator: M casualties, N evacuators, P facilities around a centre -->
+      <form class="random-form" id="randomForm" hidden>
+        <label><span data-i18n="random.centre">Centre</span>
+          <select id="randomPreset"></select></label>
+        <label><span data-i18n="random.casualties">Casualties</span>
+          <input id="randomCasualties" type="number" min="1" value="30"></label>
+        <label><span data-i18n="random.evacuators">Evacuators</span>
+          <input id="randomEvacuators" type="number" min="1" value="12"></label>
+        <label><span data-i18n="random.facilities">Facilities</span>
+          <input id="randomFacilities" type="number" min="1" value="4"></label>
+        <label><span data-i18n="random.radius">Radius km</span>
+          <input id="randomRadius" type="number" min="0.5" step="0.5" value="4"></label>
+        <label><span data-i18n="random.seed">Seed</span>
+          <input id="randomSeed" type="number" min="0" placeholder="random"></label>
+        <button class="btn-scenario" type="submit" data-i18n="random.generate">Generate &amp; load</button>
+      </form>
 
       <!-- ============================================================
            Triage ladder — census, alarm and filter in one object.

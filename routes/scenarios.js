@@ -3,6 +3,8 @@
 // Exposes scenario management to the frontend.
 //   GET  /api/scenarios          — list available scenario names + meta
 //   POST /api/scenarios/load/:name — load a scenario (runs load-scenario.js)
+//   GET  /api/scenarios/presets  — centres the random MASCAL generator knows
+//   POST /api/scenarios/generate — generate a random MASCAL scenario, write it, load it
 // ---------------------------------------------------------------------------
 
 const express   = require('express');
@@ -10,8 +12,8 @@ const router    = express.Router();
 const path      = require('path');
 const fs        = require('fs');
 const { execFileSync } = require('child_process');
-
-const SCENARIOS_DIR = path.join(__dirname, '..', 'scripts', 'scenarios');
+const { PRESETS, LIMITS, generateMascalScenario } = require('../lib/mascal-generator');
+const { SCENARIOS_DIR, writeScenarioModule } = require('../lib/scenario-files');
 
 const PLANNER_BASE = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
 
@@ -36,6 +38,20 @@ function _notifyScenarioLoaded(name) {
   }).catch(err => {
     console.warn(`[scenarios] Planner notify skipped (planner unreachable): ${err.message}`);
   });
+}
+
+/**
+ * Run the loader on a scenario file and tell the planner. Throws with the loader's stderr.
+ * The loader truncates both tables inside one transaction, so a failure changes nothing.
+ */
+function loadScenario(name) {
+  const loaderPath = path.join(__dirname, '..', 'scripts', 'load-scenario.js');
+  const output = execFileSync('node', [loaderPath, name], {
+    encoding: 'utf-8',
+    timeout: 15000                // 15 s safety cap
+  });
+  _notifyScenarioLoaded(name);
+  return output.trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -69,20 +85,52 @@ router.post('/load/:name', (req, res) => {
   }
 
   try {
-    const loaderPath = path.join(__dirname, '..', 'scripts', 'load-scenario.js');
-    const output = execFileSync('node', [loaderPath, name], {
-      encoding: 'utf-8',
-      timeout: 15000                // 15 s safety cap
-    });
-
-    _notifyScenarioLoaded(name);
-
-    res.json({ success: true, scenario: name, output: output.trim() });
+    const output = loadScenario(name);
+    res.json({ success: true, scenario: name, output });
   } catch (err) {
     console.error(`POST /scenarios/load/${name}:`, err.stderr || err.message);
     res.status(500).json({
       success: false,
       message: `Failed to load scenario "${name}"`,
+      error: err.stderr ? err.stderr.trim() : err.message
+    });
+  }
+});
+
+/** Preset centres and the generator's limits, for the map's form */
+router.get('/presets', (req, res) => {
+  res.json({
+    success: true,
+    data: Object.entries(PRESETS).map(([key, p]) => ({ key, label: p.label, lat: p.lat, lng: p.lng })),
+    limits: LIMITS,
+  });
+});
+
+/**
+ * Generate a random MASCAL scenario, write it as scripts/scenarios/<name>.js and load it.
+ * Body: { preset | lat+lng, n_casualties, n_evacuators, n_medical_facilities, radius_km, seed }
+ * The file stays behind so the same scenario can be reloaded, or read by the optimiser's
+ * scenario reader, by name.
+ */
+router.post('/generate', (req, res) => {
+  let scenario;
+  try {
+    const { preset, lat, lng, n_casualties, n_evacuators, n_medical_facilities, radius_km, seed } = req.body || {};
+    scenario = generateMascalScenario({ preset, lat, lng, n_casualties, n_evacuators,
+                                        n_medical_facilities, radius_km, seed });
+  } catch (err) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+
+  try {
+    writeScenarioModule(scenario);
+    const output = loadScenario(scenario.meta.name);
+    res.json({ success: true, scenario: scenario.meta.name, meta: scenario.meta, output });
+  } catch (err) {
+    console.error('POST /scenarios/generate:', err.stderr || err.message);
+    res.status(500).json({
+      success: false,
+      message: `Failed to generate scenario "${scenario.meta.name}"`,
       error: err.stderr ? err.stderr.trim() : err.message
     });
   }

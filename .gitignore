@@ -30,3 +30,5 @@ Thumbs.db
 *.backup
 *.bak
 docs_backup/
+# Random MASCAL scenarios: reproducible from the seed in their name
+scripts/scenarios/random_*.js

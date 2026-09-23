@@ -541,6 +541,8 @@ function setupEventListeners() {
   });
 
   document.getElementById('loadScenarioBtn').addEventListener('click', loadSelectedScenario);
+  document.getElementById('randomToggleBtn').addEventListener('click', toggleRandomForm);
+  document.getElementById('randomForm').addEventListener('submit', generateRandomScenario);
 
   // MEDEVAC Routes panel
   document.getElementById('loadRoutesBtn').addEventListener('click', () => {
@@ -781,6 +783,67 @@ async function initScenarios() {
     }
   } catch (err) {
     console.error('Failed to fetch scenarios:', err);
+  }
+}
+
+// Random MASCAL generator (POST /api/scenarios/generate) -------------------------
+
+function toggleRandomForm() {
+  const form = document.getElementById('randomForm');
+  const btn  = document.getElementById('randomToggleBtn');
+  form.hidden = !form.hidden;
+  btn.setAttribute('aria-expanded', String(!form.hidden));
+  if (!form.hidden && !document.getElementById('randomPreset').options.length) loadPresets();
+}
+
+async function loadPresets() {
+  try {
+    const res  = await fetch('/api/scenarios/presets');
+    const data = await res.json();
+    if (!data.success) return;
+    const select = document.getElementById('randomPreset');
+    select.innerHTML = data.data
+      .map(p => `<option value="${p.key}">${p.label}</option>`)
+      .join('');
+  } catch (err) {
+    console.error('Failed to fetch presets:', err);
+  }
+}
+
+async function generateRandomScenario(event) {
+  event.preventDefault();
+  const value = id => document.getElementById(id).value;
+  const body = {
+    preset:               value('randomPreset') || 'paris',
+    n_casualties:         Number(value('randomCasualties')),
+    n_evacuators:         Number(value('randomEvacuators')),
+    n_medical_facilities: Number(value('randomFacilities')),
+    radius_km:            Number(value('randomRadius')),
+  };
+  if (value('randomSeed') !== '') body.seed = Number(value('randomSeed'));
+
+  showLoading(true);
+  try {
+    const res  = await fetch('/api/scenarios/generate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showMessage(t('msg.randomLoaded', { name: data.scenario }), 'success');
+      _shouldFit = true;
+      await initScenarios();
+      document.getElementById('scenarioSelect').value = data.scenario;
+      await loadEntities();
+    } else {
+      showMessage(data.message || t('msg.scenarioError'), 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showMessage(t('msg.connError'), 'error');
+  } finally {
+    showLoading(false);
   }
 }
 

@@ -29,7 +29,9 @@ cmop_map/
 ├── config/
 │   └── database.js              # pg Pool — reads .env
 ├── lib/
-│   └── sse-broker.js            # Singleton SSE broadcast module (connected clients registry)
+│   ├── sse-broker.js            # Singleton SSE broadcast module (connected clients registry)
+│   ├── mascal-generator.js      # Pure, seeded random MASCAL scenario generator
+│   └── scenario-files.js        # Scenario file paths, name validation, module writer
 ├── models/
 │   └── entity.js                # All queries: puntos_interes + medical_details (LEFT JOIN)
 ├── routes/
@@ -40,6 +42,7 @@ cmop_map/
 ├── scripts/
 │   ├── init-db.js               # Creates schema (enums, tables, indexes, triggers). No seed.
 │   ├── load-scenario.js         # CLI loader: truncates + inserts a scenario in a transaction
+│   ├── generate-mascal.js       # CLI: write (and optionally load) a random MASCAL scenario
 │   └── scenarios/
 │       ├── valencia_urban.js    # Military-only baseline (no casualties)
 │       ├── valencia_medevac.js  # Urban + 3 casualties + medical facilities
@@ -76,6 +79,7 @@ All entity mutations are pushed to connected browsers without page refresh via *
 - **`medical_details`** — 1-to-1 table (FK = PK). Only exists for casualty entities. All fields nullable; defaults to `UNKNOWN`.
 - **`tipo_elemento`** — Used for subtypes within categories (e.g., `infantry` + `tipo_elemento: 'mechanised'` → icon `infantry_mechanised_{country}.svg`). Medical facilities and MEDEVAC units use this for Role 1/2/3/4.
 - **Scenarios** — data lives in `scripts/scenarios/*.js`. Each exports `{ meta, entities, medicalDetails }`. The loader resolves `elemento_identificado` → FK automatically. Adding a new scenario = one new file, zero schema changes.
+- **Random MASCAL scenarios** — `lib/mascal-generator.js` scatters `n_casualties`, `n_evacuators` and `n_medical_facilities` within a few kilometres of a preset city (Paris, Madrid, Valencia, London, Berlin, Rome, Brussels) or a custom point. See [Random MASCAL scenarios](#random-mascal-scenarios).
 - **Icon resolution** — `app.js` builds a candidate list (`category_tipo_country.svg` → `category_tipo.svg` → `category_country.svg` → `category.svg` → `default.svg`), checks with HEAD, caches.
 
 ---
@@ -164,6 +168,22 @@ node scripts/load-scenario.js paris_sud_medevac
 # List scenarios
 node scripts/load-scenario.js --list
 ```
+
+### Random MASCAL scenarios
+
+```bash
+node scripts/generate-mascal.js --preset paris --casualties 30 --evacuators 12 --facilities 4 --seed 42 --load
+node scripts/generate-mascal.js --lat 48.6 --lng 2.34 --casualties 20 --evacuators 8
+node scripts/generate-mascal.js --presets
+```
+
+The map offers the same thing under **Random**, next to the scenario selector. A scenario is written to `scripts/scenarios/random_mascal_<centre>_s<seed>.js` (git-ignored) and loaded like any other, so it can be reloaded by name and read by the optimiser's scenario reader. The same seed and counts always give the same scenario.
+
+Attributes follow skewed distributions, apportioned so the skew holds at any size: triage 50 % GREEN, 30 % YELLOW, 20 % RED (T3 > T2 > T1); vehicles 65 % `medevac_role_1`, 35 % role 2, 80 % ground and 20 % air; facilities 40 % role 1, 30 % role 2, 20 % role 3, 10 % role 4; one vehicle in three with `capacity: 2`, the rest 1. Casualties come in incidents of about eight, each within 300 m of its centre; facilities sit in the outer half of the radius. At least one role-2 facility and, when there is a RED casualty, one role-2 vehicle are guaranteed, since doctrine requires both for T1.
+
+Two limits. Positions are not snapped to roads, so an entity can land where no vehicle reaches; the planner then reports it as needing manual extraction. And the demo's Valhalla tiles cover Île-de-France only: outside Paris, ground routes need tiles for that region, or the planner's straight-line fallback.
+
+`npm test` runs the generator's tests (`node:test`, no dependencies).
 
 Stop: `Ctrl+C` then `docker compose down`
 
@@ -388,6 +408,16 @@ List scenarios.
   ]
 }
 ```
+
+#### **GET** `/api/scenarios/presets`
+
+Centres the random MASCAL generator knows, and its limits.
+
+#### **POST** `/api/scenarios/generate`
+
+Generate a random MASCAL scenario, write it, load it (truncates tables) and notify the planner as `load` does. Body: `{ preset | lat + lng, n_casualties, n_evacuators, n_medical_facilities, radius_km, seed }`, every field optional. 400 on invalid input, with the reason.
+
+**Response:** `{ "success": true, "scenario": "random_mascal_paris_s42", "meta": { ..., "generated": { "seed": 42, "triage_mix": {...}, "evacuation_slots": 20 } }, "output": "..." }`
 
 #### **POST** `/api/scenarios/load/:name`
 
