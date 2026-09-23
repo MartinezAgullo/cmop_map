@@ -147,6 +147,10 @@ const COUNTRY_ALIASES = {
   korea_del_sur:      'pok',
   republic_of_korea:  'pok',
   rok:                'pok',
+  marruecos:          'morocco',
+  morroco:            'morocco',
+  marroco:            'morocco',
+  morrocco:           'morocco',
 };
 
 function normalizeCountry(country) {
@@ -586,7 +590,7 @@ function setupEventListeners() {
     updateTipoElementoOptions(e.target.value);
   });
 
-  // Re-evaluate CASEVAC eligibility visibility when alliance changes
+  // Re-evaluate CASEVAC eligibility and capacity visibility when alliance changes
   document.getElementById('alliance').addEventListener('change', () => {
     const categoria = document.getElementById('categoria').value;
     updateTipoElementoOptions(categoria);
@@ -716,8 +720,9 @@ const CASEVAC_ELIGIBLE_CATEGORIES = [
   'transportation', 'reconnaissance', 'helicopter', 'ground_vehicle', 'armoured', 'ugv'
 ];
 
-// Anything that can carry a casualty declares how many it takes per planning cycle.
-// A dedicated MEDEVAC unit always can; the rest only when flagged CASEVAC eligible.
+// Anything friendly that can carry a casualty declares how many it takes per planning
+// cycle. A dedicated MEDEVAC unit always can; the rest only when flagged CASEVAC eligible.
+// Hostile, neutral and unknown platforms are never our evacuators, so they have none.
 const CAPACITY_CATEGORIES = ['medevac_unit', ...CASEVAC_ELIGIBLE_CATEGORIES];
 
 function updateTipoElementoOptions(categoria) {
@@ -747,7 +752,7 @@ function updateTipoElementoOptions(categoria) {
 
   const capacityGroup = document.getElementById('capacityGroup');
   const capacityInput = document.getElementById('capacity');
-  if (CAPACITY_CATEGORIES.includes(categoria)) {
+  if (CAPACITY_CATEGORIES.includes(categoria) && alliance === 'friendly') {
     capacityGroup.style.display = 'block';
   } else {
     capacityGroup.style.display = 'none';
@@ -1550,7 +1555,7 @@ async function crearNuevaEntidad() {
     }
 
     const capacity = parseInt(document.getElementById('capacity').value, 10);
-    if (CAPACITY_CATEGORIES.includes(categoria) && capacity >= 1) {
+    if (CAPACITY_CATEGORIES.includes(categoria) && payload.alliance === 'friendly' && capacity >= 1) {
       payload.capacity = capacity;
     }
 

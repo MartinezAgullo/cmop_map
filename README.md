@@ -178,7 +178,7 @@ node scripts/generate-mascal.js --lat 48.6 --lng 2.34 --casualties 20 --evacuato
 node scripts/generate-mascal.js --presets
 ```
 
-The map offers the same thing under **Random**, next to the scenario selector. A scenario is written to `scripts/scenarios/random_mascal_<centre>_s<seed>.js` (git-ignored) and loaded like any other, so it can be reloaded by name and read by the optimiser's scenario reader. The same seed and counts always give the same scenario.
+The map offers the same thing under **Random**, next to the scenario selector. `--load` and the map both tell a running planner (`POST /scenario/loaded`), so it replans on the new casualties. A scenario is written to `scripts/scenarios/random_mascal_<centre>_s<seed>.js` (git-ignored) and loaded like any other, so it can be reloaded by name and read by the optimiser's scenario reader. The same seed and counts always give the same scenario.
 
 Attributes follow skewed distributions, apportioned (largest remainder) so the proportions hold at any size rather than drifting as independent draws would: casualties 50 % GREEN, 30 % YELLOW, 15 % RED and 5 % KIA (BLACK); vehicle roles 1 to 4 in the triangular 4:3:2:1 of `optimizacion-annealing/evacuaciones_medevac_2.ipynb`, 80 % ground and 20 % air; facilities the same 4:3:2:1, with one of each role guaranteed when there are four or more; one vehicle in three with `capacity: 2`, the rest 1. Casualties come in incidents of about eight, each within 300 m of its centre; facilities sit in the outer half of the radius. Below four facilities, at least one role-2 facility is guaranteed, and when there is a RED casualty one role-2+ vehicle, since doctrine requires both for T1.
 
