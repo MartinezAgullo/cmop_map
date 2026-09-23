@@ -1673,7 +1673,7 @@ async function loadMedevacRoutes(taskId) {
       // Pickup leg — dashed, lighter.  Only the best route is rendered.
       if (pickupGeo) {
         L.geoJSON(pickupGeo, {
-          filter: (feature) => !feature.properties?.route_type || ['best', 'direct_haversine'].includes(feature.properties.route_type),
+          filter: (feature) => !feature.properties?.route_type || DRAWN_ROUTE_TYPES.includes(feature.properties.route_type),
           style: { color, weight: 3, opacity: 0.7, dashArray: '8 6' }
         }).bindPopup(_routePopup(route, 'pickup'), { className: 'custom-popup' }).addTo(routeLayer);
         _collectBounds(pickupGeo, bounds);
@@ -1682,7 +1682,7 @@ async function loadMedevacRoutes(taskId) {
       // Delivery leg — solid, full opacity.  Only the best route is rendered.
       if (deliveryGeo) {
         L.geoJSON(deliveryGeo, {
-          filter: (feature) => !feature.properties?.route_type || ['best', 'direct_haversine'].includes(feature.properties.route_type),
+          filter: (feature) => !feature.properties?.route_type || DRAWN_ROUTE_TYPES.includes(feature.properties.route_type),
           style: { color, weight: 4, opacity: 1 }
         }).bindPopup(_routePopup(route, 'delivery'), { className: 'custom-popup' }).addTo(routeLayer);
         _collectBounds(deliveryGeo, bounds);
@@ -1715,6 +1715,33 @@ async function loadMedevacRoutes(taskId) {
   }
 }
 
+// Route variants drawn on the map: Valhalla's best road route, a straight air line, and an
+// air line bent around threat zones. Road alternatives stay in the data, off the map.
+const DRAWN_ROUTE_TYPES = ['best', 'direct_haversine', 'diverted'];
+
+// What the planner says about threats on an air route: a climb advisory when the line
+// crosses a threat zone, or the detour it flies instead. Empty for everything else.
+function _airThreatHTML(route) {
+  const names = list => [...new Set(list.map(c => c.threat_name || c.threat_id || '?'))]
+    .map(esc).join(', ');
+  if (route.altitude_advisory) {
+    const crossings = route.threat_crossings || [];
+    const legs = [...new Set(crossings.map(c => t(`popup.leg.${c.leg}`)))].join(' + ');
+    return `<div class="popup-air-advisory">
+      <strong>⬆ ${t('popup.increaseAltitude')}</strong>
+      <span>${t('popup.crossesThreat', { legs, threats: names(crossings) })}</span>
+    </div>`;
+  }
+  if ((route.diverted || []).length) {
+    const around = route.diverted.flatMap(d => d.around || []);
+    return `<div class="popup-air-diverted">
+      <strong>↪ ${t('popup.diverted')}</strong>
+      <span>${t('popup.divertedAround', { threats: names(around) })}</span>
+    </div>`;
+  }
+  return '';
+}
+
 function _routePopup(route, leg) {
   const min = n => (n != null ? `${n} ${t('routes.min')}` : '—');
   const legLabel = leg === 'pickup'   ? t('popup.legPickup')
@@ -1723,7 +1750,9 @@ function _routePopup(route, leg) {
 
   const notes      = Array.isArray(route.doctrinal_notes) ? route.doctrinal_notes : [];
   const violations = notes.filter(n => n.startsWith('VIOLATION'));
-  const warnings   = notes.filter(n => !n.startsWith('VIOLATION'));
+  // The air notes are shown as their own banner, so they are not repeated here.
+  const warnings   = notes.filter(n => !n.startsWith('VIOLATION')
+                                    && !n.startsWith('INCREASE ALTITUDE:') && !n.startsWith('DIVERTED:'));
 
   const doctrineHTML = (violations.length + warnings.length) === 0 ? '' : `
     <div class="popup-doctrine">
@@ -1749,6 +1778,7 @@ function _routePopup(route, leg) {
         ${row(t('popup.deliveryEta'), min(route.delivery_eta_minutes))}
         ${row(t('popup.totalEta'), min(route.total_eta_minutes), true)}
       </div>
+      ${_airThreatHTML(route)}
       ${doctrineHTML}
     </div>`;
 }
@@ -1761,7 +1791,8 @@ function _routesSummaryHTML(routes) {
       <span class="route-color-dot" style="background:${color}"></span>
       <span>${esc(r.asset_name || '?')}<br>
         <em>&rarr;</em> ${esc(r.casualty_name || '?')}<br>
-        <em>&rarr;</em> ${esc(r.destination_name || '?')}</span>
+        <em>&rarr;</em> ${esc(r.destination_name || '?')}${
+          r.altitude_advisory ? `<br><b class="route-advisory">⬆ ${t('popup.increaseAltitude')}</b>` : ''}</span>
       <span class="route-eta">${eta}<br><span class="med-label">${t('routes.min')}</span></span>
     </div>`;
   }).join('');

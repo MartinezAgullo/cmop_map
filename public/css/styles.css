@@ -1116,6 +1116,21 @@ body.dark .brand-light { display: none !important; }
 
 .popup-doctrine { border-top: 1px solid var(--rule); padding: 8px 13px; font-size: 11.5px; line-height: 1.5; }
 
+.popup-air-advisory,
+.popup-air-diverted {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--t-red);
+  font-size: 11.5px;
+}
+.popup-air-advisory strong { color: var(--t-red); letter-spacing: .08em; }
+.popup-air-diverted { border-left-color: var(--t-yellow); }
+.popup-air-diverted strong { color: var(--t-yellow); letter-spacing: .08em; }
+.route-advisory { color: var(--t-red); font-weight: 600; font-size: 10.5px; letter-spacing: .06em; }
+
 .doctrine-violation {
   font-family: var(--font-cond);
   letter-spacing: .02em;
