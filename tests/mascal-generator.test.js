@@ -35,33 +35,46 @@ test('it creates exactly the counts asked for, each medical record on its casual
   assert.equal(new Set(s.entities.map(e => e.elemento_identificado)).size, s.entities.length);
 });
 
-test('triage is skewed T3 > T2 > T1 at every size', () => {
+test('triage is skewed T3 > T2 > T1 at every size, with about 5 % KIA', () => {
   for (const n of [10, 12, 30, 57, 120]) {
     const s = generateMascalScenario({ n_casualties: n, n_evacuators: 5, seed: n, now: NOW });
     const count = t => s.medicalDetails.filter(m => m.triage_color === t).length;
     assert.ok(count('GREEN') > count('YELLOW') && count('YELLOW') > count('RED'),
               `n=${n}: GREEN ${count('GREEN')}, YELLOW ${count('YELLOW')}, RED ${count('RED')}`);
   }
+  const s = generateMascalScenario({ n_casualties: 100, n_evacuators: 5, seed: 1, now: NOW });
+  const count = t => s.medicalDetails.filter(m => m.triage_color === t).length;
+  assert.deepEqual([count('GREEN'), count('YELLOW'), count('RED'), count('BLACK')], [50, 30, 15, 5]);
+  const dead = s.medicalDetails.filter(m => m.triage_color === 'BLACK');
+  assert.ok(dead.every(m => m.casualty_status === 'KIA' && m.vital_signs === null));
 });
 
-test('more role-1 vehicles than role-2, about one in three with two litters', () => {
+test('vehicle roles follow 4:3:2:1, ground 3x air, one in three with two litters', () => {
   const s = generateMascalScenario({ n_casualties: 40, n_evacuators: 30, seed: 3, now: NOW });
   const vehicles = byCategory(s, 'medevac_unit');
   const role = r => vehicles.filter(v => v.tipo_elemento === `medevac_role_${r}`).length;
-  assert.ok(role(1) > role(2));
+  assert.deepEqual([role(1), role(2), role(3), role(4)], [12, 9, 6, 3]);
+  assert.ok(vehicles.filter(v => v.mobility === 'ground').length
+            > 2 * vehicles.filter(v => v.mobility === 'air').length);
   assert.equal(vehicles.filter(v => v.capacity === 2).length, 10);
   assert.ok(vehicles.every(v => v.capacity === 1 || v.capacity === 2));
 });
 
-test('facility roles decrease up the ladder, and a RED casualty always has an R2+', () => {
+test('facility roles decrease up the ladder, one of each from four facilities, R2+ always', () => {
   const s = generateMascalScenario({ n_casualties: 30, n_evacuators: 12, n_medical_facilities: 10, seed: 5, now: NOW });
   const roles = byCategory(s, 'medical_facility').map(f => Number(f.tipo_elemento.slice(-1)));
   const count = r => roles.filter(x => x === r).length;
   assert.ok(count(1) >= count(2) && count(2) >= count(3) && count(3) >= count(4));
 
+  for (const n of [4, 5, 7]) {
+    const few = generateMascalScenario({ n_casualties: 10, n_evacuators: 4, n_medical_facilities: n, seed: n, now: NOW });
+    const present = new Set(byCategory(few, 'medical_facility').map(f => f.tipo_elemento));
+    assert.equal(present.size, 4, `n=${n}: roles ${[...present]}`);
+  }
+
   const single = generateMascalScenario({ n_casualties: 20, n_evacuators: 1, n_medical_facilities: 1, seed: 2, now: NOW });
   assert.equal(byCategory(single, 'medical_facility')[0].tipo_elemento, 'medical_role_2');
-  assert.equal(byCategory(single, 'medevac_unit')[0].tipo_elemento, 'medevac_role_2');
+  assert.ok(Number(byCategory(single, 'medevac_unit')[0].tipo_elemento.slice(-1)) >= 2);
 });
 
 test('everything lands within the radius of the chosen centre', () => {
