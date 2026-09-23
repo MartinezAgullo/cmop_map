@@ -49,13 +49,13 @@ test('triage is skewed T3 > T2 > T1 at every size, with about 5 % KIA', () => {
   assert.ok(dead.every(m => m.casualty_status === 'KIA' && m.vital_signs === null));
 });
 
-test('vehicle roles follow 4:3:2:1, ground 3x air, one in three with two litters', () => {
+test('vehicle roles follow 4:3:2:1, 80 % ground, one in three with two litters', () => {
   const s = generateMascalScenario({ n_casualties: 40, n_evacuators: 30, seed: 3, now: NOW });
   const vehicles = byCategory(s, 'medevac_unit');
   const role = r => vehicles.filter(v => v.tipo_elemento === `medevac_role_${r}`).length;
   assert.deepEqual([role(1), role(2), role(3), role(4)], [12, 9, 6, 3]);
-  assert.ok(vehicles.filter(v => v.mobility === 'ground').length
-            > 2 * vehicles.filter(v => v.mobility === 'air').length);
+  assert.equal(vehicles.filter(v => v.mobility === 'ground').length, 24);
+  assert.equal(vehicles.filter(v => v.mobility === 'air').length, 6);
   assert.equal(vehicles.filter(v => v.capacity === 2).length, 10);
   assert.ok(vehicles.every(v => v.capacity === 1 || v.capacity === 2));
 });
