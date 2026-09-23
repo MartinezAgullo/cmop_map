@@ -159,6 +159,22 @@ function normalizeCountry(country) {
   return COUNTRY_ALIASES[normalized] ?? normalized;
 }
 
+// Missing mobility means ground, which uses the plain icon with no suffix.
+function nonGroundMobility(entity) {
+  const mobility = (entity?.mobility || '').toLowerCase();
+  return mobility === 'ground' ? '' : mobility;
+}
+
+// Air (or sea) variants of a subtype icon, tried before the ground one:
+// medevac_role_2_air → medevac_role_air (any role) → medevac_role_2.
+function mobilityBases(tipo, entity) {
+  const mobility = nonGroundMobility(entity);
+  if (!mobility) return [];
+  const bases = [`${tipo}_${mobility}`];
+  if (tipo.startsWith('medevac_role_')) bases.push(`medevac_role_${mobility}`);
+  return bases;
+}
+
 function buildFilenameCandidates(category, country, entity) {
   let bases = CATEGORY_BASE_NAMES[category?.toLowerCase()] || CATEGORY_BASE_NAMES.default;
 
@@ -178,7 +194,7 @@ function buildFilenameCandidates(category, country, entity) {
     if (category === 'medical_facility' && tipo.startsWith('medical_role_')) {
       tipo = tipo.replace('medical_role_', 'medical_facility_role_');
     }
-    bases = [tipo, ...bases];
+    bases = [...mobilityBases(tipo, entity), tipo, ...bases];
   }
 
   // UAV: use fixedwing / rotarywing subtype when present
@@ -241,7 +257,7 @@ async function resolveIconUrl(category, alliance, country, entity) {
   const c      = (category || 'default').toLowerCase();
   const status = entity?.medical?.casualty_status || '';
   const tipo   = entity?.tipo_elemento || '';
-  const key    = `${a}|${c}|${normalizeCountry(country)}|${tipo}|${status}`;
+  const key    = `${a}|${c}|${normalizeCountry(country)}|${tipo}|${nonGroundMobility(entity)}|${status}`;
 
   if (iconCache.has(key)) return iconCache.get(key);
 

@@ -596,7 +596,8 @@ Fallback:     default
 **Special cases:**
 - Infantry `standard` → `infantry_{country}.svg`
 - Medical facilities → `medical_facility_role_1_{country}.svg`
-- MEDEVAC → `medevac_role_2_{country}.svg`
+- MEDEVAC → `medevac_role_2_{country}.svg` (ground, or no `mobility` set)
+- Air MEDEVAC (`mobility: 'air'`) → `medevac_role_2_air_{country}.svg`, then `medevac_role_2_air.svg`, then the generic `medevac_role_air.svg`, and finally the ground icon
 - Casualties → `casualty_wia_{country}.svg` or `casualty_kia_{country}.svg`
 
 ---
