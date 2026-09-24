@@ -35,7 +35,7 @@ test('it creates exactly the counts asked for, each medical record on its casual
   assert.equal(new Set(s.entities.map(e => e.elemento_identificado)).size, s.entities.length);
 });
 
-test('triage is skewed T3 > T2 > T1 at every size, with about 5 % KIA', () => {
+test('triage is skewed T3 > T2 > T1 at every size, with about 5 % T4 and 5 % KIA', () => {
   for (const n of [10, 12, 30, 57, 120]) {
     const s = generateMascalScenario({ n_casualties: n, n_evacuators: 5, seed: n, now: NOW });
     const count = t => s.medicalDetails.filter(m => m.triage_color === t).length;
@@ -44,7 +44,11 @@ test('triage is skewed T3 > T2 > T1 at every size, with about 5 % KIA', () => {
   }
   const s = generateMascalScenario({ n_casualties: 100, n_evacuators: 5, seed: 1, now: NOW });
   const count = t => s.medicalDetails.filter(m => m.triage_color === t).length;
-  assert.deepEqual([count('GREEN'), count('YELLOW'), count('RED'), count('BLACK')], [50, 30, 15, 5]);
+  assert.deepEqual([count('GREEN'), count('YELLOW'), count('RED'), count('BLUE'), count('BLACK')],
+                   [45, 30, 15, 5, 5]);
+  const expectant = s.medicalDetails.filter(m => m.triage_color === 'BLUE');
+  assert.ok(expectant.every(m => m.casualty_status === 'WIA' && m.vital_signs !== null
+                                 && m.evac_priority === 'ROUTINE'));
   const dead = s.medicalDetails.filter(m => m.triage_color === 'BLACK');
   assert.ok(dead.every(m => m.casualty_status === 'KIA' && m.vital_signs === null));
 });
