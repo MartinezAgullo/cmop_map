@@ -11,7 +11,9 @@
 //   node scripts/generate-mascal.js --presets          list the preset centres
 //
 // The same seed and counts always give the same scenario. --load runs the ordinary loader,
-// which truncates the tables; it does not notify the planner (the map's REST route does).
+// which truncates the tables, and then tells the planner (MEDEVAC_PLANNER_URL, default
+// :8400) as the map's Random button does: without that, a running planner keeps the old
+// scenario's plan and never looks at the new casualties.
 // ---------------------------------------------------------------------------
 
 const path = require('path');
@@ -47,7 +49,24 @@ function parseArgs(argv) {
   return { options, switches };
 }
 
-function main() {
+/** Fire-and-forget POST /scenario/loaded: a planner that is down must not fail the load. */
+async function notifyPlanner(name) {
+  const base = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
+  try {
+    const res = await fetch(`${base}/scenario/loaded`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: name }),
+      signal: AbortSignal.timeout(3000),
+    });
+    console.log(res.ok ? `   planner notified (${base})`
+                       : `⚠️  planner answered ${res.status} to /scenario/loaded`);
+  } catch (err) {
+    console.log(`⚠️  planner not notified (${base} unreachable): replan it once it is up`);
+  }
+}
+
+async function main() {
   const { options, switches } = parseArgs(process.argv.slice(2));
 
   if (switches.has('--help')) {
@@ -70,14 +89,13 @@ function main() {
   if (switches.has('--load')) {
     const loader = path.join(__dirname, 'load-scenario.js');
     execFileSync('node', [loader, scenario.meta.name], { stdio: 'inherit' });
+    await notifyPlanner(scenario.meta.name);
   } else {
     console.log(`   load it with: node scripts/load-scenario.js ${scenario.meta.name}\n`);
   }
 }
 
-try {
-  main();
-} catch (err) {
+main().catch((err) => {
   console.error(`❌ ${err.message}`);
   process.exit(1);
-}
+});
