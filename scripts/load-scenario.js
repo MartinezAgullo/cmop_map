@@ -39,13 +39,13 @@ function listScenarios() {
  * Insert entities into puntos_interes.
  * Returns Map<elemento_identificado, id> for downstream FK resolution.
  *
- * 15 flat params per row:
+ * 16 flat params per row:
  *   nombre, descripcion, categoria, country, alliance,
  *   elemento_identificado, activo, tipo_elemento,
- *   observaciones, altitud, casevac_eligible, mobility, capacity, lng, lat
+ *   observaciones, altitud, casevac_eligible, mobility, capacity, status, lng, lat
  */
 async function insertEntities(client, entities) {
-  const PARAMS_PER_ROW = 15;
+  const PARAMS_PER_ROW = 16;
 
   const values = entities.flatMap(e => [
     e.nombre,
@@ -61,6 +61,7 @@ async function insertEntities(client, entities) {
     e.casevac_eligible                                     ?? false,
     e.mobility                                             ?? null,
     e.capacity                                             ?? null,
+    e.status                                               ?? null,
     e.lng,
     e.lat
   ]);
@@ -71,7 +72,8 @@ async function insertEntities(client, entities) {
       $${b+1}, $${b+2}, $${b+3}::categoria_militar,
       $${b+4}, $${b+5}::alliance_enum,
       $${b+6}, $${b+7}, $${b+8}, $${b+9}, $${b+10}, $${b+11}, $${b+12}::mobility_enum, $${b+13},
-      ST_SetSRID(ST_MakePoint($${b+14}, $${b+15}), 4326)
+      $${b+14}::asset_status_enum,
+      ST_SetSRID(ST_MakePoint($${b+15}, $${b+16}), 4326)
     )`;
   });
 
@@ -79,7 +81,7 @@ async function insertEntities(client, entities) {
     INSERT INTO puntos_interes (
       nombre, descripcion, categoria, country, alliance,
       elemento_identificado, activo, tipo_elemento,
-      observaciones, altitud, casevac_eligible, mobility, capacity, geom
+      observaciones, altitud, casevac_eligible, mobility, capacity, status, geom
     )
     VALUES ${rows.join(',')}
     RETURNING id, elemento_identificado;

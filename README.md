@@ -69,7 +69,7 @@ All entity mutations are pushed to connected browsers without page refresh via *
 
 - `lib/sse-broker.js` — singleton that keeps a `Set` of open SSE connections and exposes `broadcast(payload)`.
 - `POST /api/entities` (single + batch) broadcasts `entity_created` — new entities appear on the map immediately.
-- `PUT /api/entities/:id` broadcasts `entity_updated { id, lat, lng }` — marker position updates in place.
+- `PUT /api/entities/:id` broadcasts `entity_updated { id, lat, lng }` — marker position updates in place. When it changes a platform's `status`, it also broadcasts `entity_changed { data }`, and the marker's icon and popup are redrawn.
 - `DELETE /api/entities/:id` broadcasts `entity_deleted { id }` — marker is removed from the map immediately.
 - The browser `EventSource` on `/api/events` handles all three: `addEntityToMap`, `setLatLng`, `removeLayer`.
 - Internal services (e.g. `medevac_planner`) can push arbitrary events via `POST /api/events/notify`.
@@ -331,6 +331,8 @@ Partial update. Can include `medical` object.
 }
 ```
 
+`status` (`operational` | `damaged`) is the operational status of an evacuation platform; NULL reads as operational. When a PUT changes it, the MEDEVAC planner is told (`POST {MEDEVAC_PLANNER_URL}/assets/status` with `{id, name, status, previous_status, lat, lng}`) and hands the casualties of a damaged vehicle to other vehicles. The popup of a friendly MEDEVAC or CASEVAC platform has a **Mark damaged** / **Back in service** button that sends it. A damaged platform is drawn with its `_damaged` icon (`medevac_role_2_air_damaged_spain.svg` and so on, down to `medevac_damaged.svg`).
+
 #### **DELETE** `/api/entities/:id`
 
 Delete entity (medical cascades).
@@ -469,6 +471,7 @@ Event types:
 | `connected` | On stream open | — |
 | `entity_created` | After `POST /api/entities` (single or batch) | `data` (full entity object) |
 | `entity_updated` | After `PUT /api/entities/:id` | `id`, `lat`, `lng` |
+| `entity_changed` | After a `PUT /api/entities/:id` that changed `status` | `data` (full entity object) |
 | `entity_deleted` | After `DELETE /api/entities/:id` | `id` |
 | `evac_stage_updated` | At pickup / delivery milestones | `id`, `evac_stage` |
 | `route_updated` | After threat-triggered reroute | `task_id` |

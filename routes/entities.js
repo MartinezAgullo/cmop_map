@@ -58,6 +58,26 @@ function _notifyNewCasualty(entity) {
   });
 }
 
+// A platform's operational status changed (a breakdown, or back in service). Sent on
+// the change only: the movement simulation PUTs vehicle positions every second, and
+// the planner reassigns casualties on each of these.
+function _notifyAssetStatus(entity, previousStatus) {
+  fetch(`${PLANNER_BASE}/assets/status`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      id:              entity.id,
+      name:            entity.nombre ?? `Entity-${entity.id}`,
+      status:          entity.status ?? 'operational',
+      previous_status: previousStatus ?? 'operational',
+      lat:             entity.latitud,
+      lng:             entity.longitud,
+    }),
+  }).catch(err => {
+    console.warn(`[entities] Asset status notify skipped (planner unreachable): ${err.message}`);
+  });
+}
+
 // ---------------------------------------------------------------------------
 // GET  /api/entities              — all entities
 // GET  /api/entities/:id          — single entity
@@ -200,6 +220,8 @@ router.post('/batch', async (req, res) => {
   }
 });
 
+const ASSET_STATUSES = ['operational', 'damaged'];
+
 router.put('/:id', async (req, res) => {
   try {
     // A point needs both halves.  ST_MakePoint(lng, NULL) is NULL, so a
@@ -211,6 +233,17 @@ router.put('/:id', async (req, res) => {
         message: 'longitud and latitud must be supplied together'
       });
     }
+    if (req.body.status !== undefined && !ASSET_STATUSES.includes(req.body.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `status must be one of: ${ASSET_STATUSES.join(', ')}`
+      });
+    }
+
+    // Read the old status only when the body carries one, so the simulation's
+    // position PUTs cost no extra query.
+    const statusSent = req.body.status !== undefined;
+    const before = statusSent ? await Entity.getById(req.params.id) : null;
 
     const entity = await Entity.update(req.params.id, req.body);
     if (!entity) {
@@ -218,12 +251,16 @@ router.put('/:id', async (req, res) => {
     }
     if (entity.alliance === 'hostile') _notifyThreat(entity);
     if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
+    const statusChanged = statusSent && (before?.status ?? 'operational') !== (entity.status ?? 'operational');
+    if (statusChanged) _notifyAssetStatus(entity, before?.status);
     sseBroker.broadcast({
       type: 'entity_updated',
       id:   entity.id,
       lat:  entity.latitud,
       lng:  entity.longitud,
     });
+    // A status change also changes the icon and the popup: every open map redraws it.
+    if (statusChanged) sseBroker.broadcast({ type: 'entity_changed', data: entity });
     res.json({ success: true, data: entity });
   } catch (err) {
     console.error('PUT /entities/:id:', err);

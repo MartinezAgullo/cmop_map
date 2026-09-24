@@ -179,6 +179,12 @@ function mobilityBases(tipo, entity) {
   return bases;
 }
 
+// A damaged platform tries each icon with "_damaged" before the plain one:
+// medevac_role_2_air_damaged_spain → … → medevac_damaged → then the usual chain.
+function isDamaged(entity) {
+  return (entity?.status || '').toLowerCase() === 'damaged';
+}
+
 function buildFilenameCandidates(category, country, entity) {
   let bases = CATEGORY_BASE_NAMES[category?.toLowerCase()] || CATEGORY_BASE_NAMES.default;
 
@@ -236,6 +242,8 @@ function buildFilenameCandidates(category, country, entity) {
     }
   }
 
+  if (isDamaged(entity)) bases = [...bases.map(b => `${b}_damaged`), ...bases];
+
   const cn         = normalizeCountry(country);
   const tryCountry = country && country.toLowerCase() !== 'unknown' && cn;
 
@@ -261,7 +269,7 @@ async function resolveIconUrl(category, alliance, country, entity) {
   const c      = (category || 'default').toLowerCase();
   const status = entity?.medical?.casualty_status || '';
   const tipo   = entity?.tipo_elemento || '';
-  const key    = `${a}|${c}|${normalizeCountry(country)}|${tipo}|${nonGroundMobility(entity)}|${status}`;
+  const key    = `${a}|${c}|${normalizeCountry(country)}|${tipo}|${nonGroundMobility(entity)}|${status}|${isDamaged(entity) ? 'damaged' : ''}`;
 
   if (iconCache.has(key)) return iconCache.get(key);
 
@@ -724,6 +732,12 @@ const CASEVAC_ELIGIBLE_CATEGORIES = [
 // cycle. A dedicated MEDEVAC unit always can; the rest only when flagged CASEVAC eligible.
 // Hostile, neutral and unknown platforms are never our evacuators, so they have none.
 const CAPACITY_CATEGORIES = ['medevac_unit', ...CASEVAC_ELIGIBLE_CATEGORIES];
+
+// What can break down: our own evacuation platforms, dedicated or CASEVAC.
+function canBreakDown(e) {
+  return e.alliance === 'friendly'
+    && (e.categoria === 'medevac_unit' || (CASEVAC_ELIGIBLE_CATEGORIES.includes(e.categoria) && e.casevac_eligible));
+}
 
 function updateTipoElementoOptions(categoria) {
   const group  = document.getElementById('tipoElementoGroup');
@@ -1308,6 +1322,8 @@ function initSSE() {
         updateMarkerPosition(msg.id, msg.lat, msg.lng);
       } else if (msg.type === 'entity_created') {
         _onEntityCreated(msg.data);
+      } else if (msg.type === 'entity_changed') {
+        _onEntityChanged(msg.data);
       } else if (msg.type === 'entity_deleted') {
         _onEntityDeleted(msg.id);
       } else if (msg.type === 'route_updated' && _currentTaskId) {
@@ -1331,6 +1347,25 @@ async function _onEntityCreated(entity) {
   allEntities.push(entity);
   updateStats();
   await filterEntities(); // re-applies filters, re-renders list + markers
+}
+
+// Swap in the new record and redraw its marker, keeping the popup open if it was.
+async function _onEntityChanged(entity) {
+  if (!entity) return;
+  const i = allEntities.findIndex(e => e.id === entity.id);
+  if (i === -1) return _onEntityCreated(entity);
+  allEntities[i] = entity;
+  const j = filteredEntities.findIndex(e => e.id === entity.id);
+  if (j !== -1) filteredEntities[j] = entity;
+
+  const marker = markersById[entity.id];
+  if (!marker) return;
+  const wasOpen = marker.isPopupOpen();
+  marker.setIcon(await makeIcon(entity));
+  marker._cmopEntity = entity;
+  marker.setPopupContent(buildPopup(entity));
+  if (wasOpen) marker.openPopup();
+  renderList();
 }
 
 function _onEntityDeleted(id) {
@@ -1467,8 +1502,10 @@ function buildPopup(e) {
       </div>`;
   }
 
-  const infoHTML = (e.descripcion || e.observaciones || e.casevac_eligible || e.capacity) ? `
+  const damaged  = isDamaged(e);
+  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity) ? `
       <div class="popup-info">
+        ${damaged ? `<p><span class="damaged-badge">${t('popup.damaged')}</span></p>` : ''}
         ${e.descripcion ? `<p>${esc(e.descripcion)}</p>` : ''}
         ${e.observaciones ? `<p><strong>${t('popup.obs')}:</strong> ${esc(e.observaciones)}</p>` : ''}
         ${e.casevac_eligible ? `<p><span class="casevac-badge">${t('popup.casevac')}</span></p>` : ''}
@@ -1484,6 +1521,7 @@ function buildPopup(e) {
       ${infoHTML}
       ${medicalHTML}
       <div class="popup-actions">
+        ${canBreakDown(e) ? `<button class="btn-danger" onclick="setAssetStatus(${e.id}, '${damaged ? 'operational' : 'damaged'}')">${t(damaged ? 'action.markOperational' : 'action.markDamaged')}</button>` : ''}
         <button class="btn-danger" onclick="deleteEntity(${e.id})">${t('action.delete')}</button>
       </div>
     </div>`;
@@ -1601,6 +1639,29 @@ async function crearNuevaEntidad() {
     showMessage(t('msg.connError'), 'error');
   } finally {
     showLoading(false);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Operational status
+// ---------------------------------------------------------------------------
+// The map only writes the status. cmop_map tells the planner, which hands the
+// vehicle's casualties to others, and the SSE entity_changed event redraws it here.
+async function setAssetStatus(id, status) {
+  if (status === 'damaged' && !confirm(t('msg.confirmDamaged'))) return;
+  try {
+    const res  = await fetch(`/api/entities/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    showMessage(data.success ? t(status === 'damaged' ? 'msg.markedDamaged' : 'msg.markedOperational')
+                             : (data.message || t('msg.statusError')),
+                data.success ? 'success' : 'error');
+  } catch (err) {
+    console.error(err);
+    showMessage(t('msg.connError'), 'error');
   }
 }
 

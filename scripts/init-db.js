@@ -84,6 +84,14 @@ const ENUMS = `
     'unknown'
   );
 
+  -- Operational status of an evacuation platform. NULL on every entity where the
+  -- notion does not apply, and on a platform nobody has reported on: both read as
+  -- operational. A change is what wakes the MEDEVAC planner (POST /assets/status).
+  CREATE TYPE asset_status_enum AS ENUM (
+    'operational',
+    'damaged'     -- broken down: its casualties must be taken over by another platform
+  );
+
   -- Casualty status (WIA vs KIA)
   CREATE TYPE casualty_status_enum AS ENUM (
     'WIA',      -- Wounded in action
@@ -115,6 +123,7 @@ const BASE_TABLE = `
     -- notion does not apply (a tank has no litter capacity), so it is nullable rather
     -- than defaulted: a missing value means "not stated", not "one".
     capacity              SMALLINT          CHECK (capacity IS NULL OR capacity >= 1),
+    status                asset_status_enum,
     geom                  GEOMETRY(Point, 4326) NOT NULL,
     created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP
@@ -236,6 +245,7 @@ const DROP_ALL = `
   DROP TABLE IF EXISTS puntos_interes  CASCADE;
 
   DROP TYPE IF EXISTS casualty_status_enum;
+  DROP TYPE IF EXISTS asset_status_enum;
   DROP TYPE IF EXISTS evac_stage_enum;
   DROP TYPE IF EXISTS evac_priority_enum;
   DROP TYPE IF EXISTS triage_color_enum;
