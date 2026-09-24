@@ -331,6 +331,8 @@ Partial update. Can include `medical` object.
 }
 ```
 
+A PUT that carries only `latitud`/`longitud` does not notify the planner about a casualty: the movement simulation sends one per second while a casualty is carried. Any other change to a casualty does.
+
 `status` (`operational` | `damaged`) is the operational status of an evacuation platform; NULL reads as operational. When a PUT changes it, the MEDEVAC planner is told (`POST {MEDEVAC_PLANNER_URL}/assets/status` with `{id, name, status, previous_status, lat, lng}`) and hands the casualties of a damaged vehicle to other vehicles. The popup of a friendly MEDEVAC or CASEVAC platform has a **Mark damaged** / **Back in service** button that sends it. A damaged platform is drawn with its `_damaged` icon (`medevac_role_2_air_damaged_spain.svg` and so on, down to `medevac_damaged.svg`).
 
 #### **DELETE** `/api/entities/:id`

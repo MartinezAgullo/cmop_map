@@ -249,8 +249,12 @@ router.put('/:id', async (req, res) => {
     if (!entity) {
       return res.status(404).json({ success: false, message: 'Entity not found' });
     }
+    // A PUT carrying only a position is no news for the planner: the movement
+    // simulation sends one per casualty per second while it is carried, and each
+    // used to restart the planner's replan debounce until the delivery.
+    const positionOnly = Object.keys(req.body).every(k => k === 'latitud' || k === 'longitud');
     if (entity.alliance === 'hostile') _notifyThreat(entity);
-    if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
+    if (entity.categoria === 'casualty' && !positionOnly) _notifyNewCasualty(entity);
     const statusChanged = statusSent && (before?.status ?? 'operational') !== (entity.status ?? 'operational');
     if (statusChanged) _notifyAssetStatus(entity, before?.status);
     sseBroker.broadcast({
