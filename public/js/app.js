@@ -26,6 +26,8 @@ let threatRadiusM    = 500;    // populated from /api/config at startup
 let _currentTaskId  = null;   // last successfully loaded task ID (for refresh)
 let _simState       = 'idle'; // 'idle' | 'running' | 'paused'
 let _lastRoutes     = null;   // last rendered route list (for language switching)
+let _routeDrawings  = [];     // per route, in _lastRoutes order: { layers: [{ layer, kind }], bounds }
+let _selectedPlanKey = null;  // plan picked in the MEDEVAC tab; kept across route reloads
 let _lastEventAt    = null;   // Date of the last SSE message — drives the LIVE dot
 let _sseConnected   = false;
 let _shouldFit      = true;   // fit the map on load / scenario change, not on every filter
@@ -1710,6 +1712,8 @@ function showMessage(text, type) {
 
 function clearRoutes() {
   if (routeLayer) routeLayer.clearLayers();
+  _routeDrawings   = [];
+  _selectedPlanKey = null;
   document.getElementById('routesStatus').innerHTML = '';
   document.getElementById('routesActions').style.display = 'none';
   _currentTaskId = null;
@@ -1735,6 +1739,8 @@ async function loadMedevacRoutes(taskId) {
       return;
     }
 
+    // A reload of the same task (route_updated, Refresh, theme) keeps the plan picked.
+    const keepPlanKey = taskId === _currentTaskId ? _selectedPlanKey : null;
     clearRoutes();
     const routes = data.routes;
 
@@ -1747,6 +1753,8 @@ async function loadMedevacRoutes(taskId) {
 
     routes.forEach((route, idx) => {
       const color = getRouteColors()[idx % ROUTE_COLORS_DARK.length];
+      const drawing = { layers: [], bounds: [] };
+      _routeDrawings.push(drawing);
 
       // Use real GeoJSON if available, otherwise build straight-line fallback
       const pickupGeo  = route.pickup_leg  || _straightLine(route.asset_position,    route.casualty_position);
@@ -1754,39 +1762,46 @@ async function loadMedevacRoutes(taskId) {
 
       // Pickup leg — dashed, lighter.  Only the best route is rendered.
       if (pickupGeo) {
-        L.geoJSON(pickupGeo, {
+        const layer = L.geoJSON(pickupGeo, {
           filter: (feature) => !feature.properties?.route_type || DRAWN_ROUTE_TYPES.includes(feature.properties.route_type),
-          style: { color, weight: 3, opacity: 0.7, dashArray: '8 6' }
+          style: { color, dashArray: '8 6', ..._routeLegStyle('pickup', 'normal') }
         }).bindPopup(_routePopup(route, 'pickup'), { className: 'custom-popup' }).addTo(routeLayer);
+        drawing.layers.push({ layer, kind: 'pickup' });
         _collectBounds(pickupGeo, bounds);
+        _collectBounds(pickupGeo, drawing.bounds);
       }
 
       // Delivery leg — solid, full opacity.  Only the best route is rendered.
       if (deliveryGeo) {
-        L.geoJSON(deliveryGeo, {
+        const layer = L.geoJSON(deliveryGeo, {
           filter: (feature) => !feature.properties?.route_type || DRAWN_ROUTE_TYPES.includes(feature.properties.route_type),
-          style: { color, weight: 4, opacity: 1 }
+          style: { color, ..._routeLegStyle('delivery', 'normal') }
         }).bindPopup(_routePopup(route, 'delivery'), { className: 'custom-popup' }).addTo(routeLayer);
+        drawing.layers.push({ layer, kind: 'delivery' });
         _collectBounds(deliveryGeo, bounds);
+        _collectBounds(deliveryGeo, drawing.bounds);
       }
 
       // Waypoint marker at the casualty POI
       const poiCoord = _firstCoord(deliveryGeo);
       if (poiCoord) {
-        L.circleMarker(poiCoord, {
-          radius: 6, color, fillColor: color,
-          fillOpacity: 0.9, weight: 2
+        const layer = L.circleMarker(poiCoord, {
+          radius: 6, color, fillColor: color, ..._routeLegStyle('poi', 'normal')
         }).bindPopup(_routePopup(route, 'poi'), { className: 'custom-popup' }).addTo(routeLayer);
+        drawing.layers.push({ layer, kind: 'poi' });
       }
     });
 
-    // Fit map to routes
-    if (bounds.length > 0) {
+    _currentTaskId = taskId;
+    _lastRoutes    = routes;
+    _selectedPlanKey = routes.some(r => r.plan_key === keepPlanKey) ? keepPlanKey : null;
+    _applyRouteSelection();
+
+    // Fit map to routes, unless a plan is picked: then the view stays where the operator is.
+    if (bounds.length > 0 && !_selectedPlanKey) {
       map.fitBounds(L.latLngBounds(bounds).pad(0.12));
     }
 
-    _currentTaskId = taskId;
-    _lastRoutes    = routes;
     document.getElementById('routesActions').style.display = 'flex';
     statusEl.innerHTML = _routesSummaryHTML(routes);
 
@@ -1794,6 +1809,46 @@ async function loadMedevacRoutes(taskId) {
     console.error('loadMedevacRoutes error:', err);
     statusEl.innerHTML =
       `<span class="routes-error">${t('routes.error', { detail: err.message })}</span>`;
+  }
+}
+
+// Weight and opacity of each part of a route: as drawn, picked in the MEDEVAC tab, or
+// faded behind the plan that is picked.
+function _routeLegStyle(kind, state) {
+  const base = { pickup:   { weight: 3, opacity: 0.7 },
+                 delivery: { weight: 4, opacity: 1 },
+                 poi:      { weight: 2, opacity: 1, fillOpacity: 0.9 } }[kind];
+  if (state === 'selected') {
+    return kind === 'poi' ? { ...base, radius: 8 } : { ...base, weight: base.weight + 2, opacity: 1 };
+  }
+  if (state === 'dimmed') {
+    return { ...base, opacity: 0.15, ...(kind === 'poi' ? { fillOpacity: 0.15 } : {}) };
+  }
+  return kind === 'poi' ? { ...base, radius: 6 } : base;
+}
+
+// Restyle every drawn route for the plan picked (or none), and mark its card.
+function _applyRouteSelection() {
+  const picked = (_lastRoutes || []).findIndex(r => r.plan_key === _selectedPlanKey);
+  _routeDrawings.forEach((drawing, idx) => {
+    const state = picked < 0 ? 'normal' : idx === picked ? 'selected' : 'dimmed';
+    drawing.layers.forEach(({ layer, kind }) => layer.setStyle(_routeLegStyle(kind, state)));
+  });
+  if (picked >= 0) _routeDrawings[picked].layers.forEach(({ layer }) => layer.bringToFront());
+  document.querySelectorAll('.route-summary-item').forEach((card, idx) =>
+    card.classList.toggle('active', idx === picked));
+}
+
+// Card click in the MEDEVAC tab: pick that plan and zoom to it; a second click drops it.
+function selectRoute(idx) {
+  const route = _lastRoutes?.[idx];
+  if (!route) return;
+  const drop = route.plan_key === _selectedPlanKey;
+  _selectedPlanKey = drop ? null : route.plan_key;
+  _applyRouteSelection();
+  const bounds = _routeDrawings[idx]?.bounds || [];
+  if (!drop && bounds.length > 0) {
+    map.fitBounds(L.latLngBounds(bounds).pad(0.2), { maxZoom: 15 });
   }
 }
 
@@ -1869,14 +1924,15 @@ function _routesSummaryHTML(routes) {
   const items = routes.map((r, i) => {
     const color = getRouteColors()[i % ROUTE_COLORS_DARK.length];
     const eta   = r.total_eta_minutes != null ? r.total_eta_minutes : '—';
-    return `<div class="route-summary-item">
+    const cls   = r.plan_key != null && r.plan_key === _selectedPlanKey ? ' active' : '';
+    return `<button type="button" class="route-summary-item${cls}" onclick="selectRoute(${i})">
       <span class="route-color-dot" style="background:${color}"></span>
       <span>${esc(r.asset_name || '?')}<br>
         <em>&rarr;</em> ${esc(r.casualty_name || '?')}<br>
         <em>&rarr;</em> ${esc(r.destination_name || '?')}${
           r.altitude_advisory ? `<br><b class="route-advisory">⬆ ${t('popup.increaseAltitude')}</b>` : ''}</span>
       <span class="route-eta">${eta}<br><span class="med-label">${t('routes.min')}</span></span>
-    </div>`;
+    </button>`;
   }).join('');
   return `<div class="routes-summary">${items}</div>`;
 }

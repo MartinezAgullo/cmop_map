@@ -788,13 +788,23 @@ body.dark .brand-light { display: none !important; }
   grid-template-columns: 9px 1fr auto;
   gap: 9px;
   align-items: center;
-  padding: 8px 0;
+  width: 100%;
+  padding: 8px 6px;
+  text-align: left;
+  background: none;
+  border: none;
   border-top: 1px solid var(--rule);
   font-family: var(--font-mono);
   font-size: 10.5px;
   color: var(--ink);
   line-height: 1.5;
+  cursor: pointer;
+  transition: background .12s;
 }
+
+.route-summary-item:hover,
+.route-summary-item.active { background: var(--g2); }
+.route-summary-item.active .route-color-dot { box-shadow: 0 0 0 2px var(--g2), 0 0 0 3px var(--hot); }
 
 .route-color-dot {
   width: 9px;
