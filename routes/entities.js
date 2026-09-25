@@ -41,8 +41,9 @@ function _notifyNewCasualty(entity) {
     name,
     lat:           Number(lat),
     lng:           Number(lng),
-    triage_color:  medical.triage_color  ?? null,
-    evac_priority: medical.evac_priority ?? null,
+    triage_color:    medical.triage_color    ?? null,
+    casualty_status: medical.casualty_status ?? null,
+    evac_priority:   medical.evac_priority   ?? null,
   });
   fetch(`${PLANNER_BASE}/casualties/notify`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
@@ -72,6 +73,7 @@ function _notifyAssetStatus(entity, previousStatus) {
       previous_status: previousStatus ?? 'operational',
       lat:             entity.latitud,
       lng:             entity.longitud,
+      tipo_elemento:   entity.tipo_elemento ?? null,   // its care level, for the planner's log
     }),
   }).catch(err => {
     console.warn(`[entities] Asset status notify skipped (planner unreachable): ${err.message}`);

@@ -1599,19 +1599,9 @@ async function crearNuevaEntidad() {
       payload.capacity = capacity;
     }
 
-    const res  = await fetch('/api/entities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-
-    if (!data.success) {
-      showMessage(data.message || t('msg.createError'), 'error');
-      return;
-    }
-
-    // For casualties, also create the medical record
+    // A casualty is created with its medical record in the same request: the planner
+    // and pfc_agent are told about it on creation, and a record written afterwards
+    // reached them as triage UNKNOWN.
     if (categoria === 'casualty') {
       const casualtyStatus  = document.getElementById('casualtyStatus').value;
       const medPayload = { casualty_status: casualtyStatus, evac_stage: 'at_poi' };
@@ -1625,12 +1615,19 @@ async function crearNuevaEntidad() {
         if (injMech)    medPayload.injury_mechanism = injMech;
         if (primInjury) medPayload.primary_injury   = primInjury;
       }
+      payload.medical = medPayload;
+    }
 
-      await fetch(`/api/medical/${data.data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(medPayload)
-      });
+    const res  = await fetch('/api/entities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      showMessage(data.message || t('msg.createError'), 'error');
+      return;
     }
 
     showMessage(t('msg.entityCreated'), 'success');
