@@ -93,6 +93,9 @@ function _proxyToVision(req, res) {
 
 app.use('/api/vision', (req, res) => _proxyToVision(req, res));
 
+// Log batches from the Python services can carry long tracebacks: a larger
+// limit, parsed before the global parser (which then skips the parsed body).
+app.use('/api/logs/ingest', express.json({ limit: '2mb' }));
 app.use(express.json());                          // replaces body-parser
 app.use(express.static(path.join(__dirname, 'public')));
 

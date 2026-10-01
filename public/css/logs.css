@@ -116,7 +116,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 92px 44px minmax(0, 104px) minmax(0, 1fr);
+  grid-template-columns: 92px 44px minmax(0, 116px) minmax(0, 104px) minmax(0, 1fr);
   column-gap: 12px;
   padding: 2px 16px;
 }
@@ -125,7 +125,9 @@
 
 .row time  { color: var(--dim); font-variant-numeric: tabular-nums; }
 .row .lvl  { font-size: 10px; letter-spacing: .06em; padding-top: 1px; color: var(--dim); }
+.row .service,
 .row .scope { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .service { color: var(--ink); }
 .row .msg  { white-space: pre-wrap; overflow-wrap: anywhere; }
 .row.has-fields .msg::after { content: ' ▸'; color: var(--dim); }
 .row.open .msg::after       { content: ' ▾'; }
@@ -182,7 +184,7 @@
 
 /* Narrow screens: the message takes its own line under time · level · source. */
 @media (max-width: 640px) {
-  .row { grid-template-columns: auto auto minmax(0, 1fr); padding: 4px 16px; }
+  .row { grid-template-columns: auto auto auto minmax(0, 1fr); padding: 4px 16px; }
   .row .msg { grid-column: 1 / -1; }
 }
 

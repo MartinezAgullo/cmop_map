@@ -2,7 +2,9 @@
 // ---------------------------------------------------------------------------
 // /logs — the server's log, live (routes/logs.js streams it over SSE).
 //
-//   - filter by lowest level, by source ([scope]) and by text
+//   - every service in one list: cmop_map's own lines and those the Python
+//     services forward (latacc_common.log)
+//   - filter by lowest level, by service, by source ([scope]) and by text
 //   - click a row with extra fields (an error's stack, a payload…) to open it
 //   - follows the bottom while you are there; scroll up and it holds still
 //   - PAUSE holds new entries back; CLEAR empties the view (the server keeps them)
@@ -10,7 +12,7 @@
 
 const MAX_ENTRIES = 5000;                    // kept in the page, oldest dropped first
 const LEVEL_RANK  = { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 60 };
-const BASE_KEYS   = new Set(['time', 'level', 'scope', 'msg', 'pid', 'hostname']);
+const BASE_KEYS   = new Set(['time', 'level', 'service', 'scope', 'msg', 'pid', 'hostname']);
 const NEAR_BOTTOM_PX = 40;
 
 const $ = id => document.getElementById(id);
@@ -18,14 +20,16 @@ const els = {
   list: $('list'), empty: $('empty'), jump: $('jumpBtn'),
   status: $('status'), statusText: $('statusText'),
   countError: $('countError'), countWarn: $('countWarn'),
-  levelSeg: $('levelSeg'), scope: $('scopeFilter'), search: $('search'),
+  levelSeg: $('levelSeg'), service: $('serviceFilter'), scope: $('scopeFilter'), search: $('search'),
   pause: $('pauseBtn'), clear: $('clearBtn'), serverLevel: $('serverLevel'),
 };
 
 const state = {
   entries:   [],
+  services:  new Set(),
   scopes:    new Set(),
   minLevel:  readStored('cmop-logs-level') || 'info',
+  service:   '',
   scope:     '',
   text:      '',
   paused:    false,
@@ -53,7 +57,7 @@ function formatTime(ms) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
 }
 
-/** The fields beyond time · level · scope · msg, as readable text, or '' when there are none. */
+/** The fields beyond time · level · service · scope · msg, as readable text, or '' when there are none. */
 function formatFields(entry) {
   const parts = [];
   for (const [key, value] of Object.entries(entry)) {
@@ -81,10 +85,12 @@ function renderRow(entry) {
   row.append(
     el('time', null, formatTime(entry.time)),
     el('span', 'lvl', entry.level.toUpperCase()),
+    el('span', 'service', entry.service || ''),
     el('span', 'scope', entry.scope || ''),
     el('span', 'msg', entry.msg ?? ''),
   );
-  row.lastChild.title = entry.scope || '';
+  row.children[2].title = entry.service || '';
+  row.children[3].title = entry.scope || '';
   if (entry._fields) {
     row.classList.add('has-fields');
     row.classList.toggle('open', !!entry._open);
@@ -104,6 +110,7 @@ function renderRow(entry) {
 function matches(entry) {
   if (entry.time <= state.clearedAt) return false;
   if ((LEVEL_RANK[entry.level] ?? 0) < LEVEL_RANK[state.minLevel]) return false;
+  if (state.service && entry.service !== state.service) return false;
   if (state.scope && entry.scope !== state.scope) return false;
   if (state.text && !entry._haystack.includes(state.text)) return false;
   return true;
@@ -111,7 +118,7 @@ function matches(entry) {
 
 function prepare(entry) {
   entry._fields   = formatFields(entry);
-  entry._haystack = `${entry.scope || ''} ${entry.msg || ''} ${entry._fields}`.toLowerCase();
+  entry._haystack = `${entry.service || ''} ${entry.scope || ''} ${entry.msg || ''} ${entry._fields}`.toLowerCase();
   return entry;
 }
 
@@ -175,12 +182,13 @@ function updateCounts() {
   els.countWarn.classList.toggle('has', warnings > 0);
 }
 
-function addScope(scope) {
-  if (!scope || state.scopes.has(scope)) return;
-  state.scopes.add(scope);
-  const options = [...state.scopes].sort().map(s => new Option(s, s));
-  els.scope.replaceChildren(new Option('ALL SOURCES', ''), ...options);
-  els.scope.value = state.scope;
+/** Add `value` to a filter's dropdown the first time it is seen. */
+function addOption(seen, select, allLabel, value, selected) {
+  if (!value || seen.has(value)) return;
+  seen.add(value);
+  const options = [...seen].sort().map(v => new Option(v, v));
+  select.replaceChildren(new Option(allLabel, ''), ...options);
+  select.value = selected;
 }
 
 function updatePauseButton() {
@@ -196,7 +204,8 @@ function updatePauseButton() {
 function keep(entry) {
   state.entries.push(prepare(entry));
   if (state.entries.length > MAX_ENTRIES) state.entries.shift();
-  addScope(entry.scope);
+  addOption(state.services, els.service, 'ALL SERVICES', entry.service, state.service);
+  addOption(state.scopes,   els.scope,   'ALL SOURCES',  entry.scope,   state.scope);
 }
 
 function onEntry(entry) {
@@ -268,7 +277,8 @@ function bindControls() {
   els.countError.addEventListener('click', () => setMinLevel('error'));
   els.countWarn.addEventListener('click',  () => setMinLevel('warn'));
 
-  els.scope.addEventListener('change', () => { state.scope = els.scope.value; renderAll(); });
+  els.service.addEventListener('change', () => { state.service = els.service.value; renderAll(); });
+  els.scope.addEventListener('change',   () => { state.scope   = els.scope.value;   renderAll(); });
 
   let searchTimer;
   els.search.addEventListener('input', () => {

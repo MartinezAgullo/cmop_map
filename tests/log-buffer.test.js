@@ -42,3 +42,12 @@ test('ignores lines that are not JSON', () => {
   buffer.write('not json\n');
   assert.equal(buffer.snapshot().length, 0);
 });
+
+test('push takes an entry already shaped, as the ingest endpoint sends it', () => {
+  const buffer = createLogBuffer();
+  const seen = [];
+  buffer.subscribe(e => seen.push(e.service));
+  buffer.push({ time: 1, level: 'warn', service: 'medevac-planner', msg: 'x' });
+  assert.deepEqual(seen, ['medevac-planner']);
+  assert.equal(buffer.snapshot()[0].level, 'warn');
+});
