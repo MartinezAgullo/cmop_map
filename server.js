@@ -10,6 +10,7 @@ const medicalRoutes   = require('./routes/medical');
 const scenariosRoutes = require('./routes/scenarios');
 const schemaRoutes    = require('./routes/schema');
 const clientLogRoutes = require('./routes/client-log');
+const logsRoutes      = require('./routes/logs');
 
 const http      = require('http');
 const sseBroker = require('./lib/sse-broker');
@@ -50,6 +51,7 @@ function isQuietRequest(req) {
   if (!url.startsWith('/api/')) return true;
   if (url.startsWith('/api/events') && req.method === 'GET') return true;
   if (url.startsWith('/api/client-log')) return true;
+  if (url.startsWith('/api/logs/')) return true;
   if (req.method === 'PUT' && url.startsWith('/api/entities/') && req.body
       && Object.keys(req.body).every(k => POSITION_KEYS.includes(k))) return true;
   return false;
@@ -102,6 +104,17 @@ app.use('/api/medical',    medicalRoutes);
 app.use('/api/scenarios',  scenariosRoutes);
 app.use('/api/schema',     schemaRoutes);
 app.use('/api/client-log', clientLogRoutes);
+
+// ---------------------------------------------------------------------------
+// Live log page — every terminal line, in a browser tab.  For demos reached
+// over a port forward, where nobody sees this terminal.  LOG_VIEWER=off hides
+// it: like the rest of this API it has no authentication.
+// ---------------------------------------------------------------------------
+const LOG_VIEWER_ON = (process.env.LOG_VIEWER || 'on').toLowerCase() !== 'off';
+if (LOG_VIEWER_ON) {
+  app.use('/api/logs', logsRoutes);
+  app.get('/logs', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'logs.html')));
+}
 
 // ---------------------------------------------------------------------------
 // SSE — real-time push to connected browsers
@@ -231,6 +244,7 @@ const server = app.listen(PORT, () => {
 ║   🏥 Medical:   http://localhost:${PORT}/api/medical    ║
 ║   🎬 Scenarios: http://localhost:${PORT}/api/scenarios  ║
 ║   📋 Schema:    http://localhost:${PORT}/api/schema     ║
+║   📜 Logs:      http://localhost:${PORT}/logs           ║
 ║   💚 Env:     ${process.env.NODE_ENV || 'development'}                            ║
 ╚══════════════════════════════════════════════════════╝
   `);
@@ -245,6 +259,7 @@ const server = app.listen(PORT, () => {
 
   const hint = logger.root.level === 'debug' ? '' : ' (set LOG_LEVEL=debug for more)';
   log.info(`Log level: ${logger.root.level}${hint}`);
+  if (LOG_VIEWER_ON) log.info(`Live logs: http://localhost:${PORT}/logs`);
   checkDependencies([
     { name: 'postgres    ', target: pool.target,       probe: probeDatabase },
     { name: 'planner     ', target: services.planner,  probe: httpProbe(services.planner) },

@@ -1,0 +1,191 @@
+/* ===========================================================================
+   logs.css — /logs, the live server log
+   ---------------------------------------------------------------------------
+   Builds on styles.css (tokens, reset, .wordmark, .brand, .seg). The only
+   colour here is the log level: error → --bad, warn → --warn, debug → --dim.
+   =========================================================================== */
+
+.logs-app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--g1);
+}
+
+/* ---- header ---- */
+.logs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.logs-title {
+  font-family: var(--font-cond);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.logs-header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+.logs-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  color: var(--dim);
+}
+.logs-status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+.logs-status[data-state="live"]         .dot { background: var(--ok); }
+.logs-status[data-state="reconnecting"] .dot { background: var(--warn); animation: logs-pulse 1s ease-in-out infinite; }
+.logs-status[data-state="reconnecting"]      { color: var(--warn); }
+@keyframes logs-pulse { 50% { opacity: .25; } }
+
+.logs-counts { display: flex; gap: 6px; }
+.count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  padding: 4px 7px;
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+}
+.count:hover { background: var(--g2); color: var(--ink); }
+#countError.has { color: var(--bad);  border-color: var(--bad); }
+#countWarn.has  { color: var(--warn); border-color: var(--warn); }
+
+.logs-maplink {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  color: var(--dim);
+  text-decoration: none;
+}
+.logs-maplink:hover { color: var(--ink); }
+
+/* ---- toolbar ---- */
+.logs-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--g0);
+  border-bottom: 1px solid var(--rule);
+}
+
+.logs-toolbar select,
+.logs-toolbar input {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  height: 24px;
+  padding: 0 7px;
+  border: 1px solid var(--rule);
+  background: var(--g1);
+  color: var(--ink);
+  border-radius: 0;
+}
+.logs-toolbar input { flex: 1 1 180px; min-width: 0; max-width: 360px; }
+.logs-toolbar .seg button { height: 24px; padding: 0 8px; }
+.logs-toolbar .seg button:disabled { opacity: .35; cursor: not-allowed; }
+.logs-toolbar .seg button:disabled:hover { background: none; color: var(--dim); }
+
+.logs-note { font-family: var(--font-mono); font-size: 10px; color: var(--dim); }
+
+/* ---- the list ---- */
+.logs-list {
+  flex: 1;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 4px 0 40px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 92px 44px minmax(0, 104px) minmax(0, 1fr);
+  column-gap: 12px;
+  padding: 2px 16px;
+}
+.row:hover { background: var(--g2); }
+.row.has-fields { cursor: pointer; }
+
+.row time  { color: var(--dim); font-variant-numeric: tabular-nums; }
+.row .lvl  { font-size: 10px; letter-spacing: .06em; padding-top: 1px; color: var(--dim); }
+.row .scope { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .msg  { white-space: pre-wrap; overflow-wrap: anywhere; }
+.row.has-fields .msg::after { content: ' ▸'; color: var(--dim); }
+.row.open .msg::after       { content: ' ▾'; }
+
+.row.lvl-debug .msg { color: var(--dim); }
+.row.lvl-info  .lvl { color: var(--ink); }
+.row.lvl-warn  { background: color-mix(in srgb, var(--warn) 7%, transparent); }
+.row.lvl-warn  .lvl { color: var(--warn); }
+.row.lvl-error,
+.row.lvl-fatal { background: color-mix(in srgb, var(--bad) 9%, transparent); }
+.row.lvl-error .lvl,
+.row.lvl-fatal .lvl { color: var(--bad); font-weight: 600; }
+
+.fields {
+  grid-column: 1 / -1;
+  margin: 4px 0 6px;
+  padding: 8px 10px;
+  background: var(--g0);
+  border-left: 2px solid var(--rule);
+  font-size: 11.5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+.row:not(.open) .fields { display: none; }
+
+.logs-empty {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+  pointer-events: none;
+}
+
+.logs-jump {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  padding: 7px 14px;
+  border: none;
+  background: var(--hot);
+  color: var(--on-hot);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+/* Narrow screens: the message takes its own line under time · level · source. */
+@media (max-width: 640px) {
+  .row { grid-template-columns: auto auto minmax(0, 1fr); padding: 4px 16px; }
+  .row .msg { grid-column: 1 / -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logs-status[data-state="reconnecting"] .dot { animation: none; }
+}
