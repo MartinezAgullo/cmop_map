@@ -14,8 +14,11 @@ const fs        = require('fs');
 const { execFileSync } = require('child_process');
 const { PRESETS, LIMITS, generateMascalScenario } = require('../lib/mascal-generator');
 const { SCENARIOS_DIR, writeScenarioModule } = require('../lib/scenario-files');
+const services  = require('../config/services');
+const { createNotifier } = require('../lib/notifier');
+const log       = require('../lib/logger').child('scenarios');
 
-const PLANNER_BASE = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
+const planner = createNotifier({ service: 'planner', baseUrl: services.planner, logger: log });
 
 // ---------------------------------------------------------------------------
 
@@ -31,13 +34,7 @@ const PLANNER_BASE = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400'
  * down must never make a scenario load fail.
  */
 function _notifyScenarioLoaded(name) {
-  fetch(`${PLANNER_BASE}/scenario/loaded`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ scenario: name }),
-  }).catch(err => {
-    console.warn(`[scenarios] Planner notify skipped (planner unreachable): ${err.message}`);
-  });
+  planner('/scenario/loaded', { scenario: name });
 }
 
 /**
@@ -50,6 +47,8 @@ function loadScenario(name) {
     encoding: 'utf-8',
     timeout: 15000                // 15 s safety cap
   });
+  log.info(`Scenario "${name}" loaded`);
+  log.debug(output.trim());
   _notifyScenarioLoaded(name);
   return output.trim();
 }
@@ -70,7 +69,7 @@ router.get('/', (req, res) => {
 
     res.json({ success: true, data: scenarios });
   } catch (err) {
-    console.error('GET /scenarios:', err);
+    log.error({ err }, 'GET /scenarios: cannot read the scenario modules');
     res.status(500).json({ success: false, message: 'Failed to list scenarios', error: err.message });
   }
 });
@@ -88,7 +87,7 @@ router.post('/load/:name', (req, res) => {
     const output = loadScenario(name);
     res.json({ success: true, scenario: name, output });
   } catch (err) {
-    console.error(`POST /scenarios/load/${name}:`, err.stderr || err.message);
+    log.error({ stderr: err.stderr?.trim() }, `Scenario "${name}" failed to load: ${err.message}`);
     res.status(500).json({
       success: false,
       message: `Failed to load scenario "${name}"`,
@@ -127,7 +126,7 @@ router.post('/generate', (req, res) => {
     const output = loadScenario(scenario.meta.name);
     res.json({ success: true, scenario: scenario.meta.name, meta: scenario.meta, output });
   } catch (err) {
-    console.error('POST /scenarios/generate:', err.stderr || err.message);
+    log.error({ stderr: err.stderr?.trim() }, `Scenario "${scenario.meta.name}" generated but failed to load: ${err.message}`);
     res.status(500).json({
       success: false,
       message: `Failed to generate scenario "${scenario.meta.name}"`,

@@ -437,6 +437,8 @@ function setTileLayer(theme) {
   if (tileLayer) map.removeLayer(tileLayer);
   const cfg = TILE_LAYERS[theme];
   tileLayer = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 19 });
+  // A constant message, so client-log's throttle folds a screenful of failed tiles into one line.
+  tileLayer.on('tileerror', () => console.warn(`Map tiles failing to load from ${new URL(cfg.url.replace('{s}', 'a')).host}`));
   tileLayer.addTo(map);
 }
 

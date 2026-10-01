@@ -9,9 +9,29 @@ const entitiesRoutes  = require('./routes/entities');
 const medicalRoutes   = require('./routes/medical');
 const scenariosRoutes = require('./routes/scenarios');
 const schemaRoutes    = require('./routes/schema');
+const clientLogRoutes = require('./routes/client-log');
 
 const http      = require('http');
 const sseBroker = require('./lib/sse-broker');
+const services  = require('./config/services');
+const logger    = require('./lib/logger');
+const { errorDetail }         = require('./lib/error-detail');
+const { createRequestLogger } = require('./lib/request-logger');
+const { httpProbe, checkDependencies } = require('./lib/dependency-check');
+
+const log      = logger.child('server');
+const proxyLog = logger.child('proxy');
+
+// ---------------------------------------------------------------------------
+// Process-level failures: log them instead of dying silently
+// ---------------------------------------------------------------------------
+process.on('unhandledRejection', (reason) => {
+  log.error({ err: reason }, 'Unhandled promise rejection');
+});
+process.on('uncaughtException', (err) => {
+  log.fatal({ err }, 'Uncaught exception, exiting');
+  process.exit(1);
+});
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +41,21 @@ const PORT = process.env.PORT || 3000;
 // ---------------------------------------------------------------------------
 app.use(cors());
 
+// One line per request.  Static files, the SSE stream, the health check, the
+// browser's own log reports and the simulation's per-second position PUTs
+// drop to debug so they do not drown the rest.
+const POSITION_KEYS = ['latitud', 'longitud'];
+function isQuietRequest(req) {
+  const url = req.originalUrl;
+  if (!url.startsWith('/api/')) return true;
+  if (url.startsWith('/api/events') && req.method === 'GET') return true;
+  if (url.startsWith('/api/client-log')) return true;
+  if (req.method === 'PUT' && url.startsWith('/api/entities/') && req.body
+      && Object.keys(req.body).every(k => POSITION_KEYS.includes(k))) return true;
+  return false;
+}
+app.use(createRequestLogger({ logger: logger.child('http'), isQuiet: isQuietRequest }));
+
 // ---------------------------------------------------------------------------
 // Vision Agent proxy — forwards /api/vision/* to vision_agent service
 //
@@ -29,7 +64,7 @@ app.use(cors());
 // forwards zero bytes while still passing on the original Content-Length, and
 // the vision agent blocks waiting for a body that never arrives.
 // ---------------------------------------------------------------------------
-const VISION_BASE = (process.env.VISION_AGENT_URL || 'http://localhost:8500').replace(/\/$/, '');
+const VISION_BASE = services.vision;
 
 function _proxyToVision(req, res) {
   // Express already strips the /api/vision mount path from req.url
@@ -46,7 +81,9 @@ function _proxyToVision(req, res) {
     upRes.pipe(res, { end: true });
   });
   upstream.on('error', (err) => {
-    res.status(502).json({ success: false, message: `Cannot reach vision agent: ${err.message}` });
+    proxyLog.error(`vision_agent ${req.method} ${target} failed: ${errorDetail(err)}`);
+    if (res.headersSent) return res.end();
+    res.status(502).json({ success: false, message: `Cannot reach vision agent: ${errorDetail(err)}` });
   });
 
   req.pipe(upstream, { end: true });
@@ -64,6 +101,7 @@ app.use('/api/entities',   entitiesRoutes);
 app.use('/api/medical',    medicalRoutes);
 app.use('/api/scenarios',  scenariosRoutes);
 app.use('/api/schema',     schemaRoutes);
+app.use('/api/client-log', clientLogRoutes);
 
 // ---------------------------------------------------------------------------
 // SSE — real-time push to connected browsers
@@ -80,6 +118,7 @@ app.post('/api/events/notify', (req, res) => {
   if (!payload || typeof payload !== 'object' || typeof payload.type !== 'string') {
     return res.status(400).json({ ok: false, message: 'Body must be an object with a string `type`' });
   }
+  logger.child('events').info(`${payload.type} from ${req.ip} → ${sseBroker.clientCount()} browser(s)`);
   sseBroker.broadcast(payload);
   res.json({ ok: true });
 });
@@ -87,44 +126,36 @@ app.post('/api/events/notify', (req, res) => {
 // ---------------------------------------------------------------------------
 // Planner proxy — forwards to medevac_planner task server (avoids CORS)
 // ---------------------------------------------------------------------------
-const PLANNER_BASE = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
+const PLANNER_BASE      = services.planner;
+const PLANNER_TIMEOUT_MS = 30000;
 
-app.get('/api/planner/tasks/:taskId/routes', (req, res) => {
-  const target = `${PLANNER_BASE}/tasks/${req.params.taskId}/routes`;
-  http.get(target, (upstream) => {
-    let body = '';
-    upstream.on('data', chunk => { body += chunk; });
-    upstream.on('end', () => {
-      try {
-        res.status(upstream.statusCode).json(JSON.parse(body));
-      } catch {
-        res.status(502).json({ success: false, message: 'Invalid JSON from planner' });
-      }
-    });
-  }).on('error', (err) => {
-    res.status(502).json({ success: false, message: `Cannot reach planner: ${err.message}` });
-  });
-});
-
-// Proxy POST /simulate and DELETE /simulate to the medevac planner task server
-function _proxyToPlanner(method, req, res, suffix = '/simulate') {
+/** Forward to the planner and relay its JSON answer; log every way it can fail. */
+function _proxyToPlanner(method, req, res, suffix) {
   const target   = `${PLANNER_BASE}/tasks/${req.params.taskId}${suffix}`;
   const upstream = http.request(target, { method }, (upRes) => {
     let body = '';
     upRes.on('data', chunk => { body += chunk; });
     upRes.on('end', () => {
       try { res.status(upRes.statusCode).json(JSON.parse(body)); }
-      catch (_) { res.status(502).json({ success: false, message: 'Invalid JSON from planner' }); }
+      catch (_) {
+        proxyLog.error({ body: body.slice(0, 300) }, `planner ${method} ${target} answered ${upRes.statusCode} with invalid JSON`);
+        res.status(502).json({ success: false, message: 'Invalid JSON from planner' });
+      }
     });
   });
+  upstream.setTimeout(PLANNER_TIMEOUT_MS, () => {
+    upstream.destroy(new Error(`no answer after ${PLANNER_TIMEOUT_MS / 1000} s`));
+  });
   upstream.on('error', (err) => {
-    res.status(502).json({ success: false, message: `Cannot reach planner: ${err.message}` });
+    proxyLog.error(`planner ${method} ${target} failed: ${errorDetail(err)}`);
+    res.status(502).json({ success: false, message: `Cannot reach planner: ${errorDetail(err)}` });
   });
   upstream.end();
 }
 
-app.post('/api/planner/tasks/:taskId/simulate',          (req, res) => _proxyToPlanner('POST',   req, res));
-app.delete('/api/planner/tasks/:taskId/simulate',        (req, res) => _proxyToPlanner('DELETE', req, res));
+app.get('/api/planner/tasks/:taskId/routes', (req, res) => _proxyToPlanner('GET', req, res, '/routes'));
+app.post('/api/planner/tasks/:taskId/simulate',          (req, res) => _proxyToPlanner('POST',   req, res, '/simulate'));
+app.delete('/api/planner/tasks/:taskId/simulate',        (req, res) => _proxyToPlanner('DELETE', req, res, '/simulate'));
 app.post('/api/planner/tasks/:taskId/simulate/resume',   (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/resume'));
 app.post('/api/planner/tasks/:taskId/simulate/restart',  (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/restart'));
 
@@ -151,8 +182,8 @@ app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
-app.use((err, _req, res, _next) => {
-  console.error('Unhandled error:', err);
+app.use((err, req, res, _next) => {
+  log.error({ err }, `Unhandled error in ${req.method} ${req.originalUrl}`);
   res.status(500).json({
     success: false,
     message: 'Internal server error',
@@ -171,13 +202,25 @@ async function runMigrations() {
   if (rows.length > 0) {
     await pool.query("ALTER TYPE triage_color_enum ADD VALUE IF NOT EXISTS 'BLUE' BEFORE 'BLACK';");
   }
-  console.log('✅ DB migrations applied');
+  log.info('DB migrations applied');
 }
 
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
-app.listen(PORT, () => {
+/** Whether the CMOP schema exists, so a fresh database says "run init-db" up front. */
+async function probeDatabase() {
+  try {
+    const { rows } = await pool.query("SELECT to_regclass('puntos_interes') AS t");
+    return rows[0].t
+      ? { ok: true,  detail: 'schema ready' }
+      : { ok: false, detail: 'reachable but the schema is missing: run npm run init-db' };
+  } catch (err) {
+    return { ok: false, detail: errorDetail(err) };
+  }
+}
+
+const server = app.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════════════╗
 ║   🗺️  CMOP Map Server                                 ║
@@ -197,8 +240,23 @@ app.listen(PORT, () => {
   // turned an unreachable database into an unhandled rejection that killed the
   // process — after the port was already bound.
   runMigrations().catch(err => {
-    console.warn(`⚠️  DB migrations skipped: ${err.message}`);
+    log.warn(`DB migrations skipped: ${errorDetail(err)}`);
   });
+
+  const hint = logger.root.level === 'debug' ? '' : ' (set LOG_LEVEL=debug for more)';
+  log.info(`Log level: ${logger.root.level}${hint}`);
+  checkDependencies([
+    { name: 'postgres    ', target: pool.target,       probe: probeDatabase },
+    { name: 'planner     ', target: services.planner,  probe: httpProbe(services.planner) },
+    { name: 'pfc_agent   ', target: services.pfcAgent, probe: httpProbe(services.pfcAgent) },
+    { name: 'vision_agent', target: services.vision,   probe: httpProbe(services.vision) },
+  ], logger.child('deps'));
+});
+
+server.on('error', (err) => {
+  const hint = err.code === 'EADDRINUSE' ? `: port ${PORT} is taken, is another server still running?` : '';
+  log.fatal({ err }, `Cannot start the server${hint}`);
+  process.exit(1);
 });
 
 module.exports = app;

@@ -22,6 +22,7 @@ const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/database');
 const Entity  = require('../models/entity');
+const log     = require('../lib/logger').child('medical');
 
 // ---------------------------------------------------------------------------
 // 9-Line MEDEVAC validation
@@ -171,7 +172,7 @@ router.get('/casualties', async (req, res) => {
     );
     res.json({ success: true, count: rows.length, data: rows });
   } catch (err) {
-    console.error('GET /medical/casualties:', err);
+    log.error({ err }, 'GET /medical/casualties');
     res.status(500).json({ success: false, message: 'Failed to fetch casualties', error: err.message });
   }
 });
@@ -186,7 +187,7 @@ router.get('/triage/:color', async (req, res) => {
     );
     res.json({ success: true, count: rows.length, data: rows });
   } catch (err) {
-    console.error('GET /medical/triage/:color:', err);
+    log.error({ err }, 'GET /medical/triage/:color');
     res.status(500).json({ success: false, message: 'Failed to fetch by triage color', error: err.message });
   }
 });
@@ -201,7 +202,7 @@ router.get('/evac-stage/:stage', async (req, res) => {
     );
     res.json({ success: true, count: rows.length, data: rows });
   } catch (err) {
-    console.error('GET /medical/evac-stage/:stage:', err);
+    log.error({ err }, 'GET /medical/evac-stage/:stage');
     res.status(500).json({ success: false, message: 'Failed to fetch by evac stage', error: err.message });
   }
 });
@@ -254,7 +255,7 @@ router.get('/:entity_id/nine-line', async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('GET /medical/:entity_id/nine-line:', err);
+    log.error({ err }, 'GET /medical/:entity_id/nine-line');
     res.status(500).json({ success: false, message: 'Failed to fetch 9-Line data', error: err.message });
   }
 });
@@ -315,7 +316,7 @@ router.put('/:entity_id', async (req, res) => {
     const updated = await Entity.getById(id);
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error('PUT /medical/:entity_id:', err);
+    log.error({ err }, 'PUT /medical/:entity_id');
     res.status(500).json({ success: false, message: 'Failed to update medical record', error: err.message });
   }
 });
@@ -360,7 +361,7 @@ router.post('/:entity_id/vitals', async (req, res) => {
     const updated = await Entity.getById(id);
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error('POST /medical/:entity_id/vitals:', err);
+    log.error({ err }, 'POST /medical/:entity_id/vitals');
     res.status(500).json({ success: false, message: 'Failed to append vital signs', error: err.message });
   }
 });
@@ -430,7 +431,7 @@ router.post('/:entity_id/nine-line', async (req, res) => {
     const updated = await Entity.getById(id);
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error('POST /medical/:entity_id/nine-line:', err);
+    log.error({ err }, 'POST /medical/:entity_id/nine-line');
     res.status(500).json({ success: false, message: 'Failed to save 9-Line data', error: err.message });
   }
 });
@@ -454,7 +455,7 @@ router.delete('/:entity_id', async (req, res) => {
     }
     res.json({ success: true, message: 'Medical record removed' });
   } catch (err) {
-    console.error('DELETE /medical/:entity_id:', err);
+    log.error({ err }, 'DELETE /medical/:entity_id');
     res.status(500).json({ success: false, message: 'Failed to delete medical record', error: err.message });
   }
 });

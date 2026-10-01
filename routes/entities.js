@@ -9,25 +9,22 @@ const express    = require('express');
 const router     = express.Router();
 const Entity     = require('../models/entity');
 const sseBroker  = require('../lib/sse-broker');
+const services   = require('../config/services');
+const { createNotifier } = require('../lib/notifier');
+const log        = require('../lib/logger').child('entities');
 
 // ---------------------------------------------------------------------------
 // Planner / PFC-agent notifications — fire-and-forget, never block the response
 // ---------------------------------------------------------------------------
-const PLANNER_BASE   = (process.env.MEDEVAC_PLANNER_URL || 'http://localhost:8400').replace(/\/$/, '');
-const PFC_AGENT_BASE = (process.env.PFC_AGENT_BASE      || 'http://localhost:8600').replace(/\/$/, '');
+const planner  = createNotifier({ service: 'planner',   baseUrl: services.planner,  logger: log });
+const pfcAgent = createNotifier({ service: 'pfc_agent', baseUrl: services.pfcAgent, logger: log });
 
 function _notifyThreat(entity) {
   const lat  = entity.lat  ?? entity.latitud;
   const lng  = entity.lng  ?? entity.longitud;
   const name = entity.name ?? entity.nombre ?? `Entity-${entity.id}`;
   if (lat == null || lng == null) return;
-  fetch(`${PLANNER_BASE}/threats/notify`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ lat: Number(lat), lng: Number(lng), name, id: entity.id }),
-  }).catch(err => {
-    console.warn(`[entities] Threat notify skipped (planner unreachable): ${err.message}`);
-  });
+  planner('/threats/notify', { lat: Number(lat), lng: Number(lng), name, id: entity.id });
 }
 
 function _notifyNewCasualty(entity) {
@@ -36,7 +33,7 @@ function _notifyNewCasualty(entity) {
   const name = entity.name ?? entity.nombre ?? `Entity-${entity.id}`;
   if (lat == null || lng == null) return;
   const medical = entity.medical ?? {};
-  const body = JSON.stringify({
+  const payload = {
     id:            entity.id,
     name,
     lat:           Number(lat),
@@ -44,39 +41,25 @@ function _notifyNewCasualty(entity) {
     triage_color:    medical.triage_color    ?? null,
     casualty_status: medical.casualty_status ?? null,
     evac_priority:   medical.evac_priority   ?? null,
-  });
-  fetch(`${PLANNER_BASE}/casualties/notify`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
-  }).catch(err => {
-    console.warn(`[entities] Casualty notify skipped (planner unreachable): ${err.message}`);
-  });
+  };
+  planner('/casualties/notify', payload);
   // Also notify pfc_agent so it can spawn a PFC session as a safety-net
   // (in case the planner is slow or offline when the casualty is created).
-  fetch(`${PFC_AGENT_BASE}/casualties/notify`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
-  }).catch(err => {
-    console.warn(`[entities] PFC notify skipped (pfc_agent unreachable): ${err.message}`);
-  });
+  pfcAgent('/casualties/notify', payload);
 }
 
 // A platform's operational status changed (a breakdown, or back in service). Sent on
 // the change only: the movement simulation PUTs vehicle positions every second, and
 // the planner reassigns casualties on each of these.
 function _notifyAssetStatus(entity, previousStatus) {
-  fetch(`${PLANNER_BASE}/assets/status`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({
-      id:              entity.id,
-      name:            entity.nombre ?? `Entity-${entity.id}`,
-      status:          entity.status ?? 'operational',
-      previous_status: previousStatus ?? 'operational',
-      lat:             entity.latitud,
-      lng:             entity.longitud,
-      tipo_elemento:   entity.tipo_elemento ?? null,   // its care level, for the planner's log
-    }),
-  }).catch(err => {
-    console.warn(`[entities] Asset status notify skipped (planner unreachable): ${err.message}`);
+  planner('/assets/status', {
+    id:              entity.id,
+    name:            entity.nombre ?? `Entity-${entity.id}`,
+    status:          entity.status ?? 'operational',
+    previous_status: previousStatus ?? 'operational',
+    lat:             entity.latitud,
+    lng:             entity.longitud,
+    tipo_elemento:   entity.tipo_elemento ?? null,   // its care level, for the planner's log
   });
 }
 
@@ -98,7 +81,7 @@ router.get('/', async (req, res) => {
     const data = await Entity.getAll();
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    console.error('GET /entities:', err);
+    log.error({ err }, 'GET /entities');
     res.status(500).json({ success: false, message: 'Failed to fetch entities', error: err.message });
   }
 });
@@ -108,7 +91,7 @@ router.get('/meta/categorias', async (req, res) => {
     const data = await Entity.getCategorias();
     res.json({ success: true, data });
   } catch (err) {
-    console.error('GET /entities/meta/categorias:', err);
+    log.error({ err }, 'GET /entities/meta/categorias');
     res.status(500).json({ success: false, message: 'Failed to fetch categories', error: err.message });
   }
 });
@@ -118,7 +101,7 @@ router.get('/categoria/:categoria', async (req, res) => {
     const data = await Entity.getByCategoria(req.params.categoria);
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    console.error('GET /entities/categoria:', err);
+    log.error({ err }, 'GET /entities/categoria');
     res.status(500).json({ success: false, message: 'Failed to fetch by category', error: err.message });
   }
 });
@@ -132,7 +115,7 @@ router.get('/alliance/:alliance', async (req, res) => {
     const data = await Entity.getByAlliance(req.params.alliance);
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    console.error('GET /entities/alliance:', err);
+    log.error({ err }, 'GET /entities/alliance');
     res.status(500).json({ success: false, message: 'Failed to fetch by alliance', error: err.message });
   }
 });
@@ -150,7 +133,7 @@ router.get('/cerca/:longitud/:latitud', async (req, res) => {
     const data = await Entity.getNearby(lng, lat, radio);
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    console.error('GET /entities/cerca:', err);
+    log.error({ err }, 'GET /entities/cerca');
     res.status(500).json({ success: false, message: 'Spatial query failed', error: err.message });
   }
 });
@@ -160,7 +143,7 @@ router.get('/casevac', async (req, res) => {
     const data = await Entity.getCasevacEligible();
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    console.error('GET /entities/casevac:', err);
+    log.error({ err }, 'GET /entities/casevac');
     res.status(500).json({ success: false, message: 'Failed to fetch casevac-eligible entities', error: err.message });
   }
 });
@@ -175,7 +158,7 @@ router.get('/:id', async (req, res) => {
     }
     res.json({ success: true, data: entity });
   } catch (err) {
-    console.error('GET /entities/:id:', err);
+    log.error({ err }, 'GET /entities/:id');
     res.status(500).json({ success: false, message: 'Failed to fetch entity', error: err.message });
   }
 });
@@ -197,7 +180,7 @@ router.post('/', async (req, res) => {
     sseBroker.broadcast({ type: 'entity_created', data: entity });
     res.status(201).json({ success: true, data: entity });
   } catch (err) {
-    console.error('POST /entities:', err);
+    log.error({ err }, 'POST /entities');
     res.status(500).json({ success: false, message: 'Failed to create entity', error: err.message });
   }
 });
@@ -217,7 +200,7 @@ router.post('/batch', async (req, res) => {
     });
     res.status(201).json({ success: true, count: data.length, data });
   } catch (err) {
-    console.error('POST /entities/batch:', err);
+    log.error({ err }, 'POST /entities/batch');
     res.status(500).json({ success: false, message: 'Batch create failed', error: err.message });
   }
 });
@@ -269,7 +252,7 @@ router.put('/:id', async (req, res) => {
     if (statusChanged) sseBroker.broadcast({ type: 'entity_changed', data: entity });
     res.json({ success: true, data: entity });
   } catch (err) {
-    console.error('PUT /entities/:id:', err);
+    log.error({ err }, 'PUT /entities/:id');
     res.status(500).json({ success: false, message: 'Failed to update entity', error: err.message });
   }
 });
@@ -283,7 +266,7 @@ router.delete('/:id', async (req, res) => {
     sseBroker.broadcast({ type: 'entity_deleted', id: Number(req.params.id) });
     res.json({ success: true, message: 'Entity deleted' });
   } catch (err) {
-    console.error('DELETE /entities/:id:', err);
+    log.error({ err }, 'DELETE /entities/:id');
     res.status(500).json({ success: false, message: 'Failed to delete entity', error: err.message });
   }
 });
