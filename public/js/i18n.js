@@ -162,6 +162,9 @@ const I18N = {
     'msg.markedDamaged':  'Vehicle marked as damaged',
     'msg.markedOperational': 'Vehicle back in service',
     'msg.statusError':    'Could not change the vehicle status',
+    'alert.preemption':   '<strong>T1 reassignment:</strong> {asset} leaves {displaced} ({displacedTriage}) and goes to {t1} ({t1Triage})',
+    'alert.careBreach':   'Role-1 vehicle for a T1: no Role-2 vehicle could serve.',
+    'alert.dismiss':      'Dismiss',
 
     'popup.medical':     'Medical',
     'popup.triage':      'Triage',
@@ -370,6 +373,9 @@ const I18N = {
     'msg.markedDamaged':  'Vehículo marcado como averiado',
     'msg.markedOperational': 'Vehículo de nuevo operativo',
     'msg.statusError':    'No se pudo cambiar el estado del vehículo',
+    'alert.preemption':   '<strong>Reasignación T1:</strong> {asset} deja a {displaced} ({displacedTriage}) y va a por {t1} ({t1Triage})',
+    'alert.careBreach':   'Vehículo Role-1 para un T1: ningún Role-2 podía atenderlo.',
+    'alert.dismiss':      'Cerrar',
 
     'popup.medical':     'Sanitario',
     'popup.triage':      'Triaje',

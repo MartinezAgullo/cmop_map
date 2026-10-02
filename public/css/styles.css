@@ -978,6 +978,53 @@ body.dark .brand-light { display: none !important; }
   background: var(--c);
 }
 
+/* Plan alerts — a change in the plan an operator must not miss (a T1 preemption).
+   They stay until closed, unlike the sidebar's #message. */
+.plan-alerts {
+  position: absolute;
+  top: 48px;                      /* below .map-tools */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: min(560px, calc(100% - 20px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.plan-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 10px 9px 14px;
+  background: var(--g1);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--t-red);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-family: var(--font-cond);
+  font-size: 13.5px;
+  line-height: 1.4;
+  pointer-events: auto;
+}
+
+.plan-alert-text { flex: 1; }
+.plan-alert-text strong { color: var(--t-red-ink); letter-spacing: .04em; }
+.plan-alert-note { display: block; margin-top: 2px; color: var(--warn); font-size: 12.5px; }
+
+.plan-alert button {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.plan-alert button:hover { color: var(--hot); }
+
 .map-coords:empty { display: none; }
 
 .map-coords {

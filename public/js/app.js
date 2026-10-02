@@ -357,6 +357,7 @@ function _rerenderDynamicStrings() {
   _updateLiveLabel();
   markers.forEach(m => m._cmopEntity && m.setPopupContent(buildPopup(m._cmopEntity)));
   if (_lastRoutes) document.getElementById('routesStatus').innerHTML = _routesSummaryHTML(_lastRoutes);
+  _rerenderPlanAlerts();
 }
 
 // The `categoria` enum values are English words, so English needs no gloss.
@@ -871,9 +872,8 @@ async function generateRandomScenario(event) {
     const data = await res.json();
     if (data.success) {
       showMessage(t('msg.randomLoaded', { name: data.scenario }), 'success');
+      clearPlanAlerts();             // they were about the scenario just replaced
       _shouldFit = true;
-      await initScenarios();
-      document.getElementById('scenarioSelect').value = data.scenario;
       await loadEntities();
     } else {
       showMessage(data.message || t('msg.scenarioError'), 'error');
@@ -900,6 +900,7 @@ async function loadSelectedScenario() {
 
     if (data.success) {
       showMessage(t('msg.scenarioLoaded', { name }), 'success');
+      clearPlanAlerts();             // they were about the scenario just replaced
       _shouldFit = true;          // a new scenario is a new area of operations
       await loadEntities();
     } else {
@@ -1332,6 +1333,8 @@ function initSSE() {
         _onEntityDeleted(msg.id);
       } else if (msg.type === 'route_updated' && _currentTaskId) {
         loadMedevacRoutes(_currentTaskId);
+      } else if (msg.type === 'preemption') {
+        showPlanAlert(msg);
       } else if (msg.type === 'simulation_stopped') {
         // 'cancelled' = user clicked Detener → show Reanudar/Reiniciar
         // 'completed' = finished naturally → back to idle
@@ -1703,6 +1706,54 @@ function showMessage(text, type) {
   el.textContent = text;
   el.className   = `message message-${type} show`;
   setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// ---------------------------------------------------------------------------
+// Plan alerts
+// ---------------------------------------------------------------------------
+// The planner announces a T1 preemption (an ambulance taken from a lower-priority
+// casualty for a RED one) as data, through POST /api/events/notify, so the map words
+// it in its own language. The alert stays until closed: a vehicle changing its
+// destination must not go unnoticed. Each alert keeps its event, so a language
+// switch rewrites it.
+
+/** An entity as the map titles it (its callsign), else the name the planner sent. */
+function _alertName(id, name) {
+  const e = markersById[id]?._cmopEntity;
+  return esc(e?.elemento_identificado || e?.nombre || name || `#${id}`);
+}
+
+function _planAlertHTML(ev) {
+  const text = t('alert.preemption', {
+    asset:           _alertName(ev.asset_id, ev.asset_name),
+    displaced:       _alertName(ev.displaced_id, ev.displaced_name),
+    displacedTriage: esc(ev.displaced_triage || '?'),
+    t1:              _alertName(ev.t1_id, ev.t1_name),
+    t1Triage:        esc(ev.t1_triage || 'RED'),
+  });
+  const note = ev.care_breach ? `<span class="plan-alert-note">${t('alert.careBreach')}</span>` : '';
+  return `<span class="plan-alert-text">${text}${note}</span>` +
+         `<button type="button" aria-label="${t('alert.dismiss')}" title="${t('alert.dismiss')}">×</button>`;
+}
+
+function showPlanAlert(ev) {
+  const el = document.createElement('div');
+  el.className = 'plan-alert';
+  el.setAttribute('role', 'alert');
+  el._planEvent = ev;
+  el.innerHTML = _planAlertHTML(ev);
+  el.addEventListener('click', e => { if (e.target.closest('button')) el.remove(); });
+  document.getElementById('planAlerts').appendChild(el);
+}
+
+function clearPlanAlerts() {
+  document.getElementById('planAlerts').replaceChildren();
+}
+
+function _rerenderPlanAlerts() {
+  document.querySelectorAll('#planAlerts .plan-alert').forEach(el => {
+    el.innerHTML = _planAlertHTML(el._planEvent);
+  });
 }
 
 // ---------------------------------------------------------------------------
