@@ -1366,6 +1366,10 @@ async function _onEntityChanged(entity) {
   const j = filteredEntities.findIndex(e => e.id === entity.id);
   if (j !== -1) filteredEntities[j] = entity;
 
+  if (_lastRoutes?.some(r => r.casualty_id === entity.id)) {   // a retriage recolours its route
+    document.getElementById('routesStatus').innerHTML = _routesSummaryHTML(_lastRoutes);
+  }
+
   const marker = markersById[entity.id];
   if (!marker) return;
   const wasOpen = marker.isPopupOpen();
@@ -2027,12 +2031,22 @@ function _routePopup(route, leg) {
     </div>`;
 }
 
+/** The triage of a route's casualty: the map's own, newer than the plan's after a retriage. */
+function _routeTriage(r) {
+  const casualty = allEntities.find(e => e.id === r.casualty_id);
+  return casualty?.medical?.triage_color || r.triage || 'UNKNOWN';
+}
+
 function _routesSummaryHTML(routes) {
   const items = routes.map((r, i) => {
-    const color = getRouteColors()[i % ROUTE_COLORS_DARK.length];
-    const eta   = r.total_eta_minutes != null ? r.total_eta_minutes : '—';
-    const cls   = r.plan_key != null && r.plan_key === _selectedPlanKey ? ' active' : '';
+    const color  = getRouteColors()[i % ROUTE_COLORS_DARK.length];
+    const eta    = r.total_eta_minutes != null ? r.total_eta_minutes : '—';
+    const triage = _routeTriage(r);
+    const meta   = TRIAGE_META[triage] || TRIAGE_META.UNKNOWN;
+    let cls = r.plan_key != null && r.plan_key === _selectedPlanKey ? ' active' : '';
+    if (triage === 'RED') cls += ' t1';
     return `<button type="button" class="route-summary-item${cls}" onclick="selectRoute(${i})">
+      <span class="route-edge" style="--c:${meta.fill}" title="${t(meta.key)}"></span>
       <span class="route-color-dot" style="background:${color}"></span>
       <span>${esc(r.asset_name || '?')}<br>
         <em>&rarr;</em> ${esc(r.casualty_name || '?')}<br>

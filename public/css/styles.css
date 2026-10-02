@@ -785,11 +785,11 @@ body.dark .brand-light { display: none !important; }
 
 .route-summary-item {
   display: grid;
-  grid-template-columns: 9px 1fr auto;
+  grid-template-columns: 3px 9px 1fr auto;
   gap: 9px;
   align-items: center;
   width: 100%;
-  padding: 8px 6px;
+  padding: 8px 6px 8px 0;
   text-align: left;
   background: none;
   border: none;
@@ -813,7 +813,11 @@ body.dark .brand-light { display: none !important; }
   flex-shrink: 0;
 }
 
-.route-summary-item > span:nth-child(2) { min-width: 0; }
+/* the casualty's triage, as the roster draws it; the dot keeps the route's colour */
+.route-edge { align-self: stretch; margin: -8px 0; background: var(--c, var(--rule)); }
+.route-summary-item.t1 .route-edge { animation: edgepulse 2.6s ease-in-out infinite; }
+
+.route-summary-item > span:nth-child(3) { min-width: 0; }
 .route-summary-item em { font-style: normal; color: var(--dim); }
 
 .route-eta {
