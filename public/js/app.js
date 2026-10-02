@@ -1990,6 +1990,15 @@ function _airThreatHTML(route) {
   return '';
 }
 
+/** "ITA-CAS-5 (WIA)" as "ITA-CAS-5 (WIA · T1)", the tag in its triage colour. */
+function _casualtyWithTriageHTML(route) {
+  const meta = TRIAGE_META[_routeTriage(route)] || TRIAGE_META.UNKNOWN;
+  const tag  = `<span style="color:${meta.ink}">${meta.tag}</span>`;
+  const name = route.casualty_name || '?';
+  const m    = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(name);
+  return m ? `${esc(m[1])} (${esc(m[2])} · ${tag})` : `${esc(name)} (${tag})`;
+}
+
 function _routePopup(route, leg) {
   const min = n => (n != null ? `${n} ${t('routes.min')}` : '—');
   const legLabel = leg === 'pickup'   ? t('popup.legPickup')
@@ -2020,7 +2029,7 @@ function _routePopup(route, leg) {
       </div>
       <div class="popup-medical">
         ${row(t('popup.asset'), esc(route.asset_name || '?'))}
-        ${row(t('popup.casualty'), esc(route.casualty_name || '?'))}
+        ${row(t('popup.casualty'), _casualtyWithTriageHTML(route))}
         ${row(t('popup.destination'), esc(route.destination_name || '?'))}
         ${row(t('popup.pickupEta'), min(route.pickup_eta_minutes))}
         ${row(t('popup.deliveryEta'), min(route.delivery_eta_minutes))}
