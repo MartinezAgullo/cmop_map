@@ -484,6 +484,10 @@ body.dark .brand-light { display: none !important; }
 
 .roster-head button:hover { color: var(--hot); }
 
+/* the search sits in the sticky head, on a row of its own, so it never scrolls away */
+.roster-head { flex-wrap: wrap; }
+.roster-head .search-input { flex-basis: 100%; margin-top: 2px; }
+
 .ent {
   display: flex;
   align-items: stretch;
@@ -819,6 +823,8 @@ body.dark .brand-light { display: none !important; }
 
 .route-summary-item > span:nth-child(3) { min-width: 0; }
 .route-summary-item em { font-style: normal; color: var(--dim); }
+.route-entity { text-decoration: underline dotted var(--dim); text-underline-offset: 3px; }
+.route-entity:hover { color: var(--hot); text-decoration-color: currentColor; }
 
 .route-eta {
   font-family: var(--font-mono);
@@ -1174,6 +1180,7 @@ body.dark .brand-light { display: none !important; }
 }
 
 .med-value.big { font-size: 13.5px; color: var(--hot); }
+.med-value em { font-style: normal; color: var(--dim); }
 
 .popup-doctrine { border-top: 1px solid var(--rule); padding: 8px 13px; font-size: 11.5px; line-height: 1.5; }
 

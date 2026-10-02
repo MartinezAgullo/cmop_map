@@ -103,6 +103,8 @@
           <div class="roster-head">
             <span id="rosterLabel" data-i18n="roster.sorted">Sorted by urgency</span>
             <button type="button" id="clearAllFilters" data-i18n="roster.clear">Clear filters</button>
+            <input type="search" id="buscarNombre" class="search-input" autocomplete="off"
+                   data-i18n-ph="filter.searchPlaceholder" placeholder="Name, callsign, country…"/>
           </div>
           <div id="puntosList"></div>
         </section>
@@ -110,11 +112,6 @@
         <!-- ---------- Filters ---------- -->
         <section class="pane" id="pane-filters" role="tabpanel">
 
-          <div class="fgroup">
-            <div class="fgroup-head"><h3 data-i18n="filter.search">Search</h3></div>
-            <input type="text" id="buscarNombre" class="search-input"
-                   data-i18n-ph="filter.searchPlaceholder" placeholder="Callsign, unit, country…"/>
-          </div>
 
           <div class="fgroup">
             <div class="fgroup-head">

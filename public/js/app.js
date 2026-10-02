@@ -945,7 +945,7 @@ async function filterEntities() {
   const selectedTriage     = getCheckedValues('triageCheckboxes');
   const selectedMedRoles   = getCheckedValues('medFacilityCheckboxes');
   const selectedMedevac    = getCheckedValues('medevacCheckboxes');
-  const search             = document.getElementById('buscarNombre').value.toLowerCase();
+  const search             = document.getElementById('buscarNombre').value;
   const casevacOnly        = document.getElementById('casevacFilter').checked;
 
   filteredEntities = allEntities.filter(e => {
@@ -962,7 +962,7 @@ async function filterEntities() {
     }
 
     // Name search
-    if (search && !(e.nombre || '').toLowerCase().includes(search)) return false;
+    if (!_matchesSearch(e, search)) return false;
 
     // Triage subfilter (only applies to casualties)
     if (selectedTriage.length > 0 && e.categoria === 'casualty') {
@@ -1145,10 +1145,22 @@ function renderList() {
  * True when the entity name adds nothing to the callsign already on the row —
  * "RUS-CAS-2" vs "RUS-CAS-2 (WIA)", or "RUS-ART-1" vs "RUS ART-1".
  */
+/** A name with only its letters and digits, so "DEU MEDEVAC-HEL-3" and "deu-medevac-hel-3" meet. */
+function _flatName(s) {
+  return (s || '').normalize('NFD').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
 function _isRedundantName(callsign, nombre) {
   if (!callsign || !nombre) return true;
-  const flat = s => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  return flat(nombre).startsWith(flat(callsign));
+  return _flatName(nombre).startsWith(_flatName(callsign));
+}
+
+/** The search box: the query inside the name, callsign, type, category or country. */
+function _matchesSearch(e, query) {
+  const q = _flatName(query);
+  if (!q) return true;
+  return [e.nombre, e.elemento_identificado, e.tipo_elemento, e.categoria, e.country]
+    .some(field => _flatName(field).includes(q));
 }
 
 /** Casualties rank above units; inside casualties, down the triage scale. */
@@ -1606,11 +1618,8 @@ function selectEntity(id) {
   renderList();
   map.setView([e.latitud, e.longitud], 14);
 
-  const marker = markers.find(m => {
-    const ll = m.getLatLng();
-    return Math.abs(ll.lat - e.latitud) < 1e-9 && Math.abs(ll.lng - e.longitud) < 1e-9;
-  });
-  if (marker) marker.openPopup();
+  // By id, not position: a vehicle at its casualty's POI shares its coordinates.
+  markersById[id]?.openPopup();
 }
 
 // ---------------------------------------------------------------------------
@@ -2028,7 +2037,7 @@ function _routePopup(route, leg) {
         <span class="popup-categoria">${legLabel}</span>
       </div>
       <div class="popup-medical">
-        ${row(t('popup.asset'), esc(route.asset_name || '?'))}
+        ${row(t('popup.asset'), esc(route.asset_name || '?') + _callsignAliasHTML(route.asset_id, route.asset_name))}
         ${row(t('popup.casualty'), _casualtyWithTriageHTML(route))}
         ${row(t('popup.destination'), esc(route.destination_name || '?'))}
         ${row(t('popup.pickupEta'), min(route.pickup_eta_minutes))}
@@ -2046,6 +2055,20 @@ function _routeTriage(r) {
   return casualty?.medical?.triage_color || r.triage || 'UNKNOWN';
 }
 
+/** The map's callsign of *id*, when it does not read like the planner's *name*. */
+function _callsignAliasHTML(id, name) {
+  const callsign = allEntities.find(e => e.id === id)?.elemento_identificado;
+  return callsign && !_isRedundantName(callsign, name) ? ` <em>· ${esc(callsign)}</em>` : '';
+}
+
+/** A vehicle or casualty in a route card: a click finds it on the map (not the route). */
+function _routeEntityHTML(id, name) {
+  const label = esc(name || '?');
+  if (!allEntities.some(e => e.id === id)) return label;
+  return `<span class="route-entity" title="${t('routes.locate')}"` +
+    ` onclick="event.stopPropagation(); selectEntity(${id})">${label}</span>${_callsignAliasHTML(id, name)}`;
+}
+
 function _routesSummaryHTML(routes) {
   const items = routes.map((r, i) => {
     const color  = getRouteColors()[i % ROUTE_COLORS_DARK.length];
@@ -2057,8 +2080,8 @@ function _routesSummaryHTML(routes) {
     return `<button type="button" class="route-summary-item${cls}" onclick="selectRoute(${i})">
       <span class="route-edge" style="--c:${meta.fill}" title="${t(meta.key)}"></span>
       <span class="route-color-dot" style="background:${color}"></span>
-      <span>${esc(r.asset_name || '?')}<br>
-        <em>&rarr;</em> ${esc(r.casualty_name || '?')}<br>
+      <span>${_routeEntityHTML(r.asset_id, r.asset_name)}<br>
+        <em>&rarr;</em> ${_routeEntityHTML(r.casualty_id, r.casualty_name)}<br>
         <em>&rarr;</em> ${esc(r.destination_name || '?')}${
           r.altitude_advisory ? `<br><b class="route-advisory">⬆ ${t('popup.increaseAltitude')}</b>` : ''}</span>
       <span class="route-eta">${eta}<br><span class="med-label">${t('routes.min')}</span></span>
