@@ -146,8 +146,8 @@ const PLANNER_BASE      = services.planner;
 const PLANNER_TIMEOUT_MS = 30000;
 
 /** Forward to the planner and relay its JSON answer; log every way it can fail. */
-function _proxyToPlanner(method, req, res, suffix) {
-  const target   = `${PLANNER_BASE}/tasks/${req.params.taskId}${suffix}`;
+function _proxyToPlanner(method, path, res) {
+  const target   = `${PLANNER_BASE}${path}`;
   const upstream = http.request(target, { method }, (upRes) => {
     let body = '';
     upRes.on('data', chunk => { body += chunk; });
@@ -169,11 +169,15 @@ function _proxyToPlanner(method, req, res, suffix) {
   upstream.end();
 }
 
-app.get('/api/planner/tasks/:taskId/routes', (req, res) => _proxyToPlanner('GET', req, res, '/routes'));
-app.post('/api/planner/tasks/:taskId/simulate',          (req, res) => _proxyToPlanner('POST',   req, res, '/simulate'));
-app.delete('/api/planner/tasks/:taskId/simulate',        (req, res) => _proxyToPlanner('DELETE', req, res, '/simulate'));
-app.post('/api/planner/tasks/:taskId/simulate/resume',   (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/resume'));
-app.post('/api/planner/tasks/:taskId/simulate/restart',  (req, res) => _proxyToPlanner('POST',   req, res, '/simulate/restart'));
+/** The planner path of a task, plus *suffix*. */
+const _taskPath = (req, suffix) => `/tasks/${req.params.taskId}${suffix}`;
+
+app.get('/api/planner/assignments', (req, res) => _proxyToPlanner('GET', '/assignments', res));
+app.get('/api/planner/tasks/:taskId/routes', (req, res) => _proxyToPlanner('GET', _taskPath(req, '/routes'), res));
+app.post('/api/planner/tasks/:taskId/simulate',          (req, res) => _proxyToPlanner('POST',   _taskPath(req, '/simulate'), res));
+app.delete('/api/planner/tasks/:taskId/simulate',        (req, res) => _proxyToPlanner('DELETE', _taskPath(req, '/simulate'), res));
+app.post('/api/planner/tasks/:taskId/simulate/resume',   (req, res) => _proxyToPlanner('POST',   _taskPath(req, '/simulate/resume'), res));
+app.post('/api/planner/tasks/:taskId/simulate/restart',  (req, res) => _proxyToPlanner('POST',   _taskPath(req, '/simulate/restart'), res));
 
 // ---------------------------------------------------------------------------
 // Planner config (surface selected settings to the frontend)

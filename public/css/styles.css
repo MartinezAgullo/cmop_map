@@ -1239,6 +1239,19 @@ body.dark .brand-light { display: none !important; }
   border: 1px solid var(--bad);
 }
 
+.assign-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+}
+.assign-badge.free { color: var(--ok); }
+.assign-badge.busy { color: var(--warn); }
+
 .casevac-badge {
   display: inline-block;
   padding: 1px 5px;

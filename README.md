@@ -499,6 +499,10 @@ Push an arbitrary event to all connected SSE clients. Used internally by `medeva
 
 Thin proxies to `medevac_planner` task server (default `:8400`). Avoids CORS issues.
 
+#### **GET** `/api/planner/assignments`
+
+Every live assignment of the planner: `{assignments: [{plan_key, task_id, stage, asset_id, asset_name, casualty_id, casualty_name, triage, destination_name}]}`, where `stage` is `to_pickup` or `in_transit`. The popup of a friendly evacuation platform that is not damaged asks for it each time it opens and shows the vehicle as free or assigned, with each casualty it is going for or carrying. 502 when the planner is down; the popup then says the state is unknown.
+
 #### **GET** `/api/planner/tasks/:taskId/routes`
 
 Fetch GeoJSON routes for a completed plan.

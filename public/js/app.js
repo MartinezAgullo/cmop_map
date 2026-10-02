@@ -1258,6 +1258,7 @@ async function renderMarkers() {
 
     marker._cmopEntity = e;          // so a language switch can rebuild the popup
     marker.on('click', () => selectEntity(e.id));
+    marker.on('popupopen', () => _refreshAssignmentPopup(marker));
     markers.push(marker);
     markersById[e.id] = marker;
   }
@@ -1371,7 +1372,10 @@ async function _onEntityChanged(entity) {
   marker.setIcon(await makeIcon(entity));
   marker._cmopEntity = entity;
   marker.setPopupContent(buildPopup(entity));
-  if (wasOpen) marker.openPopup();
+  if (wasOpen) {
+    marker.openPopup();
+    _refreshAssignmentPopup(marker);   // a moving vehicle may have picked its casualty up
+  }
   renderList();
 }
 
@@ -1526,12 +1530,65 @@ function buildPopup(e) {
         <span class="popup-categoria">${esc(subtitle)}</span>
       </div>
       ${infoHTML}
+      ${_showsAssignment(e) ? _assignmentHTML(e) : ''}
       ${medicalHTML}
       <div class="popup-actions">
         ${canBreakDown(e) ? `<button class="btn-danger" onclick="setAssetStatus(${e.id}, '${damaged ? 'operational' : 'damaged'}')">${t(damaged ? 'action.markOperational' : 'action.markDamaged')}</button>` : ''}
         <button class="btn-danger" onclick="deleteEntity(${e.id})">${t('action.delete')}</button>
       </div>
     </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Vehicle assignments
+// ---------------------------------------------------------------------------
+// Whether a vehicle is free or on a mission lives in the planner's assignment ledger,
+// not in the CMOP. An open popup asks for it, then rebuilds; a popup rebuilt in between
+// (language switch, entity update) shows the last answer.
+// undefined: never asked. null: the planner did not answer.
+let _assignments;
+
+async function refreshAssignments() {
+  try {
+    const res = await fetch('/api/planner/assignments');
+    _assignments = res.ok ? (await res.json()).assignments : null;
+  } catch (_) {
+    _assignments = null;
+  }
+}
+
+/** A working evacuation platform of ours: the planner may have given it casualties. */
+function _showsAssignment(e) {
+  return !!e && canBreakDown(e) && !isDamaged(e);
+}
+
+function _assignmentHTML(e) {
+  const row = (label, value) =>
+    `<div class="med-row"><span class="med-label">${label}</span><span class="med-value">${value}</span></div>`;
+  const section = rows => `<div class="popup-medical"><h4>${t('assign.title')}</h4>${rows}</div>`;
+
+  if (_assignments === undefined) return section(row(t('popup.status'), t('assign.asking')));
+  if (_assignments === null)      return section(row(t('popup.status'), t('assign.unknown')));
+
+  const mine = _assignments.filter(a => a.asset_id === e.id);
+  if (mine.length === 0) {
+    return section(row(t('popup.status'), `<span class="assign-badge free">${t('assign.free')}</span>`));
+  }
+  const legs = mine.map(a => {
+    const meta = TRIAGE_META[a.triage];
+    const tag  = meta ? `<span style="color:${meta.ink}">${meta.tag}</span> ` : '';
+    const dest = a.destination_name ? ` → ${esc(a.destination_name)}` : '';
+    const what = a.stage === 'in_transit' ? t('assign.inTransit') : t('assign.toPickup');
+    return row(what, `${tag}${_entityName(a.casualty_id, a.casualty_name)}${dest}`);
+  });
+  return section(row(t('popup.status'), `<span class="assign-badge busy">${t('assign.busy')}</span>`) + legs.join(''));
+}
+
+/** Ask the planner again and rebuild the popup of *marker*, if it shows an assignment. */
+async function _refreshAssignmentPopup(marker) {
+  if (!_showsAssignment(marker._cmopEntity)) return;
+  await refreshAssignments();
+  if (marker.isPopupOpen()) marker.setPopupContent(buildPopup(marker._cmopEntity));
 }
 
 // ---------------------------------------------------------------------------
@@ -1718,17 +1775,17 @@ function showMessage(text, type) {
 // switch rewrites it.
 
 /** An entity as the map titles it (its callsign), else the name the planner sent. */
-function _alertName(id, name) {
+function _entityName(id, name) {
   const e = markersById[id]?._cmopEntity;
   return esc(e?.elemento_identificado || e?.nombre || name || `#${id}`);
 }
 
 function _planAlertHTML(ev) {
   const text = t('alert.preemption', {
-    asset:           _alertName(ev.asset_id, ev.asset_name),
-    displaced:       _alertName(ev.displaced_id, ev.displaced_name),
+    asset:           _entityName(ev.asset_id, ev.asset_name),
+    displaced:       _entityName(ev.displaced_id, ev.displaced_name),
     displacedTriage: esc(ev.displaced_triage || '?'),
-    t1:              _alertName(ev.t1_id, ev.t1_name),
+    t1:              _entityName(ev.t1_id, ev.t1_name),
     t1Triage:        esc(ev.t1_triage || 'RED'),
   });
   const note = ev.care_breach ? `<span class="plan-alert-note">${t('alert.careBreach')}</span>` : '';
