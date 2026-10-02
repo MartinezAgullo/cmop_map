@@ -18,7 +18,7 @@ const services  = require('./config/services');
 const logger    = require('./lib/logger');
 const { errorDetail }         = require('./lib/error-detail');
 const { createRequestLogger } = require('./lib/request-logger');
-const { httpProbe, checkDependencies } = require('./lib/dependency-check');
+const { httpProbe, createDependencyMonitor } = require('./lib/dependency-monitor');
 
 const log      = logger.child('server');
 const proxyLog = logger.child('proxy');
@@ -189,10 +189,41 @@ app.get('/api/config', (_req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Health check
+// Dependencies and health check
 // ---------------------------------------------------------------------------
+/** Whether the CMOP schema exists, so a fresh database says "run init-db" up front. */
+async function probeDatabase() {
+  try {
+    const { rows } = await pool.query("SELECT to_regclass('puntos_interes') AS t");
+    return rows[0].t
+      ? { ok: true,  detail: 'schema ready' }
+      : { ok: false, detail: 'reachable but the schema is missing: run npm run init-db' };
+  } catch (err) {
+    return { ok: false, detail: errorDetail(err) };
+  }
+}
+
+// The database must be up before this server starts.  The agents are often
+// launched alongside it and take longer to come up, so they get a grace period
+// before being unreachable counts as a warning.
+const DEPS_GRACE_MS = parseInt(process.env.DEPS_STARTUP_GRACE_MS, 10) || 60000;
+const dependencies = createDependencyMonitor([
+  { name: 'postgres',     target: pool.target,       probe: probeDatabase },
+  { name: 'planner',      target: services.planner,  probe: httpProbe(services.planner),  graceMs: DEPS_GRACE_MS },
+  { name: 'pfc_agent',    target: services.pfcAgent, probe: httpProbe(services.pfcAgent), graceMs: DEPS_GRACE_MS },
+  { name: 'vision_agent', target: services.vision,   probe: httpProbe(services.vision),   graceMs: DEPS_GRACE_MS },
+], logger.child('deps'), { intervalMs: parseInt(process.env.DEPS_CHECK_INTERVAL_MS, 10) || 10000 });
+
+// Liveness: answers 200 while this process serves requests, whatever the state
+// of its dependencies, so an orchestrator never restarts it because the
+// planner is down.  `dependencies` is there to read, not to gate on.
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString(), uptime: process.uptime() });
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    dependencies: dependencies.status(),
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -228,18 +259,6 @@ async function runMigrations() {
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
-/** Whether the CMOP schema exists, so a fresh database says "run init-db" up front. */
-async function probeDatabase() {
-  try {
-    const { rows } = await pool.query("SELECT to_regclass('puntos_interes') AS t");
-    return rows[0].t
-      ? { ok: true,  detail: 'schema ready' }
-      : { ok: false, detail: 'reachable but the schema is missing: run npm run init-db' };
-  } catch (err) {
-    return { ok: false, detail: errorDetail(err) };
-  }
-}
-
 const server = app.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════════════╗
@@ -267,12 +286,7 @@ const server = app.listen(PORT, () => {
   const hint = logger.root.level === 'debug' ? '' : ' (set LOG_LEVEL=debug for more)';
   log.info(`Log level: ${logger.root.level}${hint}`);
   if (LOG_VIEWER_ON) log.info(`Live logs: http://localhost:${PORT}/logs`);
-  checkDependencies([
-    { name: 'postgres    ', target: pool.target,       probe: probeDatabase },
-    { name: 'planner     ', target: services.planner,  probe: httpProbe(services.planner) },
-    { name: 'pfc_agent   ', target: services.pfcAgent, probe: httpProbe(services.pfcAgent) },
-    { name: 'vision_agent', target: services.vision,   probe: httpProbe(services.vision) },
-  ], logger.child('deps'));
+  dependencies.start();
 });
 
 server.on('error', (err) => {

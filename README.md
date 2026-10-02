@@ -32,6 +32,7 @@ cmop_map/
 │   └── database.js              # pg Pool — reads .env
 ├── lib/
 │   ├── sse-broker.js            # Singleton SSE broadcast module (connected clients registry)
+│   ├── dependency-monitor.js    # Probes postgres and the agents, logs state changes, feeds GET /health
 │   ├── mascal-generator.js      # Pure, seeded random MASCAL scenario generator
 │   ├── scenario-files.js        # Scenario file paths and name validation
 │   └── scenario-loader.js       # Replaces the DB contents with an in-memory scenario, in one transaction

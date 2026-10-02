@@ -6,7 +6,7 @@ const http   = require('node:http');
 const { errorDetail }         = require('../lib/error-detail');
 const { createNotifier }      = require('../lib/notifier');
 const { createRequestLogger } = require('../lib/request-logger');
-const { httpProbe }           = require('../lib/dependency-check');
+const { httpProbe }           = require('../lib/dependency-monitor');
 
 /** A logger stand-in that records [level, message] pairs. */
 function recorder() {
