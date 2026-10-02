@@ -33,7 +33,8 @@ cmop_map/
 ├── lib/
 │   ├── sse-broker.js            # Singleton SSE broadcast module (connected clients registry)
 │   ├── mascal-generator.js      # Pure, seeded random MASCAL scenario generator
-│   └── scenario-files.js        # Scenario file paths, name validation, module writer
+│   ├── scenario-files.js        # Scenario file paths and name validation
+│   └── scenario-loader.js       # Replaces the DB contents with an in-memory scenario, in one transaction
 ├── models/
 │   └── entity.js                # All queries: puntos_interes + medical_details (LEFT JOIN)
 ├── routes/
@@ -43,8 +44,8 @@ cmop_map/
 │   └── schema.js                # Schema introspection (/api/schema) — for MCP servers
 ├── scripts/
 │   ├── init-db.js               # Creates schema (enums, tables, indexes, triggers). No seed.
-│   ├── load-scenario.js         # CLI loader: truncates + inserts a scenario in a transaction
-│   ├── generate-mascal.js       # CLI: write (and optionally load) a random MASCAL scenario
+│   ├── load-scenario.js         # CLI loader: loads a scenario file through lib/scenario-loader.js
+│   ├── generate-mascal.js       # CLI: generate and load a random MASCAL scenario
 │   └── scenarios/
 │       ├── valencia_urban.js    # Military-only baseline (no casualties)
 │       ├── valencia_medevac.js  # Urban + 3 casualties + medical facilities
@@ -174,12 +175,12 @@ node scripts/load-scenario.js --list
 ### Random MASCAL scenarios
 
 ```bash
-node scripts/generate-mascal.js --preset paris --casualties 30 --evacuators 12 --facilities 4 --seed 42 --load
+node scripts/generate-mascal.js --preset paris --casualties 30 --evacuators 12 --facilities 4 --seed 42
 node scripts/generate-mascal.js --lat 48.6 --lng 2.34 --casualties 20 --evacuators 8
 node scripts/generate-mascal.js --presets
 ```
 
-The map offers the same thing under **Random**, next to the scenario selector. `--load` and the map both tell a running planner (`POST /scenario/loaded`), so it replans on the new casualties. A scenario is written to `scripts/scenarios/random_mascal_<centre>_s<seed>.js` (git-ignored) and loaded like any other, so it can be reloaded by name and read by the optimiser's scenario reader. The same seed and counts always give the same scenario.
+The map offers the same thing under **Random**, next to the scenario selector. Both load the scenario straight into the database and tell a running planner (`POST /scenario/loaded`), so it replans on the new casualties. Nothing is written to disk and generated scenarios do not appear in the scenario selector: to get one back, generate it again with the same seed and counts. Whoever needs to know which one is loaded reads `GET /api/scenarios/current`.
 
 Attributes follow skewed distributions, apportioned (largest remainder) so the proportions hold at any size rather than drifting as independent draws would: casualties 45 % GREEN, 30 % YELLOW, 15 % RED, 5 % T4 expectant (BLUE) and 5 % KIA (BLACK); vehicle roles 1 to 4 in the triangular 4:3:2:1 of `optimizacion-annealing/evacuaciones_medevac_2.ipynb`, 80 % ground and 20 % air; facilities the same 4:3:2:1, with one of each role guaranteed when there are four or more; one vehicle in three with `capacity: 2`, the rest 1. Casualties come in incidents of about eight, each within 300 m of its centre; facilities sit in the outer half of the radius. Below four facilities, at least one role-2 facility is guaranteed, and when there is a RED casualty one role-2+ vehicle, since doctrine requires both for T1.
 
@@ -415,15 +416,21 @@ List scenarios.
 }
 ```
 
+#### **GET** `/api/scenarios/current`
+
+Which scenario the tables were last loaded from, kept in the one-row `loaded_scenario` table that every load (the CLI loader, the map's *Load* and *Random*) rewrites in the same transaction as the entities. Map edits made after the load are not tracked: `loaded_at` is when the tables last matched the scenario. `data` is `null` before the first load. A reader of `/api/entities` uses it to name what it read; the QUBO in `optimizacion-annealing` refuses a map holding another scenario than the one it was asked for.
+
+**Response:** `{ "success": true, "data": { "name": "random_mascal_paris_s42", "meta": { ... }, "loaded_at": "2026-10-01T18:44:18.467Z" } }`
+
 #### **GET** `/api/scenarios/presets`
 
 Centres the random MASCAL generator knows, and its limits.
 
 #### **POST** `/api/scenarios/generate`
 
-Generate a random MASCAL scenario, write it, load it (truncates tables) and notify the planner as `load` does. Body: `{ preset | lat + lng, n_casualties, n_evacuators, n_medical_facilities, radius_km, seed }`, every field optional. 400 on invalid input, with the reason.
+Generate a random MASCAL scenario and load it (truncates tables, writes no file) and notify the planner as `load` does. Body: `{ preset | lat + lng, n_casualties, n_evacuators, n_medical_facilities, radius_km, seed }`, every field optional. 400 on invalid input, with the reason.
 
-**Response:** `{ "success": true, "scenario": "random_mascal_paris_s42", "meta": { ..., "generated": { "seed": 42, "triage_mix": {...}, "evacuation_slots": 20 } }, "output": "..." }`
+**Response:** `{ "success": true, "scenario": "random_mascal_paris_s42", "meta": { ..., "generated": { "seed": 42, "triage_mix": {...}, "evacuation_slots": 20 } }, "loaded": { "entities": 46, "medicalRecords": 30 } }`
 
 #### **POST** `/api/scenarios/load/:name`
 

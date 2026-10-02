@@ -2,9 +2,10 @@
 //
 // Exposes scenario management to the frontend.
 //   GET  /api/scenarios          — list available scenario names + meta
+//   GET  /api/scenarios/current  — which scenario the tables were last loaded from
 //   POST /api/scenarios/load/:name — load a scenario (runs load-scenario.js)
 //   GET  /api/scenarios/presets  — centres the random MASCAL generator knows
-//   POST /api/scenarios/generate — generate a random MASCAL scenario, write it, load it
+//   POST /api/scenarios/generate — generate a random MASCAL scenario and load it (never saved)
 // ---------------------------------------------------------------------------
 
 const express   = require('express');
@@ -13,7 +14,9 @@ const path      = require('path');
 const fs        = require('fs');
 const { execFileSync } = require('child_process');
 const { PRESETS, LIMITS, generateMascalScenario } = require('../lib/mascal-generator');
-const { SCENARIOS_DIR, writeScenarioModule } = require('../lib/scenario-files');
+const { SCENARIOS_DIR, scenarioPath } = require('../lib/scenario-files');
+const { loadScenarioData, readLoadedScenario } = require('../lib/scenario-loader');
+const pool      = require('../config/database');
 const services  = require('../config/services');
 const { createNotifier } = require('../lib/notifier');
 const log       = require('../lib/logger').child('scenarios');
@@ -74,10 +77,28 @@ router.get('/', (req, res) => {
   }
 });
 
+/**
+ * The scenario the tables were last loaded from: `{ name, meta, loaded_at }`, or null
+ * before the first load. Lets a reader of /api/entities name what it read.
+ */
+router.get('/current', async (req, res) => {
+  try {
+    res.json({ success: true, data: await readLoadedScenario(pool) });
+  } catch (err) {
+    log.error({ err }, 'GET /scenarios/current: cannot read loaded_scenario');
+    res.status(500).json({ success: false, message: 'Failed to read the loaded scenario', error: err.message });
+  }
+});
+
 /** Load a scenario by name — delegates to scripts/load-scenario.js */
 router.post('/load/:name', (req, res) => {
   const name = req.params.name;
-  const scenarioFile = path.join(SCENARIOS_DIR, `${name}.js`);
+  let scenarioFile;
+  try {
+    scenarioFile = scenarioPath(name);
+  } catch (err) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
 
   if (!fs.existsSync(scenarioFile)) {
     return res.status(404).json({ success: false, message: `Scenario "${name}" not found` });
@@ -106,12 +127,11 @@ router.get('/presets', (req, res) => {
 });
 
 /**
- * Generate a random MASCAL scenario, write it as scripts/scenarios/<name>.js and load it.
+ * Generate a random MASCAL scenario and load it straight into the database. Nothing is
+ * written to disk: the same seed and counts give the same scenario again.
  * Body: { preset | lat+lng, n_casualties, n_evacuators, n_medical_facilities, radius_km, seed }
- * The file stays behind so the same scenario can be reloaded, or read by the optimiser's
- * scenario reader, by name.
  */
-router.post('/generate', (req, res) => {
+router.post('/generate', async (req, res) => {
   let scenario;
   try {
     const { preset, lat, lng, n_casualties, n_evacuators, n_medical_facilities, radius_km, seed } = req.body || {};
@@ -121,17 +141,15 @@ router.post('/generate', (req, res) => {
     return res.status(400).json({ success: false, message: err.message });
   }
 
+  const name = scenario.meta.name;
   try {
-    writeScenarioModule(scenario);
-    const output = loadScenario(scenario.meta.name);
-    res.json({ success: true, scenario: scenario.meta.name, meta: scenario.meta, output });
+    const counts = await loadScenarioData(pool, scenario);
+    log.info(`Scenario "${name}" generated and loaded (${counts.entities} entities, ${counts.medicalRecords} medical records)`);
+    _notifyScenarioLoaded(name);
+    res.json({ success: true, scenario: name, meta: scenario.meta, loaded: counts });
   } catch (err) {
-    log.error({ stderr: err.stderr?.trim() }, `Scenario "${scenario.meta.name}" generated but failed to load: ${err.message}`);
-    res.status(500).json({
-      success: false,
-      message: `Failed to generate scenario "${scenario.meta.name}"`,
-      error: err.stderr ? err.stderr.trim() : err.message
-    });
+    log.error({ err }, `Scenario "${name}" generated but failed to load`);
+    res.status(500).json({ success: false, message: `Failed to load generated scenario "${name}"`, error: err.message });
   }
 });
 
