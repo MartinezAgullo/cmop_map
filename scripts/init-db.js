@@ -84,6 +84,14 @@ const ENUMS = `
     'unknown'
   );
 
+  -- Operational status of an evacuation platform. NULL on every entity where the
+  -- notion does not apply, and on a platform nobody has reported on: both read as
+  -- operational. A change is what wakes the MEDEVAC planner (POST /assets/status).
+  CREATE TYPE asset_status_enum AS ENUM (
+    'operational',
+    'damaged'     -- broken down: its casualties must be taken over by another platform
+  );
+
   -- Casualty status (WIA vs KIA)
   CREATE TYPE casualty_status_enum AS ENUM (
     'WIA',      -- Wounded in action
@@ -115,6 +123,7 @@ const BASE_TABLE = `
     -- notion does not apply (a tank has no litter capacity), so it is nullable rather
     -- than defaulted: a missing value means "not stated", not "one".
     capacity              SMALLINT          CHECK (capacity IS NULL OR capacity >= 1),
+    status                asset_status_enum,
     geom                  GEOMETRY(Point, 4326) NOT NULL,
     created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP
@@ -183,6 +192,25 @@ const MEDICAL_TABLE = `
 `;
 
 // ---------------------------------------------------------------------------
+// 3b. Which scenario the tables hold
+// ---------------------------------------------------------------------------
+// One row, replaced in the same transaction as the entities by every load
+// (lib/scenario-loader.js). A consumer reading the live CMOP (the QUBO, an
+// analysis script) names what it read from here instead of guessing, and can
+// refuse to read when a different scenario is loaded than the one it wanted.
+// Entities edited on the map after the load are not tracked: loaded_at says
+// when the tables last matched the scenario exactly.
+
+const SCENARIO_TABLE = `
+  CREATE TABLE loaded_scenario (
+    id         BOOLEAN       PRIMARY KEY DEFAULT TRUE CHECK (id),   -- at most one row
+    name       VARCHAR(100)  NOT NULL,
+    meta       JSONB,                                              -- the scenario's meta block
+    loaded_at  TIMESTAMPTZ   NOT NULL DEFAULT now()
+  );
+`;
+
+// ---------------------------------------------------------------------------
 // 4. Indexes
 // ---------------------------------------------------------------------------
 
@@ -232,10 +260,12 @@ const UPDATED_AT_TRIGGER = `
 // ---------------------------------------------------------------------------
 
 const DROP_ALL = `
+  DROP TABLE IF EXISTS loaded_scenario;
   DROP TABLE IF EXISTS medical_details CASCADE;
   DROP TABLE IF EXISTS puntos_interes  CASCADE;
 
   DROP TYPE IF EXISTS casualty_status_enum;
+  DROP TYPE IF EXISTS asset_status_enum;
   DROP TYPE IF EXISTS evac_stage_enum;
   DROP TYPE IF EXISTS evac_priority_enum;
   DROP TYPE IF EXISTS triage_color_enum;
@@ -271,6 +301,9 @@ const initDatabase = async () => {
 
     await pool.query(MEDICAL_TABLE);
     console.log('✅ Table medical_details created (nine_line_data JSONB structured)');
+
+    await pool.query(SCENARIO_TABLE);
+    console.log('✅ Table loaded_scenario created');
 
     await pool.query(INDEXES);
     console.log('✅ Indexes created');

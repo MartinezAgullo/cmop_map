@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medevac System. Live Logs</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%231C201C'/><path d='M16 4c-5 0-9 4-9 9 0 7 9 15 9 15s9-8 9-15c0-5-4-9-9-9z' fill='%23B4C08A'/><circle cx='16' cy='13' r='3.5' fill='%231C201C'/></svg>">
+  <script src="/js/client-log.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="/css/logs.css"/>
+</head>
+<body>
+  <script>
+    // Same theme as the map: the operator's stored choice, else the OS.
+    try {
+      const stored = localStorage.getItem('cmop-theme');
+      const dark = stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      document.body.classList.toggle('dark', dark);
+    } catch (_) {}
+  </script>
+
+  <div class="logs-app">
+    <header class="logs-header">
+      <div class="wordmark">
+        <h1>Medevac System</h1>
+        <span class="logs-title">Live Logs</span>
+        <span class="brand">
+          <img class="brand-light" src="/brand/indra-group-pos.svg" alt="Indra Group" width="70" height="15">
+          <img class="brand-dark" src="/brand/indra-group-neg.svg" alt="Indra Group" width="70" height="15">
+        </span>
+      </div>
+      <div class="logs-header-right">
+        <div class="logs-status" id="status" data-state="connecting">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="statusText">CONNECTING</span>
+        </div>
+        <div class="logs-counts">
+          <button type="button" id="countError" class="count" title="Show errors only">0 ERR</button>
+          <button type="button" id="countWarn"  class="count" title="Show warnings and errors">0 WARN</button>
+        </div>
+        <a class="logs-maplink" href="/">MAP ↗</a>
+      </div>
+    </header>
+
+    <div class="logs-toolbar">
+      <div class="seg" id="levelSeg" role="group" aria-label="Lowest level shown">
+        <button type="button" data-level="debug">DEBUG</button>
+        <button type="button" data-level="info">INFO</button>
+        <button type="button" data-level="warn">WARN</button>
+        <button type="button" data-level="error">ERROR</button>
+      </div>
+      <select id="serviceFilter" aria-label="Service">
+        <option value="">ALL SERVICES</option>
+      </select>
+      <select id="scopeFilter" aria-label="Source">
+        <option value="">ALL SOURCES</option>
+      </select>
+      <input type="search" id="search" placeholder="Filter text…" aria-label="Filter text" autocomplete="off">
+      <div class="seg">
+        <button type="button" id="pauseBtn" aria-pressed="false">PAUSE</button>
+        <button type="button" id="clearBtn">CLEAR</button>
+      </div>
+      <span class="logs-note" id="serverLevel"></span>
+    </div>
+
+    <main class="logs-list" id="list" role="log" aria-label="Server log"></main>
+    <p class="logs-empty" id="empty">Waiting for log entries…</p>
+    <button type="button" class="logs-jump" id="jumpBtn" hidden></button>
+  </div>
+
+  <script src="/js/logs.js"></script>
+</body>
+</html>

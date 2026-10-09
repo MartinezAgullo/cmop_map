@@ -5,6 +5,7 @@
 
 const { Pool } = require('pg');
 require('dotenv').config();
+const log = require('../lib/logger').child('db');
 
 const pool = new Pool({
   host:     process.env.DB_HOST     || 'localhost',
@@ -14,12 +15,19 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'postgres',
 });
 
+/** host:port/database, for log lines. */
+pool.target = `${pool.options.host}:${pool.options.port}/${pool.options.database}`;
+
+// The pool opens connections as load needs them: announce only the first.
+let announced = false;
 pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL/PostGIS');
+  if (announced) return;
+  announced = true;
+  log.info(`Connected to PostgreSQL/PostGIS at ${pool.target}`);
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Pool error:', err);
+  log.error({ err }, `Idle PostgreSQL connection failed (${pool.target})`);
 });
 
 module.exports = pool;

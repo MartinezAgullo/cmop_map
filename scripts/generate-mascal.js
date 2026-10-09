@@ -1,25 +1,22 @@
 #!/usr/bin/env node
 // scripts/generate-mascal.js
 //
-// Generate a random MASCAL scenario around a preset city or a custom point, write it to
-// scripts/scenarios/random_mascal_<centre>_s<seed>.js, and optionally load it.
+// Generate a random MASCAL scenario around a preset city or a custom point and load it.
+// Nothing is written to disk: the same seed and counts give the same scenario again.
 //
 // Usage:
 //   node scripts/generate-mascal.js --preset paris --casualties 30 --evacuators 12 \
-//        --facilities 4 [--radius-km 4] [--seed 42] [--load]
+//        --facilities 4 [--radius-km 4] [--seed 42]
 //   node scripts/generate-mascal.js --lat 48.6 --lng 2.34 --casualties 20 --evacuators 8
 //   node scripts/generate-mascal.js --presets          list the preset centres
 //
-// The same seed and counts always give the same scenario. --load runs the ordinary loader,
-// which truncates the tables, and then tells the planner (MEDEVAC_PLANNER_URL, default
+// Loading truncates the tables, and then tells the planner (MEDEVAC_PLANNER_URL, default
 // :8400) as the map's Random button does: without that, a running planner keeps the old
 // scenario's plan and never looks at the new casualties.
 // ---------------------------------------------------------------------------
 
-const path = require('path');
-const { execFileSync } = require('child_process');
 const { PRESETS, generateMascalScenario } = require('../lib/mascal-generator');
-const { writeScenarioModule } = require('../lib/scenario-files');
+const { loadScenarioData } = require('../lib/scenario-loader');
 
 const FLAGS = {
   '--preset': 'preset',
@@ -40,7 +37,7 @@ function parseArgs(argv) {
     if (FLAGS[flag]) {
       options[FLAGS[flag]] = argv[i + 1];
       i += 1;
-    } else if (flag === '--load' || flag === '--presets' || flag === '--help') {
+    } else if (flag === '--presets' || flag === '--help') {
       switches.add(flag);
     } else {
       throw new Error(`unknown argument "${flag}"`);
@@ -82,17 +79,17 @@ async function main() {
   }
 
   const scenario = generateMascalScenario(options);
-  const file = writeScenarioModule(scenario);
   console.log(`\n🎲 ${scenario.meta.description}`);
-  console.log(`   written to ${path.relative(process.cwd(), file)}`);
 
-  if (switches.has('--load')) {
-    const loader = path.join(__dirname, 'load-scenario.js');
-    execFileSync('node', [loader, scenario.meta.name], { stdio: 'inherit' });
-    await notifyPlanner(scenario.meta.name);
-  } else {
-    console.log(`   load it with: node scripts/load-scenario.js ${scenario.meta.name}\n`);
+  // Required here, not at the top: --help and --presets must work without a database.
+  const pool = require('../config/database');
+  try {
+    const counts = await loadScenarioData(pool, scenario);
+    console.log(`   loaded ${counts.entities} entities and ${counts.medicalRecords} medical records`);
+  } finally {
+    await pool.end();
   }
+  await notifyPlanner(scenario.meta.name);
 }
 
 main().catch((err) => {

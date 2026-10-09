@@ -26,6 +26,8 @@ let threatRadiusM    = 500;    // populated from /api/config at startup
 let _currentTaskId  = null;   // last successfully loaded task ID (for refresh)
 let _simState       = 'idle'; // 'idle' | 'running' | 'paused'
 let _lastRoutes     = null;   // last rendered route list (for language switching)
+let _routeDrawings  = [];     // per route, in _lastRoutes order: { layers: [{ layer, kind }], bounds }
+let _selectedPlanKey = null;  // plan picked in the MEDEVAC tab; kept across route reloads
 let _lastEventAt    = null;   // Date of the last SSE message — drives the LIVE dot
 let _sseConnected   = false;
 let _shouldFit      = true;   // fit the map on load / scenario change, not on every filter
@@ -179,6 +181,12 @@ function mobilityBases(tipo, entity) {
   return bases;
 }
 
+// A damaged platform tries each icon with "_damaged" before the plain one:
+// medevac_role_2_air_damaged_spain → … → medevac_damaged → then the usual chain.
+function isDamaged(entity) {
+  return (entity?.status || '').toLowerCase() === 'damaged';
+}
+
 function buildFilenameCandidates(category, country, entity) {
   let bases = CATEGORY_BASE_NAMES[category?.toLowerCase()] || CATEGORY_BASE_NAMES.default;
 
@@ -236,6 +244,8 @@ function buildFilenameCandidates(category, country, entity) {
     }
   }
 
+  if (isDamaged(entity)) bases = [...bases.map(b => `${b}_damaged`), ...bases];
+
   const cn         = normalizeCountry(country);
   const tryCountry = country && country.toLowerCase() !== 'unknown' && cn;
 
@@ -261,7 +271,7 @@ async function resolveIconUrl(category, alliance, country, entity) {
   const c      = (category || 'default').toLowerCase();
   const status = entity?.medical?.casualty_status || '';
   const tipo   = entity?.tipo_elemento || '';
-  const key    = `${a}|${c}|${normalizeCountry(country)}|${tipo}|${nonGroundMobility(entity)}|${status}`;
+  const key    = `${a}|${c}|${normalizeCountry(country)}|${tipo}|${nonGroundMobility(entity)}|${status}|${isDamaged(entity) ? 'damaged' : ''}`;
 
   if (iconCache.has(key)) return iconCache.get(key);
 
@@ -347,6 +357,7 @@ function _rerenderDynamicStrings() {
   _updateLiveLabel();
   markers.forEach(m => m._cmopEntity && m.setPopupContent(buildPopup(m._cmopEntity)));
   if (_lastRoutes) document.getElementById('routesStatus').innerHTML = _routesSummaryHTML(_lastRoutes);
+  _rerenderPlanAlerts();
 }
 
 // The `categoria` enum values are English words, so English needs no gloss.
@@ -427,6 +438,8 @@ function setTileLayer(theme) {
   if (tileLayer) map.removeLayer(tileLayer);
   const cfg = TILE_LAYERS[theme];
   tileLayer = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 19 });
+  // A constant message, so client-log's throttle folds a screenful of failed tiles into one line.
+  tileLayer.on('tileerror', () => console.warn(`Map tiles failing to load from ${new URL(cfg.url.replace('{s}', 'a')).host}`));
   tileLayer.addTo(map);
 }
 
@@ -725,6 +738,12 @@ const CASEVAC_ELIGIBLE_CATEGORIES = [
 // Hostile, neutral and unknown platforms are never our evacuators, so they have none.
 const CAPACITY_CATEGORIES = ['medevac_unit', ...CASEVAC_ELIGIBLE_CATEGORIES];
 
+// What can break down: our own evacuation platforms, dedicated or CASEVAC.
+function canBreakDown(e) {
+  return e.alliance === 'friendly'
+    && (e.categoria === 'medevac_unit' || (CASEVAC_ELIGIBLE_CATEGORIES.includes(e.categoria) && e.casevac_eligible));
+}
+
 function updateTipoElementoOptions(categoria) {
   const group  = document.getElementById('tipoElementoGroup');
   const select = document.getElementById('tipoElemento');
@@ -853,9 +872,8 @@ async function generateRandomScenario(event) {
     const data = await res.json();
     if (data.success) {
       showMessage(t('msg.randomLoaded', { name: data.scenario }), 'success');
+      clearPlanAlerts();             // they were about the scenario just replaced
       _shouldFit = true;
-      await initScenarios();
-      document.getElementById('scenarioSelect').value = data.scenario;
       await loadEntities();
     } else {
       showMessage(data.message || t('msg.scenarioError'), 'error');
@@ -882,6 +900,7 @@ async function loadSelectedScenario() {
 
     if (data.success) {
       showMessage(t('msg.scenarioLoaded', { name }), 'success');
+      clearPlanAlerts();             // they were about the scenario just replaced
       _shouldFit = true;          // a new scenario is a new area of operations
       await loadEntities();
     } else {
@@ -926,7 +945,7 @@ async function filterEntities() {
   const selectedTriage     = getCheckedValues('triageCheckboxes');
   const selectedMedRoles   = getCheckedValues('medFacilityCheckboxes');
   const selectedMedevac    = getCheckedValues('medevacCheckboxes');
-  const search             = document.getElementById('buscarNombre').value.toLowerCase();
+  const search             = document.getElementById('buscarNombre').value;
   const casevacOnly        = document.getElementById('casevacFilter').checked;
 
   filteredEntities = allEntities.filter(e => {
@@ -943,7 +962,7 @@ async function filterEntities() {
     }
 
     // Name search
-    if (search && !(e.nombre || '').toLowerCase().includes(search)) return false;
+    if (!_matchesSearch(e, search)) return false;
 
     // Triage subfilter (only applies to casualties)
     if (selectedTriage.length > 0 && e.categoria === 'casualty') {
@@ -1126,10 +1145,22 @@ function renderList() {
  * True when the entity name adds nothing to the callsign already on the row —
  * "RUS-CAS-2" vs "RUS-CAS-2 (WIA)", or "RUS-ART-1" vs "RUS ART-1".
  */
+/** A name with only its letters and digits, so "DEU MEDEVAC-HEL-3" and "deu-medevac-hel-3" meet. */
+function _flatName(s) {
+  return (s || '').normalize('NFD').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
 function _isRedundantName(callsign, nombre) {
   if (!callsign || !nombre) return true;
-  const flat = s => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  return flat(nombre).startsWith(flat(callsign));
+  return _flatName(nombre).startsWith(_flatName(callsign));
+}
+
+/** The search box: the query inside the name, callsign, type, category or country. */
+function _matchesSearch(e, query) {
+  const q = _flatName(query);
+  if (!q) return true;
+  return [e.nombre, e.elemento_identificado, e.tipo_elemento, e.categoria, e.country]
+    .some(field => _flatName(field).includes(q));
 }
 
 /** Casualties rank above units; inside casualties, down the triage scale. */
@@ -1239,6 +1270,7 @@ async function renderMarkers() {
 
     marker._cmopEntity = e;          // so a language switch can rebuild the popup
     marker.on('click', () => selectEntity(e.id));
+    marker.on('popupopen', () => _refreshAssignmentPopup(marker));
     markers.push(marker);
     markersById[e.id] = marker;
   }
@@ -1308,10 +1340,14 @@ function initSSE() {
         updateMarkerPosition(msg.id, msg.lat, msg.lng);
       } else if (msg.type === 'entity_created') {
         _onEntityCreated(msg.data);
+      } else if (msg.type === 'entity_changed') {
+        _onEntityChanged(msg.data);
       } else if (msg.type === 'entity_deleted') {
         _onEntityDeleted(msg.id);
       } else if (msg.type === 'route_updated' && _currentTaskId) {
         loadMedevacRoutes(_currentTaskId);
+      } else if (msg.type === 'preemption') {
+        showPlanAlert(msg);
       } else if (msg.type === 'simulation_stopped') {
         // 'cancelled' = user clicked Detener → show Reanudar/Reiniciar
         // 'completed' = finished naturally → back to idle
@@ -1331,6 +1367,32 @@ async function _onEntityCreated(entity) {
   allEntities.push(entity);
   updateStats();
   await filterEntities(); // re-applies filters, re-renders list + markers
+}
+
+// Swap in the new record and redraw its marker, keeping the popup open if it was.
+async function _onEntityChanged(entity) {
+  if (!entity) return;
+  const i = allEntities.findIndex(e => e.id === entity.id);
+  if (i === -1) return _onEntityCreated(entity);
+  allEntities[i] = entity;
+  const j = filteredEntities.findIndex(e => e.id === entity.id);
+  if (j !== -1) filteredEntities[j] = entity;
+
+  if (_lastRoutes?.some(r => r.casualty_id === entity.id)) {   // a retriage recolours its route
+    document.getElementById('routesStatus').innerHTML = _routesSummaryHTML(_lastRoutes);
+  }
+
+  const marker = markersById[entity.id];
+  if (!marker) return;
+  const wasOpen = marker.isPopupOpen();
+  marker.setIcon(await makeIcon(entity));
+  marker._cmopEntity = entity;
+  marker.setPopupContent(buildPopup(entity));
+  if (wasOpen) {
+    marker.openPopup();
+    _refreshAssignmentPopup(marker);   // a moving vehicle may have picked its casualty up
+  }
+  renderList();
 }
 
 function _onEntityDeleted(id) {
@@ -1467,8 +1529,10 @@ function buildPopup(e) {
       </div>`;
   }
 
-  const infoHTML = (e.descripcion || e.observaciones || e.casevac_eligible || e.capacity) ? `
+  const damaged  = isDamaged(e);
+  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity) ? `
       <div class="popup-info">
+        ${damaged ? `<p><span class="damaged-badge">${t('popup.damaged')}</span></p>` : ''}
         ${e.descripcion ? `<p>${esc(e.descripcion)}</p>` : ''}
         ${e.observaciones ? `<p><strong>${t('popup.obs')}:</strong> ${esc(e.observaciones)}</p>` : ''}
         ${e.casevac_eligible ? `<p><span class="casevac-badge">${t('popup.casevac')}</span></p>` : ''}
@@ -1482,11 +1546,65 @@ function buildPopup(e) {
         <span class="popup-categoria">${esc(subtitle)}</span>
       </div>
       ${infoHTML}
+      ${_showsAssignment(e) ? _assignmentHTML(e) : ''}
       ${medicalHTML}
       <div class="popup-actions">
+        ${canBreakDown(e) ? `<button class="btn-danger" onclick="setAssetStatus(${e.id}, '${damaged ? 'operational' : 'damaged'}')">${t(damaged ? 'action.markOperational' : 'action.markDamaged')}</button>` : ''}
         <button class="btn-danger" onclick="deleteEntity(${e.id})">${t('action.delete')}</button>
       </div>
     </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Vehicle assignments
+// ---------------------------------------------------------------------------
+// Whether a vehicle is free or on a mission lives in the planner's assignment ledger,
+// not in the CMOP. An open popup asks for it, then rebuilds; a popup rebuilt in between
+// (language switch, entity update) shows the last answer.
+// undefined: never asked. null: the planner did not answer.
+let _assignments;
+
+async function refreshAssignments() {
+  try {
+    const res = await fetch('/api/planner/assignments');
+    _assignments = res.ok ? (await res.json()).assignments : null;
+  } catch (_) {
+    _assignments = null;
+  }
+}
+
+/** A working evacuation platform of ours: the planner may have given it casualties. */
+function _showsAssignment(e) {
+  return !!e && canBreakDown(e) && !isDamaged(e);
+}
+
+function _assignmentHTML(e) {
+  const row = (label, value) =>
+    `<div class="med-row"><span class="med-label">${label}</span><span class="med-value">${value}</span></div>`;
+  const section = rows => `<div class="popup-medical"><h4>${t('assign.title')}</h4>${rows}</div>`;
+
+  if (_assignments === undefined) return section(row(t('popup.status'), t('assign.asking')));
+  if (_assignments === null)      return section(row(t('popup.status'), t('assign.unknown')));
+
+  const mine = _assignments.filter(a => a.asset_id === e.id);
+  if (mine.length === 0) {
+    return section(row(t('popup.status'), `<span class="assign-badge free">${t('assign.free')}</span>`));
+  }
+  const legs = mine.map(a => {
+    const meta = TRIAGE_META[a.triage];
+    const tag  = meta ? `<span style="color:${meta.ink}">${meta.tag}</span> ` : '';
+    const dest = a.destination_name ? ` → ${esc(a.destination_name)}` : '';
+    const what = a.stage === 'in_transit' ? t('assign.inTransit') : t('assign.toPickup');
+    return row(what, `${tag}${_entityName(a.casualty_id, a.casualty_name)}${dest}`);
+  });
+  return section(row(t('popup.status'), `<span class="assign-badge busy">${t('assign.busy')}</span>`) + legs.join(''));
+}
+
+/** Ask the planner again and rebuild the popup of *marker*, if it shows an assignment. */
+async function _refreshAssignmentPopup(marker) {
+  if (!_showsAssignment(marker._cmopEntity)) return;
+  await refreshAssignments();
+  if (marker.isPopupOpen()) marker.setPopupContent(buildPopup(marker._cmopEntity));
 }
 
 // ---------------------------------------------------------------------------
@@ -1500,11 +1618,8 @@ function selectEntity(id) {
   renderList();
   map.setView([e.latitud, e.longitud], 14);
 
-  const marker = markers.find(m => {
-    const ll = m.getLatLng();
-    return Math.abs(ll.lat - e.latitud) < 1e-9 && Math.abs(ll.lng - e.longitud) < 1e-9;
-  });
-  if (marker) marker.openPopup();
+  // By id, not position: a vehicle at its casualty's POI shares its coordinates.
+  markersById[id]?.openPopup();
 }
 
 // ---------------------------------------------------------------------------
@@ -1559,19 +1674,9 @@ async function crearNuevaEntidad() {
       payload.capacity = capacity;
     }
 
-    const res  = await fetch('/api/entities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-
-    if (!data.success) {
-      showMessage(data.message || t('msg.createError'), 'error');
-      return;
-    }
-
-    // For casualties, also create the medical record
+    // A casualty is created with its medical record in the same request: the planner
+    // and pfc_agent are told about it on creation, and a record written afterwards
+    // reached them as triage UNKNOWN.
     if (categoria === 'casualty') {
       const casualtyStatus  = document.getElementById('casualtyStatus').value;
       const medPayload = { casualty_status: casualtyStatus, evac_stage: 'at_poi' };
@@ -1585,12 +1690,19 @@ async function crearNuevaEntidad() {
         if (injMech)    medPayload.injury_mechanism = injMech;
         if (primInjury) medPayload.primary_injury   = primInjury;
       }
+      payload.medical = medPayload;
+    }
 
-      await fetch(`/api/medical/${data.data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(medPayload)
-      });
+    const res  = await fetch('/api/entities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      showMessage(data.message || t('msg.createError'), 'error');
+      return;
     }
 
     showMessage(t('msg.entityCreated'), 'success');
@@ -1601,6 +1713,29 @@ async function crearNuevaEntidad() {
     showMessage(t('msg.connError'), 'error');
   } finally {
     showLoading(false);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Operational status
+// ---------------------------------------------------------------------------
+// The map only writes the status. cmop_map tells the planner, which hands the
+// vehicle's casualties to others, and the SSE entity_changed event redraws it here.
+async function setAssetStatus(id, status) {
+  if (status === 'damaged' && !confirm(t('msg.confirmDamaged'))) return;
+  try {
+    const res  = await fetch(`/api/entities/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    showMessage(data.success ? t(status === 'damaged' ? 'msg.markedDamaged' : 'msg.markedOperational')
+                             : (data.message || t('msg.statusError')),
+                data.success ? 'success' : 'error');
+  } catch (err) {
+    console.error(err);
+    showMessage(t('msg.connError'), 'error');
   }
 }
 
@@ -1644,11 +1779,61 @@ function showMessage(text, type) {
 }
 
 // ---------------------------------------------------------------------------
+// Plan alerts
+// ---------------------------------------------------------------------------
+// The planner announces a T1 preemption (an ambulance taken from a lower-priority
+// casualty for a RED one) as data, through POST /api/events/notify, so the map words
+// it in its own language. The alert stays until closed: a vehicle changing its
+// destination must not go unnoticed. Each alert keeps its event, so a language
+// switch rewrites it.
+
+/** An entity as the map titles it (its callsign), else the name the planner sent. */
+function _entityName(id, name) {
+  const e = markersById[id]?._cmopEntity;
+  return esc(e?.elemento_identificado || e?.nombre || name || `#${id}`);
+}
+
+function _planAlertHTML(ev) {
+  const text = t('alert.preemption', {
+    asset:           _entityName(ev.asset_id, ev.asset_name),
+    displaced:       _entityName(ev.displaced_id, ev.displaced_name),
+    displacedTriage: esc(ev.displaced_triage || '?'),
+    t1:              _entityName(ev.t1_id, ev.t1_name),
+    t1Triage:        esc(ev.t1_triage || 'RED'),
+  });
+  const note = ev.care_breach ? `<span class="plan-alert-note">${t('alert.careBreach')}</span>` : '';
+  return `<span class="plan-alert-text">${text}${note}</span>` +
+         `<button type="button" aria-label="${t('alert.dismiss')}" title="${t('alert.dismiss')}">×</button>`;
+}
+
+function showPlanAlert(ev) {
+  const el = document.createElement('div');
+  el.className = 'plan-alert';
+  el.setAttribute('role', 'alert');
+  el._planEvent = ev;
+  el.innerHTML = _planAlertHTML(ev);
+  el.addEventListener('click', e => { if (e.target.closest('button')) el.remove(); });
+  document.getElementById('planAlerts').appendChild(el);
+}
+
+function clearPlanAlerts() {
+  document.getElementById('planAlerts').replaceChildren();
+}
+
+function _rerenderPlanAlerts() {
+  document.querySelectorAll('#planAlerts .plan-alert').forEach(el => {
+    el.innerHTML = _planAlertHTML(el._planEvent);
+  });
+}
+
+// ---------------------------------------------------------------------------
 // MEDEVAC Routes
 // ---------------------------------------------------------------------------
 
 function clearRoutes() {
   if (routeLayer) routeLayer.clearLayers();
+  _routeDrawings   = [];
+  _selectedPlanKey = null;
   document.getElementById('routesStatus').innerHTML = '';
   document.getElementById('routesActions').style.display = 'none';
   _currentTaskId = null;
@@ -1674,6 +1859,8 @@ async function loadMedevacRoutes(taskId) {
       return;
     }
 
+    // A reload of the same task (route_updated, Refresh, theme) keeps the plan picked.
+    const keepPlanKey = taskId === _currentTaskId ? _selectedPlanKey : null;
     clearRoutes();
     const routes = data.routes;
 
@@ -1686,6 +1873,8 @@ async function loadMedevacRoutes(taskId) {
 
     routes.forEach((route, idx) => {
       const color = getRouteColors()[idx % ROUTE_COLORS_DARK.length];
+      const drawing = { layers: [], bounds: [] };
+      _routeDrawings.push(drawing);
 
       // Use real GeoJSON if available, otherwise build straight-line fallback
       const pickupGeo  = route.pickup_leg  || _straightLine(route.asset_position,    route.casualty_position);
@@ -1693,39 +1882,46 @@ async function loadMedevacRoutes(taskId) {
 
       // Pickup leg — dashed, lighter.  Only the best route is rendered.
       if (pickupGeo) {
-        L.geoJSON(pickupGeo, {
+        const layer = L.geoJSON(pickupGeo, {
           filter: (feature) => !feature.properties?.route_type || DRAWN_ROUTE_TYPES.includes(feature.properties.route_type),
-          style: { color, weight: 3, opacity: 0.7, dashArray: '8 6' }
+          style: { color, dashArray: '8 6', ..._routeLegStyle('pickup', 'normal') }
         }).bindPopup(_routePopup(route, 'pickup'), { className: 'custom-popup' }).addTo(routeLayer);
+        drawing.layers.push({ layer, kind: 'pickup' });
         _collectBounds(pickupGeo, bounds);
+        _collectBounds(pickupGeo, drawing.bounds);
       }
 
       // Delivery leg — solid, full opacity.  Only the best route is rendered.
       if (deliveryGeo) {
-        L.geoJSON(deliveryGeo, {
+        const layer = L.geoJSON(deliveryGeo, {
           filter: (feature) => !feature.properties?.route_type || DRAWN_ROUTE_TYPES.includes(feature.properties.route_type),
-          style: { color, weight: 4, opacity: 1 }
+          style: { color, ..._routeLegStyle('delivery', 'normal') }
         }).bindPopup(_routePopup(route, 'delivery'), { className: 'custom-popup' }).addTo(routeLayer);
+        drawing.layers.push({ layer, kind: 'delivery' });
         _collectBounds(deliveryGeo, bounds);
+        _collectBounds(deliveryGeo, drawing.bounds);
       }
 
       // Waypoint marker at the casualty POI
       const poiCoord = _firstCoord(deliveryGeo);
       if (poiCoord) {
-        L.circleMarker(poiCoord, {
-          radius: 6, color, fillColor: color,
-          fillOpacity: 0.9, weight: 2
+        const layer = L.circleMarker(poiCoord, {
+          radius: 6, color, fillColor: color, ..._routeLegStyle('poi', 'normal')
         }).bindPopup(_routePopup(route, 'poi'), { className: 'custom-popup' }).addTo(routeLayer);
+        drawing.layers.push({ layer, kind: 'poi' });
       }
     });
 
-    // Fit map to routes
-    if (bounds.length > 0) {
+    _currentTaskId = taskId;
+    _lastRoutes    = routes;
+    _selectedPlanKey = routes.some(r => r.plan_key === keepPlanKey) ? keepPlanKey : null;
+    _applyRouteSelection();
+
+    // Fit map to routes, unless a plan is picked: then the view stays where the operator is.
+    if (bounds.length > 0 && !_selectedPlanKey) {
       map.fitBounds(L.latLngBounds(bounds).pad(0.12));
     }
 
-    _currentTaskId = taskId;
-    _lastRoutes    = routes;
     document.getElementById('routesActions').style.display = 'flex';
     statusEl.innerHTML = _routesSummaryHTML(routes);
 
@@ -1733,6 +1929,46 @@ async function loadMedevacRoutes(taskId) {
     console.error('loadMedevacRoutes error:', err);
     statusEl.innerHTML =
       `<span class="routes-error">${t('routes.error', { detail: err.message })}</span>`;
+  }
+}
+
+// Weight and opacity of each part of a route: as drawn, picked in the MEDEVAC tab, or
+// faded behind the plan that is picked.
+function _routeLegStyle(kind, state) {
+  const base = { pickup:   { weight: 3, opacity: 0.7 },
+                 delivery: { weight: 4, opacity: 1 },
+                 poi:      { weight: 2, opacity: 1, fillOpacity: 0.9 } }[kind];
+  if (state === 'selected') {
+    return kind === 'poi' ? { ...base, radius: 8 } : { ...base, weight: base.weight + 2, opacity: 1 };
+  }
+  if (state === 'dimmed') {
+    return { ...base, opacity: 0.15, ...(kind === 'poi' ? { fillOpacity: 0.15 } : {}) };
+  }
+  return kind === 'poi' ? { ...base, radius: 6 } : base;
+}
+
+// Restyle every drawn route for the plan picked (or none), and mark its card.
+function _applyRouteSelection() {
+  const picked = (_lastRoutes || []).findIndex(r => r.plan_key === _selectedPlanKey);
+  _routeDrawings.forEach((drawing, idx) => {
+    const state = picked < 0 ? 'normal' : idx === picked ? 'selected' : 'dimmed';
+    drawing.layers.forEach(({ layer, kind }) => layer.setStyle(_routeLegStyle(kind, state)));
+  });
+  if (picked >= 0) _routeDrawings[picked].layers.forEach(({ layer }) => layer.bringToFront());
+  document.querySelectorAll('.route-summary-item').forEach((card, idx) =>
+    card.classList.toggle('active', idx === picked));
+}
+
+// Card click in the MEDEVAC tab: pick that plan and zoom to it; a second click drops it.
+function selectRoute(idx) {
+  const route = _lastRoutes?.[idx];
+  if (!route) return;
+  const drop = route.plan_key === _selectedPlanKey;
+  _selectedPlanKey = drop ? null : route.plan_key;
+  _applyRouteSelection();
+  const bounds = _routeDrawings[idx]?.bounds || [];
+  if (!drop && bounds.length > 0) {
+    map.fitBounds(L.latLngBounds(bounds).pad(0.2), { maxZoom: 15 });
   }
 }
 
@@ -1761,6 +1997,15 @@ function _airThreatHTML(route) {
     </div>`;
   }
   return '';
+}
+
+/** "ITA-CAS-5 (WIA)" as "ITA-CAS-5 (WIA · T1)", the tag in its triage colour. */
+function _casualtyWithTriageHTML(route) {
+  const meta = TRIAGE_META[_routeTriage(route)] || TRIAGE_META.UNKNOWN;
+  const tag  = `<span style="color:${meta.ink}">${meta.tag}</span>`;
+  const name = route.casualty_name || '?';
+  const m    = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(name);
+  return m ? `${esc(m[1])} (${esc(m[2])} · ${tag})` : `${esc(name)} (${tag})`;
 }
 
 function _routePopup(route, leg) {
@@ -1792,8 +2037,8 @@ function _routePopup(route, leg) {
         <span class="popup-categoria">${legLabel}</span>
       </div>
       <div class="popup-medical">
-        ${row(t('popup.asset'), esc(route.asset_name || '?'))}
-        ${row(t('popup.casualty'), esc(route.casualty_name || '?'))}
+        ${row(t('popup.asset'), esc(route.asset_name || '?') + _callsignAliasHTML(route.asset_id, route.asset_name))}
+        ${row(t('popup.casualty'), _casualtyWithTriageHTML(route))}
         ${row(t('popup.destination'), esc(route.destination_name || '?'))}
         ${row(t('popup.pickupEta'), min(route.pickup_eta_minutes))}
         ${row(t('popup.deliveryEta'), min(route.delivery_eta_minutes))}
@@ -1804,18 +2049,43 @@ function _routePopup(route, leg) {
     </div>`;
 }
 
+/** The triage of a route's casualty: the map's own, newer than the plan's after a retriage. */
+function _routeTriage(r) {
+  const casualty = allEntities.find(e => e.id === r.casualty_id);
+  return casualty?.medical?.triage_color || r.triage || 'UNKNOWN';
+}
+
+/** The map's callsign of *id*, when it does not read like the planner's *name*. */
+function _callsignAliasHTML(id, name) {
+  const callsign = allEntities.find(e => e.id === id)?.elemento_identificado;
+  return callsign && !_isRedundantName(callsign, name) ? ` <em>· ${esc(callsign)}</em>` : '';
+}
+
+/** A vehicle or casualty in a route card: a click finds it on the map (not the route). */
+function _routeEntityHTML(id, name) {
+  const label = esc(name || '?');
+  if (!allEntities.some(e => e.id === id)) return label;
+  return `<span class="route-entity" title="${t('routes.locate')}"` +
+    ` onclick="event.stopPropagation(); selectEntity(${id})">${label}</span>${_callsignAliasHTML(id, name)}`;
+}
+
 function _routesSummaryHTML(routes) {
   const items = routes.map((r, i) => {
-    const color = getRouteColors()[i % ROUTE_COLORS_DARK.length];
-    const eta   = r.total_eta_minutes != null ? r.total_eta_minutes : '—';
-    return `<div class="route-summary-item">
+    const color  = getRouteColors()[i % ROUTE_COLORS_DARK.length];
+    const eta    = r.total_eta_minutes != null ? r.total_eta_minutes : '—';
+    const triage = _routeTriage(r);
+    const meta   = TRIAGE_META[triage] || TRIAGE_META.UNKNOWN;
+    let cls = r.plan_key != null && r.plan_key === _selectedPlanKey ? ' active' : '';
+    if (triage === 'RED') cls += ' t1';
+    return `<button type="button" class="route-summary-item${cls}" onclick="selectRoute(${i})">
+      <span class="route-edge" style="--c:${meta.fill}" title="${t(meta.key)}"></span>
       <span class="route-color-dot" style="background:${color}"></span>
-      <span>${esc(r.asset_name || '?')}<br>
-        <em>&rarr;</em> ${esc(r.casualty_name || '?')}<br>
+      <span>${_routeEntityHTML(r.asset_id, r.asset_name)}<br>
+        <em>&rarr;</em> ${_routeEntityHTML(r.casualty_id, r.casualty_name)}<br>
         <em>&rarr;</em> ${esc(r.destination_name || '?')}${
           r.altitude_advisory ? `<br><b class="route-advisory">⬆ ${t('popup.increaseAltitude')}</b>` : ''}</span>
       <span class="route-eta">${eta}<br><span class="med-label">${t('routes.min')}</span></span>
-    </div>`;
+    </button>`;
   }).join('');
   return `<div class="routes-summary">${items}</div>`;
 }

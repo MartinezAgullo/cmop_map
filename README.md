@@ -16,6 +16,7 @@ The panel is a map legend, not a dashboard: colour is treated as a data type, so
 - **Three tabs** — Roster, Filters and MEDEVAC. The roster gets every pixel below the ladder and is sorted by clinical urgency: casualties first, down the triage scale, then units by name.
 - **Elapsed clocks** — casualty rows and popups carry a running time since the medical record was written. There is no injury timestamp in the schema yet, so a scenario load starts every clock together; live casualties pushed over SSE are the ones that diverge.
 - **Air routes against threats** — a helicopter route that crosses a hostile unit's air-defence envelope carries the planner's advisory: clicking it opens a red **INCREASE ALTITUDE** banner naming the threat and the legs, and the MEDEVAC tab marks it under the route. With the planner in `divert` mode the route is drawn bent around the threat and the banner reads **DIVERTED ROUTE** instead.
+- **Picking a plan** — every card in the MEDEVAC tab is one plan. Click it and the map zooms to that vehicle's route and fades the others, as a roster row does for an entity; click it again to see them all. The pick survives a route reload (a replan, *Refresh*, a theme change).
 - **Live feed** — the dot next to the scenario selector reports the SSE stream and the seconds since the last event.
 - **Language and theme** — `EN`/`ES` and `LIGHT`/`DARK`, both remembered in `localStorage`. Theme follows the operating system on a first visit. UI copy lives in `public/js/i18n.js`; nothing is hardcoded in `app.js`.
 
@@ -31,8 +32,11 @@ cmop_map/
 │   └── database.js              # pg Pool — reads .env
 ├── lib/
 │   ├── sse-broker.js            # Singleton SSE broadcast module (connected clients registry)
+│   ├── dependency-monitor.js    # Probes postgres and the agents, logs state changes, feeds GET /health
 │   ├── mascal-generator.js      # Pure, seeded random MASCAL scenario generator
-│   └── scenario-files.js        # Scenario file paths, name validation, module writer
+│   ├── scenario-files.js        # Scenario file paths and name validation
+│   ├── telemetry.js             # OpenTelemetry: traces and logs over OTLP, started first by server.js
+│   └── scenario-loader.js       # Replaces the DB contents with an in-memory scenario, in one transaction
 ├── models/
 │   └── entity.js                # All queries: puntos_interes + medical_details (LEFT JOIN)
 ├── routes/
@@ -42,8 +46,8 @@ cmop_map/
 │   └── schema.js                # Schema introspection (/api/schema) — for MCP servers
 ├── scripts/
 │   ├── init-db.js               # Creates schema (enums, tables, indexes, triggers). No seed.
-│   ├── load-scenario.js         # CLI loader: truncates + inserts a scenario in a transaction
-│   ├── generate-mascal.js       # CLI: write (and optionally load) a random MASCAL scenario
+│   ├── load-scenario.js         # CLI loader: loads a scenario file through lib/scenario-loader.js
+│   ├── generate-mascal.js       # CLI: generate and load a random MASCAL scenario
 │   └── scenarios/
 │       ├── valencia_urban.js    # Military-only baseline (no casualties)
 │       ├── valencia_medevac.js  # Urban + 3 casualties + medical facilities
@@ -69,7 +73,7 @@ All entity mutations are pushed to connected browsers without page refresh via *
 
 - `lib/sse-broker.js` — singleton that keeps a `Set` of open SSE connections and exposes `broadcast(payload)`.
 - `POST /api/entities` (single + batch) broadcasts `entity_created` — new entities appear on the map immediately.
-- `PUT /api/entities/:id` broadcasts `entity_updated { id, lat, lng }` — marker position updates in place.
+- `PUT /api/entities/:id` broadcasts `entity_updated { id, lat, lng }` — marker position updates in place. When it changes a platform's `status`, it also broadcasts `entity_changed { data }`, and the marker's icon and popup are redrawn.
 - `DELETE /api/entities/:id` broadcasts `entity_deleted { id }` — marker is removed from the map immediately.
 - The browser `EventSource` on `/api/events` handles all three: `addEntityToMap`, `setLatLng`, `removeLayer`.
 - Internal services (e.g. `medevac_planner`) can push arbitrary events via `POST /api/events/notify`.
@@ -81,6 +85,8 @@ All entity mutations are pushed to connected browsers without page refresh via *
 - **`tipo_elemento`** — Used for subtypes within categories (e.g., `infantry` + `tipo_elemento: 'mechanised'` → icon `infantry_mechanised_{country}.svg`). Medical facilities and MEDEVAC units use this for Role 1/2/3/4.
 - **Scenarios** — data lives in `scripts/scenarios/*.js`. Each exports `{ meta, entities, medicalDetails }`. The loader resolves `elemento_identificado` → FK automatically. Adding a new scenario = one new file, zero schema changes.
 - **Random MASCAL scenarios** — `lib/mascal-generator.js` scatters `n_casualties`, `n_evacuators` and `n_medical_facilities` within a few kilometres of a preset city (Paris, Madrid, Valencia, London, Berlin, Rome, Brussels) or a custom point. See [Random MASCAL scenarios](#random-mascal-scenarios).
+- **Telemetry** — `lib/telemetry.js`, the first thing `server.js` runs, exports traces and every log line over OTLP to the OTel Collector of latacc-medevac (`docker-compose.observability.yml`, Jaeger and Loki behind it, Grafana on `:3001`). API requests continue the caller's `traceparent`, and the hooks to the planner and `pfc_agent` carry it, so a casualty added here and the planning it starts are one trace. A line written inside a trace ends with `(trace 4bf92f35)` on the terminal; on `/logs` the id filters the page to that trace and ↗ opens it in Jaeger. Static files, SSE streams, `/api/logs/*`, `/health` and the dependency probes are not traced. A Collector that is down costs only dropped telemetry. `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4317`), `OTEL_SDK_DISABLED=true` to turn it off.
+- **Errors** — every route answers a failed database call through `sendError(res, log, err, 'Failed to …')` from `lib/db-error.js` instead of its own `catch` body. PostgreSQL's error code decides the status (see the API reference); the valid values of an enum are read from the database itself (`enum_range`) and cached, so they cannot drift from `init-db.js`. The agents read `message`, so the reason there is what lets an LLM correct its own call.
 - **Icon resolution** — `app.js` builds a candidate list (`category_tipo_country.svg` → `category_tipo.svg` → `category_country.svg` → `category.svg` → `default.svg`), checks with HEAD, caches.
 
 ---
@@ -173,12 +179,12 @@ node scripts/load-scenario.js --list
 ### Random MASCAL scenarios
 
 ```bash
-node scripts/generate-mascal.js --preset paris --casualties 30 --evacuators 12 --facilities 4 --seed 42 --load
+node scripts/generate-mascal.js --preset paris --casualties 30 --evacuators 12 --facilities 4 --seed 42
 node scripts/generate-mascal.js --lat 48.6 --lng 2.34 --casualties 20 --evacuators 8
 node scripts/generate-mascal.js --presets
 ```
 
-The map offers the same thing under **Random**, next to the scenario selector. `--load` and the map both tell a running planner (`POST /scenario/loaded`), so it replans on the new casualties. A scenario is written to `scripts/scenarios/random_mascal_<centre>_s<seed>.js` (git-ignored) and loaded like any other, so it can be reloaded by name and read by the optimiser's scenario reader. The same seed and counts always give the same scenario.
+The map offers the same thing under **Random**, next to the scenario selector. Both load the scenario straight into the database and tell a running planner (`POST /scenario/loaded`), so it replans on the new casualties. Nothing is written to disk and generated scenarios do not appear in the scenario selector: to get one back, generate it again with the same seed and counts. Whoever needs to know which one is loaded reads `GET /api/scenarios/current`.
 
 Attributes follow skewed distributions, apportioned (largest remainder) so the proportions hold at any size rather than drifting as independent draws would: casualties 45 % GREEN, 30 % YELLOW, 15 % RED, 5 % T4 expectant (BLUE) and 5 % KIA (BLACK); vehicle roles 1 to 4 in the triangular 4:3:2:1 of `optimizacion-annealing/evacuaciones_medevac_2.ipynb`, 80 % ground and 20 % air; facilities the same 4:3:2:1, with one of each role guaranteed when there are four or more; one vehicle in three with `capacity: 2`, the rest 1. Casualties come in incidents of about eight, each within 300 m of its centre; facilities sit in the outer half of the radius. Below four facilities, at least one role-2 facility is guaranteed, and when there is a RED casualty one role-2+ vehicle, since doctrine requires both for T1.
 
@@ -230,6 +236,8 @@ The simulation engine runs in `medevac_planner/task_server.py` as an asyncio bac
 ## API reference
 
 All endpoints return: `{ success: boolean, data?: any, message?: string }`
+
+Errors (`lib/db-error.js`): a database error caused by the request is a 4xx whose `message` names the bad value and, for an enum, the valid ones, e.g. `400 Failed to fetch by triage color: "PURPLE" is not a valid triage_color; valid values: RED, YELLOW, GREEN, BLUE, BLACK, UNKNOWN` (also `400` for a non-numeric id, a missing required field, a broken reference or check; `409` for a duplicate). An unreachable PostgreSQL is a `503` that says where it was looked for. Anything else stays `500` with `message` and the database's reason in `error`. 4xx are logged as warnings, 5xx as errors with the stack.
 
 ### Entities (`/api/entities`)
 
@@ -331,6 +339,10 @@ Partial update. Can include `medical` object.
 }
 ```
 
+A PUT that carries only `latitud`/`longitud` does not notify the planner about a casualty: the movement simulation sends one per second while a casualty is carried. Any other change to a casualty does.
+
+`status` (`operational` | `damaged`) is the operational status of an evacuation platform; NULL reads as operational. When a PUT changes it, the MEDEVAC planner is told (`POST {MEDEVAC_PLANNER_URL}/assets/status` with `{id, name, status, previous_status, lat, lng, tipo_elemento}`) and hands the casualties of a damaged vehicle to other vehicles. The popup of a friendly MEDEVAC or CASEVAC platform has a **Mark damaged** / **Back in service** button that sends it. A damaged platform is drawn with its `_damaged` icon (`medevac_role_2_air_damaged_spain.svg` and so on, down to `medevac_damaged.svg`).
+
 #### **DELETE** `/api/entities/:id`
 
 Delete entity (medical cascades).
@@ -410,15 +422,21 @@ List scenarios.
 }
 ```
 
+#### **GET** `/api/scenarios/current`
+
+Which scenario the tables were last loaded from, kept in the one-row `loaded_scenario` table that every load (the CLI loader, the map's *Load* and *Random*) rewrites in the same transaction as the entities. Map edits made after the load are not tracked: `loaded_at` is when the tables last matched the scenario. `data` is `null` before the first load. A reader of `/api/entities` uses it to name what it read; the QUBO in `optimizacion-annealing` refuses a map holding another scenario than the one it was asked for.
+
+**Response:** `{ "success": true, "data": { "name": "random_mascal_paris_s42", "meta": { ... }, "loaded_at": "2026-10-01T18:44:18.467Z" } }`
+
 #### **GET** `/api/scenarios/presets`
 
 Centres the random MASCAL generator knows, and its limits.
 
 #### **POST** `/api/scenarios/generate`
 
-Generate a random MASCAL scenario, write it, load it (truncates tables) and notify the planner as `load` does. Body: `{ preset | lat + lng, n_casualties, n_evacuators, n_medical_facilities, radius_km, seed }`, every field optional. 400 on invalid input, with the reason.
+Generate a random MASCAL scenario and load it (truncates tables, writes no file) and notify the planner as `load` does. Body: `{ preset | lat + lng, n_casualties, n_evacuators, n_medical_facilities, radius_km, seed }`, every field optional. 400 on invalid input, with the reason.
 
-**Response:** `{ "success": true, "scenario": "random_mascal_paris_s42", "meta": { ..., "generated": { "seed": 42, "triage_mix": {...}, "evacuation_slots": 20 } }, "output": "..." }`
+**Response:** `{ "success": true, "scenario": "random_mascal_paris_s42", "meta": { ..., "generated": { "seed": 42, "triage_mix": {...}, "evacuation_slots": 20 } }, "loaded": { "entities": 46, "medicalRecords": 30 } }`
 
 #### **POST** `/api/scenarios/load/:name`
 
@@ -469,6 +487,7 @@ Event types:
 | `connected` | On stream open | — |
 | `entity_created` | After `POST /api/entities` (single or batch) | `data` (full entity object) |
 | `entity_updated` | After `PUT /api/entities/:id` | `id`, `lat`, `lng` |
+| `entity_changed` | After a `PUT /api/entities/:id` that changed `status` | `data` (full entity object) |
 | `entity_deleted` | After `DELETE /api/entities/:id` | `id` |
 | `evac_stage_updated` | At pickup / delivery milestones | `id`, `evac_stage` |
 | `route_updated` | After threat-triggered reroute | `task_id` |
@@ -485,6 +504,10 @@ Push an arbitrary event to all connected SSE clients. Used internally by `medeva
 ### Planner proxy (`/api/planner`)
 
 Thin proxies to `medevac_planner` task server (default `:8400`). Avoids CORS issues.
+
+#### **GET** `/api/planner/assignments`
+
+Every live assignment of the planner: `{assignments: [{plan_key, task_id, stage, asset_id, asset_name, casualty_id, casualty_name, triage, destination_name}]}`, where `stage` is `to_pickup` or `in_transit`. The popup of a friendly evacuation platform that is not damaged asks for it each time it opens and shows the vehicle as free or assigned, with each casualty it is going for or carrying. 502 when the planner is down; the popup then says the state is unknown.
 
 #### **GET** `/api/planner/tasks/:taskId/routes`
 
