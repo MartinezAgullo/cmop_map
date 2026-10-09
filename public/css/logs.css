@@ -132,6 +132,20 @@
 .row.has-fields .msg::after { content: ' ▸'; color: var(--dim); }
 .row.open .msg::after       { content: ' ▾'; }
 
+/* Trace id after the message: filters to the trace; ↗ opens it in Jaeger. */
+.row .trace { margin-left: 8px; white-space: nowrap; font-size: 10.5px; }
+.row .trace-id {
+  font: inherit;
+  padding: 0 4px;
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+}
+.row .trace-id:hover { color: var(--ink); border-color: var(--dim); }
+.row .trace-open { margin-left: 4px; color: var(--dim); text-decoration: none; }
+.row .trace-open:hover { color: var(--ink); }
+
 .row.lvl-debug .msg { color: var(--dim); }
 .row.lvl-info  .lvl { color: var(--ink); }
 .row.lvl-warn  { background: color-mix(in srgb, var(--warn) 7%, transparent); }

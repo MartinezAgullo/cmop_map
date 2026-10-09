@@ -1,4 +1,7 @@
 // server.js
+// Telemetry first: it patches express, pg and pino as they load.
+const telemetry = require('./lib/telemetry').start();
+
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
@@ -286,6 +289,9 @@ const server = app.listen(PORT, () => {
   const hint = logger.root.level === 'debug' ? '' : ' (set LOG_LEVEL=debug for more)';
   log.info(`Log level: ${logger.root.level}${hint}`);
   if (LOG_VIEWER_ON) log.info(`Live logs: http://localhost:${PORT}/logs`);
+  log.info(telemetry.endpoint
+    ? `Telemetry: traces and logs over OTLP to ${telemetry.endpoint} as cmop-map`
+    : 'Telemetry off (OTEL_SDK_DISABLED)');
   dependencies.start();
 });
 

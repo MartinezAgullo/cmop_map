@@ -6,13 +6,18 @@
 //     services forward (latacc_common.log)
 //   - filter by lowest level, by service, by source ([scope]) and by text
 //   - click a row with extra fields (an error's stack, a payload…) to open it
+//   - a line written inside a trace ends with its short trace id: click it to
+//     show only that trace's lines, from every service; ↗ opens it in Jaeger
 //   - follows the bottom while you are there; scroll up and it holds still
 //   - PAUSE holds new entries back; CLEAR empties the view (the server keeps them)
 // ---------------------------------------------------------------------------
 
 const MAX_ENTRIES = 5000;                    // kept in the page, oldest dropped first
 const LEVEL_RANK  = { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 60 };
-const BASE_KEYS   = new Set(['time', 'level', 'service', 'scope', 'msg', 'pid', 'hostname']);
+const BASE_KEYS   = new Set(['time', 'level', 'service', 'scope', 'msg', 'pid', 'hostname',
+                             'trace_id', 'span_id', 'trace_flags']);
+const TRACE_ID_CHARS = 8;                    // as the terminals show it
+const JAEGER_PORT    = 16686;                // latacc-medevac's docker-compose.observability.yml
 const NEAR_BOTTOM_PX = 40;
 
 const $ = id => document.getElementById(id);
@@ -80,14 +85,32 @@ function el(tag, className, text) {
   return node;
 }
 
+/** Short trace id that filters the page to its trace, and ↗ to open it in Jaeger. */
+function renderTrace(traceId) {
+  const wrap = el('span', 'trace');
+  const filter = el('button', 'trace-id', traceId.slice(0, TRACE_ID_CHARS));
+  filter.type  = 'button';
+  filter.title = 'Show only this trace';
+  filter.addEventListener('click', () => setSearch(traceId));
+  const open = el('a', 'trace-open', '↗');
+  open.href   = `${location.protocol}//${location.hostname}:${JAEGER_PORT}/trace/${traceId}`;
+  open.target = '_blank';
+  open.rel    = 'noopener';
+  open.title  = 'Open the trace in Jaeger';
+  wrap.append(filter, open);
+  return wrap;
+}
+
 function renderRow(entry) {
   const row = el('div', `row lvl-${entry.level}`);
+  const msg = el('span', 'msg', entry.msg ?? '');
+  if (entry.trace_id) msg.append(renderTrace(entry.trace_id));
   row.append(
     el('time', null, formatTime(entry.time)),
     el('span', 'lvl', entry.level.toUpperCase()),
     el('span', 'service', entry.service || ''),
     el('span', 'scope', entry.scope || ''),
-    el('span', 'msg', entry.msg ?? ''),
+    msg,
   );
   row.children[2].title = entry.service || '';
   row.children[3].title = entry.scope || '';
@@ -96,7 +119,7 @@ function renderRow(entry) {
     row.classList.toggle('open', !!entry._open);
     row.append(el('pre', 'fields', entry._fields));
     row.addEventListener('click', (event) => {
-      if (event.target.closest('.fields')) return;   // let text in the details be selected
+      if (event.target.closest('.fields, .trace')) return;   // details are selectable, trace links act alone
       entry._open = !entry._open;
       row.classList.toggle('open', entry._open);
     });
@@ -118,7 +141,7 @@ function matches(entry) {
 
 function prepare(entry) {
   entry._fields   = formatFields(entry);
-  entry._haystack = `${entry.service || ''} ${entry.scope || ''} ${entry.msg || ''} ${entry._fields}`.toLowerCase();
+  entry._haystack = `${entry.service || ''} ${entry.scope || ''} ${entry.msg || ''} ${entry.trace_id || ''} ${entry._fields}`.toLowerCase();
   return entry;
 }
 
@@ -269,6 +292,12 @@ function setMinLevel(level) {
   renderAll();
 }
 
+function setSearch(text) {
+  els.search.value = text;
+  state.text = text.trim().toLowerCase();
+  renderAll();
+}
+
 function bindControls() {
   els.levelSeg.addEventListener('click', (event) => {
     const btn = event.target.closest('button');
@@ -283,7 +312,7 @@ function bindControls() {
   let searchTimer;
   els.search.addEventListener('input', () => {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => { state.text = els.search.value.trim().toLowerCase(); renderAll(); }, 150);
+    searchTimer = setTimeout(() => setSearch(els.search.value), 150);
   });
 
   els.pause.addEventListener('click', () => {

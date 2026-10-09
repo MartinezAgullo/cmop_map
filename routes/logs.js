@@ -6,11 +6,12 @@
 //
 //
 // POST /api/logs/ingest — other services add their entries to the same stream
-//   Body: { service, entries: [{ time, level, scope, msg, err? }] }
+//   Body: { service, entries: [{ time, level, scope, msg, err?, trace_id? }] }
 //   They reach the /logs page only: each service already prints its own terminal.
 //   Sender: latacc_common.log.HttpLogForwarder in latacc-medevac.
 //
-// Entries are { time, level, service, scope, msg, ...fields }.
+// Entries are { time, level, service, scope, msg, ...fields }; `trace_id` (32
+// hex digits) when the line was written inside a trace, which /logs links to Jaeger.
 // ---------------------------------------------------------------------------
 
 const express = require('express');
@@ -32,6 +33,7 @@ router.get('/stream', channel.handler);
 const LEVELS          = new Set(['debug', 'info', 'warn', 'error', 'fatal']);
 const MAX_BATCH       = 500;
 const MAX_TEXT_CHARS  = 10000;
+const TRACE_ID        = /^[0-9a-f]{32}$/;
 const text = (value, fallback = '') => String(value ?? fallback).slice(0, MAX_TEXT_CHARS);
 
 /** One sender's entry, reduced to the fields the page reads. */
@@ -46,6 +48,7 @@ function ingestedEntry(raw, service) {
   if (raw.err && typeof raw.err === 'object') {
     entry.err = { type: text(raw.err.type), message: text(raw.err.message), stack: text(raw.err.stack) };
   }
+  if (typeof raw.trace_id === 'string' && TRACE_ID.test(raw.trace_id)) entry.trace_id = raw.trace_id;
   return entry;
 }
 
@@ -61,3 +64,4 @@ router.post('/ingest', (req, res) => {
 });
 
 module.exports = router;
+module.exports.ingestedEntry = ingestedEntry;
