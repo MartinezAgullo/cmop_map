@@ -12,6 +12,7 @@ const sseBroker  = require('../lib/sse-broker');
 const services   = require('../config/services');
 const { createNotifier } = require('../lib/notifier');
 const log        = require('../lib/logger').child('entities');
+const { sendError } = require('../lib/db-error');
 
 // ---------------------------------------------------------------------------
 // Planner / PFC-agent notifications — fire-and-forget, never block the response
@@ -81,8 +82,7 @@ router.get('/', async (req, res) => {
     const data = await Entity.getAll();
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    log.error({ err }, 'GET /entities');
-    res.status(500).json({ success: false, message: 'Failed to fetch entities', error: err.message });
+    await sendError(res, log, err, 'Failed to fetch entities');
   }
 });
 
@@ -91,8 +91,7 @@ router.get('/meta/categorias', async (req, res) => {
     const data = await Entity.getCategorias();
     res.json({ success: true, data });
   } catch (err) {
-    log.error({ err }, 'GET /entities/meta/categorias');
-    res.status(500).json({ success: false, message: 'Failed to fetch categories', error: err.message });
+    await sendError(res, log, err, 'Failed to fetch categories');
   }
 });
 
@@ -101,8 +100,7 @@ router.get('/categoria/:categoria', async (req, res) => {
     const data = await Entity.getByCategoria(req.params.categoria);
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    log.error({ err }, 'GET /entities/categoria');
-    res.status(500).json({ success: false, message: 'Failed to fetch by category', error: err.message });
+    await sendError(res, log, err, 'Failed to fetch by category');
   }
 });
 
@@ -115,8 +113,7 @@ router.get('/alliance/:alliance', async (req, res) => {
     const data = await Entity.getByAlliance(req.params.alliance);
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    log.error({ err }, 'GET /entities/alliance');
-    res.status(500).json({ success: false, message: 'Failed to fetch by alliance', error: err.message });
+    await sendError(res, log, err, 'Failed to fetch by alliance');
   }
 });
 
@@ -133,8 +130,7 @@ router.get('/cerca/:longitud/:latitud', async (req, res) => {
     const data = await Entity.getNearby(lng, lat, radio);
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    log.error({ err }, 'GET /entities/cerca');
-    res.status(500).json({ success: false, message: 'Spatial query failed', error: err.message });
+    await sendError(res, log, err, 'Spatial query failed');
   }
 });
 
@@ -143,8 +139,7 @@ router.get('/casevac', async (req, res) => {
     const data = await Entity.getCasevacEligible();
     res.json({ success: true, count: data.length, data });
   } catch (err) {
-    log.error({ err }, 'GET /entities/casevac');
-    res.status(500).json({ success: false, message: 'Failed to fetch casevac-eligible entities', error: err.message });
+    await sendError(res, log, err, 'Failed to fetch casevac-eligible entities');
   }
 });
 
@@ -158,8 +153,7 @@ router.get('/:id', async (req, res) => {
     }
     res.json({ success: true, data: entity });
   } catch (err) {
-    log.error({ err }, 'GET /entities/:id');
-    res.status(500).json({ success: false, message: 'Failed to fetch entity', error: err.message });
+    await sendError(res, log, err, 'Failed to fetch entity');
   }
 });
 
@@ -180,8 +174,7 @@ router.post('/', async (req, res) => {
     sseBroker.broadcast({ type: 'entity_created', data: entity });
     res.status(201).json({ success: true, data: entity });
   } catch (err) {
-    log.error({ err }, 'POST /entities');
-    res.status(500).json({ success: false, message: 'Failed to create entity', error: err.message });
+    await sendError(res, log, err, 'Failed to create entity');
   }
 });
 
@@ -200,8 +193,7 @@ router.post('/batch', async (req, res) => {
     });
     res.status(201).json({ success: true, count: data.length, data });
   } catch (err) {
-    log.error({ err }, 'POST /entities/batch');
-    res.status(500).json({ success: false, message: 'Batch create failed', error: err.message });
+    await sendError(res, log, err, 'Batch create failed');
   }
 });
 
@@ -252,8 +244,7 @@ router.put('/:id', async (req, res) => {
     if (statusChanged) sseBroker.broadcast({ type: 'entity_changed', data: entity });
     res.json({ success: true, data: entity });
   } catch (err) {
-    log.error({ err }, 'PUT /entities/:id');
-    res.status(500).json({ success: false, message: 'Failed to update entity', error: err.message });
+    await sendError(res, log, err, 'Failed to update entity');
   }
 });
 
@@ -266,8 +257,7 @@ router.delete('/:id', async (req, res) => {
     sseBroker.broadcast({ type: 'entity_deleted', id: Number(req.params.id) });
     res.json({ success: true, message: 'Entity deleted' });
   } catch (err) {
-    log.error({ err }, 'DELETE /entities/:id');
-    res.status(500).json({ success: false, message: 'Failed to delete entity', error: err.message });
+    await sendError(res, log, err, 'Failed to delete entity');
   }
 });
 

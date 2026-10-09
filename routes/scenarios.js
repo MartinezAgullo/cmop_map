@@ -20,6 +20,7 @@ const pool      = require('../config/database');
 const services  = require('../config/services');
 const { createNotifier } = require('../lib/notifier');
 const log       = require('../lib/logger').child('scenarios');
+const { sendError } = require('../lib/db-error');
 
 const planner = createNotifier({ service: 'planner', baseUrl: services.planner, logger: log });
 
@@ -85,8 +86,7 @@ router.get('/current', async (req, res) => {
   try {
     res.json({ success: true, data: await readLoadedScenario(pool) });
   } catch (err) {
-    log.error({ err }, 'GET /scenarios/current: cannot read loaded_scenario');
-    res.status(500).json({ success: false, message: 'Failed to read the loaded scenario', error: err.message });
+    await sendError(res, log, err, 'Failed to read the loaded scenario');
   }
 });
 

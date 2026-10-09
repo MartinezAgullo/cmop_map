@@ -86,6 +86,7 @@ All entity mutations are pushed to connected browsers without page refresh via *
 - **Scenarios** — data lives in `scripts/scenarios/*.js`. Each exports `{ meta, entities, medicalDetails }`. The loader resolves `elemento_identificado` → FK automatically. Adding a new scenario = one new file, zero schema changes.
 - **Random MASCAL scenarios** — `lib/mascal-generator.js` scatters `n_casualties`, `n_evacuators` and `n_medical_facilities` within a few kilometres of a preset city (Paris, Madrid, Valencia, London, Berlin, Rome, Brussels) or a custom point. See [Random MASCAL scenarios](#random-mascal-scenarios).
 - **Telemetry** — `lib/telemetry.js`, the first thing `server.js` runs, exports traces and every log line over OTLP to the OTel Collector of latacc-medevac (`docker-compose.observability.yml`, Jaeger and Loki behind it, Grafana on `:3001`). API requests continue the caller's `traceparent`, and the hooks to the planner and `pfc_agent` carry it, so a casualty added here and the planning it starts are one trace. A line written inside a trace ends with `(trace 4bf92f35)` on the terminal; on `/logs` the id filters the page to that trace and ↗ opens it in Jaeger. Static files, SSE streams, `/api/logs/*`, `/health` and the dependency probes are not traced. A Collector that is down costs only dropped telemetry. `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4317`), `OTEL_SDK_DISABLED=true` to turn it off.
+- **Errors** — every route answers a failed database call through `sendError(res, log, err, 'Failed to …')` from `lib/db-error.js` instead of its own `catch` body. PostgreSQL's error code decides the status (see the API reference); the valid values of an enum are read from the database itself (`enum_range`) and cached, so they cannot drift from `init-db.js`. The agents read `message`, so the reason there is what lets an LLM correct its own call.
 - **Icon resolution** — `app.js` builds a candidate list (`category_tipo_country.svg` → `category_tipo.svg` → `category_country.svg` → `category.svg` → `default.svg`), checks with HEAD, caches.
 
 ---
@@ -235,6 +236,8 @@ The simulation engine runs in `medevac_planner/task_server.py` as an asyncio bac
 ## API reference
 
 All endpoints return: `{ success: boolean, data?: any, message?: string }`
+
+Errors (`lib/db-error.js`): a database error caused by the request is a 4xx whose `message` names the bad value and, for an enum, the valid ones, e.g. `400 Failed to fetch by triage color: "PURPLE" is not a valid triage_color; valid values: RED, YELLOW, GREEN, BLUE, BLACK, UNKNOWN` (also `400` for a non-numeric id, a missing required field, a broken reference or check; `409` for a duplicate). An unreachable PostgreSQL is a `503` that says where it was looked for. Anything else stays `500` with `message` and the database's reason in `error`. 4xx are logged as warnings, 5xx as errors with the stack.
 
 ### Entities (`/api/entities`)
 
