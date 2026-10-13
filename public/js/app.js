@@ -78,6 +78,13 @@ const CATEGORY_BASE_NAMES = {
   medevac_unit:     ['medevac', 'medevac_default'],
   casualty:         ['casualty'],
 
+  // Civil emergencies
+  fire_fighting:    ['fire_fighting'],
+  law_enforcement:  ['law_enforcement'],
+  civil_protection: ['civil_protection'],
+  civilian:         ['civilian', 'person'],
+  shelter:          ['shelter'],
+
   default: ['default']
 };
 
@@ -116,8 +123,15 @@ const CATEGORY_I18N_KEY = {
   mortar: 'cat.mortar', person: 'cat.person', base: 'cat.base',
   building: 'cat.building', infrastructure: 'cat.infrastructure',
   medical_facility: 'cat.medical_facility', medevac_unit: 'cat.medevac_unit',
-  casualty: 'cat.casualty', default: 'cat.default'
+  casualty: 'cat.casualty',
+  fire_fighting: 'cat.fire_fighting', law_enforcement: 'cat.law_enforcement',
+  civil_protection: 'cat.civil_protection', civilian: 'cat.civilian', shelter: 'cat.shelter',
+  default: 'cat.default'
 };
+
+// Civil emergency services. Each one is a vehicle whose mobility picks the icon:
+// "air" is the service's helicopter (fire_fighting_air), anything else the ground one.
+const RESPONSE_SERVICE_CATEGORIES = ['fire_fighting', 'law_enforcement', 'civil_protection'];
 
 // Medical facility "Other" tipo_elemento values
 const MED_FACILITY_OTHER = [
@@ -198,6 +212,11 @@ function buildFilenameCandidates(category, country, entity) {
     } else if (status === 'kia') {
       bases = ['casualty_kia', 'casualty'];
     }
+  }
+
+  // Civil emergency services: the helicopter icon before the ground one
+  if (RESPONSE_SERVICE_CATEGORIES.includes(category)) {
+    bases = [...mobilityBases(category, entity), ...bases];
   }
 
   // Medical facility / medevac: use tipo_elemento for icon
@@ -727,7 +746,7 @@ const TIPO_ELEMENTO_OPTIONS = {
   ]
 };
 
-const MOBILITY_CATEGORIES = ['medevac_unit', 'transportation', 'reconnaissance'];
+const MOBILITY_CATEGORIES = ['medevac_unit', 'transportation', 'reconnaissance', ...RESPONSE_SERVICE_CATEGORIES];
 
 const CASEVAC_ELIGIBLE_CATEGORIES = [
   'transportation', 'reconnaissance', 'helicopter', 'ground_vehicle', 'armoured', 'ugv'
@@ -736,12 +755,15 @@ const CASEVAC_ELIGIBLE_CATEGORIES = [
 // Anything friendly that can carry a casualty declares how many it takes per planning
 // cycle. A dedicated MEDEVAC unit always can; the rest only when flagged CASEVAC eligible.
 // Hostile, neutral and unknown platforms are never our evacuators, so they have none.
-const CAPACITY_CATEGORIES = ['medevac_unit', ...CASEVAC_ELIGIBLE_CATEGORIES];
+const CAPACITY_CATEGORIES = ['medevac_unit', ...CASEVAC_ELIGIBLE_CATEGORIES, ...RESPONSE_SERVICE_CATEGORIES];
 
-// What can break down: our own evacuation platforms, dedicated or CASEVAC.
+// What can break down: our own evacuation platforms, dedicated or CASEVAC, and the
+// vehicles of the civil emergency services.
 function canBreakDown(e) {
   return e.alliance === 'friendly'
-    && (e.categoria === 'medevac_unit' || (CASEVAC_ELIGIBLE_CATEGORIES.includes(e.categoria) && e.casevac_eligible));
+    && (e.categoria === 'medevac_unit'
+        || RESPONSE_SERVICE_CATEGORIES.includes(e.categoria)
+        || (CASEVAC_ELIGIBLE_CATEGORIES.includes(e.categoria) && e.casevac_eligible));
 }
 
 function updateTipoElementoOptions(categoria) {

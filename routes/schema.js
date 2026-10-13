@@ -122,6 +122,20 @@ const SCHEMA = {
       note: 'Use alliance field for friendly/hostile/neutral/civilian. Use medical_details.casualty_status for WIA/KIA.'
     },
 
+    // Civil emergencies. The three services are vehicles: mobility "air" is the
+    // service's helicopter, "ground" (or none) its ground vehicle.
+    { value: 'fire_fighting', label_en: 'Fire and Rescue', label_es: 'Bomberos', subtypes: [], note: 'Vehicle. Set mobility: ground | air (helicopter).' },
+    { value: 'law_enforcement', label_en: 'Police', label_es: 'Policía', subtypes: [], note: 'Vehicle. Set mobility: ground | air (helicopter).' },
+    { value: 'civil_protection', label_en: 'Civil Protection', label_es: 'Protección Civil', subtypes: [], note: 'Vehicle. Set mobility: ground | air (helicopter).' },
+    {
+      value: 'civilian',
+      label_en: 'Civilian to evacuate',
+      label_es: 'Civil a evacuar',
+      subtypes: [],
+      note: 'An uninjured person who must be moved to a shelter. An injured one is a casualty. Usually neutral.'
+    },
+    { value: 'shelter', label_en: 'Shelter', label_es: 'Albergue', subtypes: [], note: 'Where evacuated civilians are taken.' },
+
     { value: 'default', label_en: 'Default', label_es: 'Por Defecto', subtypes: [] }
   ],
 

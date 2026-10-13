@@ -40,6 +40,12 @@ const ENUMS = `
     'medevac_unit',         -- Unidad MEDEVAC (helicóptero, ambulancia, etc.)
     -- Casualties (use alliance + medical_details.casualty_status for WIA/KIA)
     'casualty',             -- Baja
+    -- Civil emergencies: response services and the people they evacuate
+    'fire_fighting',        -- Bomberos (mobility air = helicóptero)
+    'law_enforcement',      -- Policía (mobility air = helicóptero)
+    'civil_protection',     -- Protección Civil (mobility air = helicóptero)
+    'civilian',             -- Civil a evacuar (sin heridas; con heridas es casualty)
+    'shelter',              -- Albergue / punto de reunión de evacuados
     -- Fallback
     'default'
   );

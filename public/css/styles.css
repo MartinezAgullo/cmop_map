@@ -682,6 +682,8 @@ body.dark .brand-light { display: none !important; }
 
 /* Medical categories carry a triage-red edge until selected */
 .filter-cb--medical:not(:has(input:checked)) { border-left: 2px solid var(--t-red); }
+/* Civil emergency categories carry an amber edge until selected */
+.filter-cb--civil:not(:has(input:checked)) { border-left: 2px solid var(--t-yellow); }
 
 .alliance-dot {
   display: inline-block;

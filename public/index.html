@@ -126,6 +126,13 @@
               <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medevac_unit" /><span data-i18n="cat.medevac_unit">MEDEVAC</span></label>
               <label class="filter-cb filter-cb--medical"><input type="checkbox" id="casevacFilter" /><span data-i18n="cat.casevac">CASEVAC eligible</span></label>
 
+              <!-- Civil emergencies -->
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="civilian" /><span data-i18n="cat.civilian">Civilian</span></label>
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="shelter" /><span data-i18n="cat.shelter">Shelter</span></label>
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="fire_fighting" /><span data-i18n="cat.fire_fighting">Fire and rescue</span></label>
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="civil_protection" /><span data-i18n="cat.civil_protection">Civil protection</span></label>
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="law_enforcement" /><span data-i18n="cat.law_enforcement">Police</span></label>
+
               <label class="filter-cb"><input type="checkbox" value="infantry" /><span data-i18n="cat.infantry">Infantry</span></label>
               <label class="filter-cb"><input type="checkbox" value="armoured" /><span data-i18n="cat.armoured">Armoured</span></label>
               <label class="filter-cb"><input type="checkbox" value="artillery" /><span data-i18n="cat.artillery">Artillery</span></label>
@@ -330,6 +337,14 @@
 
             <optgroup label="Casualties" data-i18n-label="form.grpCasualties">
               <option value="casualty"></option>
+            </optgroup>
+
+            <optgroup label="Civil emergencies" data-i18n-label="form.grpCivil">
+              <option value="civilian"></option>
+              <option value="shelter"></option>
+              <option value="fire_fighting"></option>
+              <option value="civil_protection"></option>
+              <option value="law_enforcement"></option>
             </optgroup>
 
             <option value="default"></option>
