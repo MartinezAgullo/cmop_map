@@ -13,7 +13,9 @@
 //   DELETE /api/hazard-zones/:id             — delete
 //
 // Every write is broadcast over SSE (hazard_zone_changed / hazard_zone_deleted) so
-// open maps redraw without polling.
+// open maps redraw without polling, and posted to the planner (POST /hazards/notify),
+// which reroutes the live ground assignments and replans: routing_mcp reads the
+// active zones on every request.
 // ---------------------------------------------------------------------------
 
 const express    = require('express');
@@ -21,10 +23,25 @@ const router     = express.Router();
 const pool       = require('../config/database');
 const HazardZone = require('../models/hazard-zone');
 const sseBroker  = require('../lib/sse-broker');
+const services   = require('../config/services');
+const { createNotifier } = require('../lib/notifier');
 const log        = require('../lib/logger').child('hazard-zones');
 const { sendError }      = require('../lib/db-error');
 const { HAZARD_TYPES, HAZARD_TYPE_VALUES } = require('../lib/hazard-types');
 const { parseZoneInput } = require('../lib/hazard-zone-input');
+
+const planner = createNotifier({ service: 'planner', baseUrl: services.planner, logger: log });
+
+/** Tell the planner a zone changed, fire-and-forget. */
+function notifyPlanner(action, zone) {
+  planner('/hazards/notify', {
+    action,                                   // created | updated | deleted
+    id:          zone.id,
+    name:        zone.name ?? null,
+    hazard_type: zone.hazard_type ?? null,
+    active:      zone.active ?? null,
+  });
+}
 
 function parseId(req, res) {
   const id = parseInt(req.params.id, 10);
@@ -78,6 +95,7 @@ router.post('/', async (req, res) => {
     const zone = await HazardZone.create(pool, data);
     log.info(`Hazard zone ${zone.id} "${zone.name}" (${zone.hazard_type}) created`);
     sseBroker.broadcast({ type: 'hazard_zone_changed', data: zone });
+    notifyPlanner('created', zone);
     res.status(201).json({ success: true, data: zone });
   } catch (err) {
     await sendError(res, log, err, 'Failed to create hazard zone');
@@ -93,6 +111,7 @@ router.put('/:id', async (req, res) => {
     const zone = await HazardZone.update(pool, id, data);
     if (!zone) return res.status(404).json({ success: false, message: 'Hazard zone not found' });
     sseBroker.broadcast({ type: 'hazard_zone_changed', data: zone });
+    notifyPlanner('updated', zone);
     res.json({ success: true, data: zone });
   } catch (err) {
     await sendError(res, log, err, 'Failed to update hazard zone');
@@ -103,10 +122,12 @@ router.delete('/:id', async (req, res) => {
   const id = parseId(req, res);
   if (id === null) return;
   try {
-    if (!(await HazardZone.remove(pool, id))) {
+    const zone = await HazardZone.getById(pool, id);
+    if (!zone || !(await HazardZone.remove(pool, id))) {
       return res.status(404).json({ success: false, message: 'Hazard zone not found' });
     }
     sseBroker.broadcast({ type: 'hazard_zone_deleted', id });
+    notifyPlanner('deleted', zone);
     res.json({ success: true, id });
   } catch (err) {
     await sendError(res, log, err, 'Failed to delete hazard zone');

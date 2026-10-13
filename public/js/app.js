@@ -486,6 +486,7 @@ function initMap() {
   function _hideCtxMenu() { ctxMenu.style.display = 'none'; }
 
   map.on('click', (e) => {
+    if (isDrawingHazards()) return;        // a Geoman click, not a request for the menu
     const formOpen = document.getElementById('formModal').classList.contains('show');
     if (formOpen) {
       document.getElementById('latitud').value  = e.latlng.lat.toFixed(6);

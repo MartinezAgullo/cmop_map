@@ -10,7 +10,7 @@
 //     area_m2, created_at, updated_at }
 //
 // Input is validated by lib/hazard-zone-input.js first; PostGIS then repairs a
-// self-intersecting polygon (ST_MakeValid) and keeps only its polygonal part.
+// self-intersecting polygon, fuses overlapping parts and keeps only polygons.
 // ---------------------------------------------------------------------------
 
 const SELECT = `
@@ -24,9 +24,14 @@ const SELECT = `
   FROM hazard_zones hz
 `;
 
-// GeoJSON parameter → a valid, non-empty MultiPolygon in EPSG:4326
-const GEOM_FROM = (param) =>
-  `ST_Multi(ST_CollectionExtract(ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(${param}), 4326)), 3))`;
+// GeoJSON parameter → a valid, non-empty MultiPolygon in EPSG:4326. Each part is
+// repaired on its own and then the parts are unioned: an area added to a zone fuses
+// with the parts it overlaps or touches and stays apart from the rest. (ST_MakeValid on
+// the whole MultiPolygon would instead cut the overlap out, as if it were a hole.)
+const GEOM_FROM = (param) => `ST_Multi(ST_CollectionExtract(ST_Union(ARRAY(
+    SELECT ST_MakeValid(part.geom)
+    FROM ST_Dump(ST_SetSRID(ST_GeomFromGeoJSON(${param}), 4326)) AS part
+  )), 3))`;
 
 /** @param {{ type?: string, active?: boolean }} filters */
 async function list(db, { type, active } = {}) {

@@ -9,7 +9,13 @@
 // (GET /api/hazard-zones/meta/types, lib/hazard-types.js); nothing is hard-coded
 // here. SSE events hazard_zone_changed / hazard_zone_deleted keep it live.
 //
-// Globals used from app.js / i18n.js: map, t, getLang, esc.
+// Drawing (Leaflet-Geoman, served from public/vendor/geoman): the toolbar draws a
+// polygon or a rectangle, and the dialog saves it as a new zone or as one more area
+// of an existing zone (PostGIS fuses the areas that overlap). Edit mode reshapes a
+// zone and saves it on leaving the mode; removal mode deletes it. Only the zones
+// are editable (Geoman opt-in), never the entity markers or the routes.
+//
+// Globals used from app.js / i18n.js: map, t, getLang, esc, showMessage.
 // ---------------------------------------------------------------------------
 
 let hazardLayer  = null;   // L.LayerGroup with every drawn zone and badge
@@ -34,7 +40,131 @@ async function initHazards() {
     document.querySelectorAll('#hazardTypeCheckboxes input').forEach(cb => { cb.checked = false; });
     renderHazardZones();
   });
+  initHazardDrawing();
   await loadHazardZones();
+}
+
+// ---------------------------------------------------------------------------
+// Drawing
+// ---------------------------------------------------------------------------
+
+let _drawnLayer = null;    // the shape waiting in the dialog
+
+function initHazardDrawing() {
+  if (!map.pm) { console.warn('Leaflet-Geoman not loaded: hazard drawing disabled'); return; }
+  L.PM.setOptIn(true);     // only layers created with pmIgnore:false are editable
+  map.pm.setLang(getLang() === 'es' ? 'es' : 'en');
+  map.pm.addControls({
+    position: 'topleft',
+    drawPolygon: true, drawRectangle: true,
+    editMode: true, removalMode: true,
+    drawMarker: false, drawCircleMarker: false, drawPolyline: false, drawCircle: false,
+    drawText: false, cutPolygon: false, rotateMode: false, dragMode: false,
+  });
+  map.pm.setPathOptions({ color: '#E63946', weight: 2, dashArray: '4 4' });
+  map.on('pm:create', (e) => _openHazardDialog(e.layer));
+  map.on('pm:remove', (e) => {
+    if (e.layer._hazardZoneId) deleteHazardZone(e.layer._hazardZoneId);
+  });
+}
+
+/** True while a Geoman mode is on: map clicks belong to it. */
+function isDrawingHazards() {
+  if (!map || !map.pm) return false;
+  return map.pm.globalDrawModeEnabled() || map.pm.globalEditModeEnabled()
+      || map.pm.globalRemovalModeEnabled();
+}
+
+function _openHazardDialog(layer) {
+  _drawnLayer = layer;
+  const target = document.getElementById('hazardTarget');
+  target.innerHTML = `<option value="new">${esc(t('hazard.newZone'))}</option>` +
+    hazardZones.map(z => `<option value="${z.id}">${esc(z.name)} · ${esc(_hazardLabel(_hazardType(z.hazard_type)))}</option>`).join('');
+  target.onchange = () => {
+    document.getElementById('hazardNewGroup').style.display = target.value === 'new' ? 'block' : 'none';
+  };
+  document.getElementById('hazardType').innerHTML = hazardTypes
+    .map(ht => `<option value="${esc(ht.value)}">${esc(_hazardLabel(ht))}</option>`).join('');
+  document.getElementById('hazardName').value = '';
+  document.getElementById('hazardDesc').value = '';
+  target.value = 'new';
+  target.onchange();
+  document.getElementById('hazardModal').classList.add('show');
+}
+
+function cancelHazardArea() {
+  document.getElementById('hazardModal').classList.remove('show');
+  if (_drawnLayer) map.removeLayer(_drawnLayer);
+  _drawnLayer = null;
+}
+
+async function saveHazardArea(event) {
+  event.preventDefault();
+  if (!_drawnLayer) return;
+  const drawn  = _drawnLayer.toGeoJSON().geometry;           // a Polygon
+  const target = document.getElementById('hazardTarget').value;
+
+  let url, method, body;
+  if (target === 'new') {
+    const name = document.getElementById('hazardName').value.trim();
+    if (!name) { showMessage(t('hazard.nameRequired'), 'error'); return; }
+    url = '/api/hazard-zones'; method = 'POST';
+    body = { name, hazard_type: document.getElementById('hazardType').value,
+             description: document.getElementById('hazardDesc').value.trim() || null,
+             geometry: drawn };
+  } else {
+    // One more area of the same event: the zone's parts plus the new one. PostGIS
+    // (ST_MakeValid) fuses it with any part it overlaps; apart, it is a new part.
+    const zone = hazardZones.find(z => z.id === Number(target));
+    url = `/api/hazard-zones/${zone.id}`; method = 'PUT';
+    body = { geometry: { type: 'MultiPolygon',
+                         coordinates: [...zone.geometry.coordinates, drawn.coordinates] } };
+  }
+  const ok = await _writeZone(url, method, body);
+  if (ok) cancelHazardArea();
+}
+
+async function _saveEditedZone(layer) {
+  await _writeZone(`/api/hazard-zones/${layer._hazardZoneId}`, 'PUT',
+                   { geometry: layer.toGeoJSON().geometry });
+}
+
+async function toggleHazardZone(id) {
+  const zone = hazardZones.find(z => z.id === id);
+  if (zone) await _writeZone(`/api/hazard-zones/${id}`, 'PUT', { active: !zone.active });
+}
+
+async function deleteHazardZone(id) {
+  const zone = hazardZones.find(z => z.id === id);
+  if (!zone || !confirm(t('hazard.confirmDelete', { name: zone.name }))) {
+    renderHazardZones();                   // removal mode already took it off the map
+    return;
+  }
+  await _writeZone(`/api/hazard-zones/${id}`, 'DELETE');
+}
+
+/** Write through the API; the SSE event that follows redraws the layer. */
+async function _writeZone(url, method, body) {
+  try {
+    const res  = await fetch(url, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showMessage(data.message || t('hazard.saveError'), 'error');
+      renderHazardZones();
+      return false;
+    }
+    if (data.data) onHazardZoneChanged(data.data);
+    else if (method === 'DELETE') onHazardZoneDeleted(data.id);
+    return true;
+  } catch (err) {
+    console.error(err);
+    showMessage(t('msg.connError'), 'error');
+    return false;
+  }
 }
 
 async function loadHazardZones() {
@@ -75,6 +205,11 @@ function renderHazardZones() {
     const popup = _hazardPopup(zone, type);
 
     L.geoJSON(zone.geometry, {
+      pmIgnore: false,                          // editable with the Geoman toolbar
+      onEachFeature: (_feature, layer) => {
+        layer._hazardZoneId = zone.id;
+        layer.on('pm:update', () => _saveEditedZone(layer));
+      },
       style: {
         color:       main,
         weight:      2,
@@ -94,6 +229,7 @@ function renderHazardZones() {
           iconAnchor: [14, 14],
         }),
         keyboard: false,
+        pmIgnore: true,
       }).bindPopup(popup, { className: 'custom-popup' }).addTo(hazardLayer);
     }
   }
@@ -101,6 +237,7 @@ function renderHazardZones() {
 
 /** Labels follow the language switch: app.js calls this from _rerenderDynamicStrings. */
 function rerenderHazardStrings() {
+  if (map && map.pm) map.pm.setLang(getLang() === 'es' ? 'es' : 'en');
   _renderHazardTypeFilters();
   renderHazardZones();
 }
@@ -131,6 +268,10 @@ function _hazardPopup(zone, type) {
         ${zone.description ? `<p>${esc(zone.description)}</p>` : ''}
         <p><strong>${t('hazard.area')}:</strong> ${km2} km²</p>
         ${parts > 1 ? `<p><strong>${t('hazard.parts')}:</strong> ${parts}</p>` : ''}
+      </div>
+      <div class="popup-actions">
+        <button type="button" class="btn-danger" onclick="toggleHazardZone(${zone.id})">${t(zone.active ? 'hazard.deactivate' : 'hazard.activate')}</button>
+        <button type="button" class="btn-danger" onclick="deleteHazardZone(${zone.id})">${t('action.delete')}</button>
       </div>
     </div>`;
 }

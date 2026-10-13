@@ -65,7 +65,8 @@ cmop_map/
 │   ├── js/i18n.js               # UI strings (en/es) + t() / applyI18n() — no copy lives in app.js
 │   ├── js/app.js                # Frontend: scenario selector, map, icon resolution, triage ladder,
 │   │                            #           medical popups, SSE client, simulation controls
-│   └── js/hazards.js            # Hazard zone layer: hatching, event badge, show/hide and type filter
+│   └── js/hazards.js            # Hazard zone layer: hatching, event badge, show/hide and type filter,
+│                                #           drawing and editing with Leaflet-Geoman
 ├── docker-compose.yml
 ├── server.js                    # Express entry point. Mounts routes, SSE, planner proxy.
 ├── package.json
@@ -521,7 +522,7 @@ Floods, fires and other disasters: areas that ground routes avoid and that trap 
 | PUT | `/api/hazard-zones/:id` | partial update; a `geometry` replaces the old one whole |
 | DELETE | `/api/hazard-zones/:id` | delete |
 
-`geometry` may be a `Polygon`, a `MultiPolygon` or a `Feature` holding one; it is stored as a `MultiPolygon`, open rings are closed, and PostGIS repairs a self-intersecting polygon (`ST_MakeValid`). A shape with no area is a 400. A zone comes back as:
+`geometry` may be a `Polygon`, a `MultiPolygon` or a `Feature` holding one; it is stored as a `MultiPolygon`, open rings are closed, each part is repaired (`ST_MakeValid`) and the parts are unioned, so overlapping or touching parts fuse and separate ones stay apart. Adding an area to a zone is therefore a `PUT` with the zone's parts plus the new one. A shape with no area is a 400. A zone comes back as:
 
 ```json
 { "id": 1, "name": "Flood DANA", "hazard_type": "flood", "description": null, "active": true,
@@ -531,6 +532,10 @@ Floods, fires and other disasters: areas that ground routes avoid and that trap 
 ```
 
 `icon_point` lies on the zone (`ST_PointOnSurface`): the map draws the event badge there. `active: false` keeps a zone on record (dashed and faded on the map) once it no longer has to be avoided. A scenario file may export `hazardZones`, a list of create bodies; loading any scenario replaces every zone.
+
+Every write is broadcast over SSE and posted to the planner (`POST /hazards/notify` with `{action, id, name, hazard_type, active}`), which reroutes its live ground assignments and replans; `routing_mcp` excludes the active zones from every ground route. Agents write zones through `cmop_mcp` (`report_hazard_area`, `clear_hazard_area`), which computes the geometry from reported coordinates.
+
+**Drawing on the map.** The Leaflet-Geoman toolbar under the zoom buttons draws a polygon or a rectangle; the dialog saves it as a new zone (name, type, description) or as one more area of an existing zone. Edit mode drags a zone's vertices and saves on leaving the mode; removal mode deletes a zone after confirming. A zone's popup activates, deactivates or deletes it. Only hazard zones are editable: entity markers and routes are left out (Geoman opt-in). Geoman (free, 2.17.0) is served from `public/vendor/geoman/`, like Leaflet.
 
 Types and colours (`lib/hazard-types.js`): fire `#FF5500`/`#E63946`, flood `#00A8E8`/`#1D70B8`, chemical `#FF8C00`/`#D97706`, biological `#10B981`/`#00E676`, nuclear/radiological `#9333EA`/`#FACC15`, earthquake `#A52A2A`/`#B45309`, structural collapse `#64748B`, sinkhole `#334155`. On the map each zone is hatched in its two colours over a light wash; the *Filters* tab shows or hides the layer and filters by type.
 
