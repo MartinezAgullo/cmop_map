@@ -41,6 +41,7 @@ class Entity {
         pi.casevac_eligible,
         pi.mobility,
         pi.capacity,
+        pi.headcount,
         pi.status,
         ST_X(pi.geom) AS longitud,
         ST_Y(pi.geom) AS latitud,
@@ -289,13 +290,13 @@ class Entity {
       `INSERT INTO puntos_interes (
          nombre, descripcion, categoria, country, alliance,
          elemento_identificado, activo, tipo_elemento,
-         observaciones, altitud, casevac_eligible, mobility, capacity, status, geom
+         observaciones, altitud, casevac_eligible, mobility, capacity, headcount, status, geom
        )
        VALUES (
          $1, $2, $3::categoria_militar, $4, $5::alliance_enum,
          $6, $7, $8,
-         $9, $10, $11, $12::mobility_enum, $13, $14::asset_status_enum,
-         ST_SetSRID(ST_MakePoint($15, $16), 4326)
+         $9, $10, $11, $12::mobility_enum, $13, $14, $15::asset_status_enum,
+         ST_SetSRID(ST_MakePoint($16, $17), 4326)
        )
        RETURNING id`,
       [
@@ -312,6 +313,7 @@ class Entity {
         data.casevac_eligible ?? false,
         data.mobility ?? null,
         data.capacity ?? null,
+        data.headcount ?? null,
         data.status ?? null,
         data.longitud,
         data.latitud
@@ -337,16 +339,17 @@ class Entity {
          casevac_eligible       = COALESCE($11, casevac_eligible),
          mobility               = COALESCE($12::mobility_enum, mobility),
          capacity               = COALESCE($13, capacity),
-         status                 = COALESCE($14::asset_status_enum, status),
+         headcount              = COALESCE($14, headcount),
+         status                 = COALESCE($15::asset_status_enum, status),
          geom                   = COALESCE(
                                     ST_SetSRID(ST_MakePoint(
-                                      CAST($15 AS DOUBLE PRECISION),
-                                      CAST($16 AS DOUBLE PRECISION)
+                                      CAST($16 AS DOUBLE PRECISION),
+                                      CAST($17 AS DOUBLE PRECISION)
                                     ), 4326),
                                     geom
                                   ),
          updated_at             = CURRENT_TIMESTAMP
-       WHERE id = $17
+       WHERE id = $18
        RETURNING id`,
       [
         data.nombre ?? null,
@@ -362,6 +365,7 @@ class Entity {
         data.casevac_eligible ?? null,
         data.mobility ?? null,
         data.capacity ?? null,
+        data.headcount ?? null,
         data.status ?? null,
         data.longitud ?? null,
         data.latitud ?? null,

@@ -132,7 +132,7 @@ const SCHEMA = {
       label_en: 'Civilian to evacuate',
       label_es: 'Civil a evacuar',
       subtypes: [],
-      note: 'An uninjured person who must be moved to a shelter. An injured one is a casualty. Usually neutral.'
+      note: 'Uninjured people who must be moved to a shelter; an injured one is a casualty. One entity per location, with headcount = people there. Usually neutral. Its medical record holds only evac_stage and destination_facility_id (the shelter).'
     },
     { value: 'shelter', label_en: 'Shelter', label_es: 'Albergue', subtypes: [], note: 'Where evacuated civilians are taken.' },
 

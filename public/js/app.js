@@ -800,6 +800,8 @@ function updateTipoElementoOptions(categoria) {
     capacityInput.value = '';
   }
 
+  document.getElementById('headcountGroup').style.display = categoria === 'civilian' ? 'block' : 'none';
+
   const mobilityGroup  = document.getElementById('mobilityGroup');
   const mobilitySelect = document.getElementById('mobility');
   if (MOBILITY_CATEGORIES.includes(categoria)) {
@@ -1534,7 +1536,15 @@ function buildPopup(e) {
     `<span class="med-value${big ? ' big' : ''}">${value}</span></div>`;
 
   let medicalHTML = '';
-  if (e.medical) {
+  if (e.medical && e.categoria === 'civilian') {
+    const m = e.medical;
+    medicalHTML = `
+      <div class="popup-medical">
+        <h4>${t('popup.evacuation')}</h4>
+        ${row(t('popup.stage'), esc(m.evac_stage || '—'))}
+        ${m.destination_facility ? row(t('popup.destination'), esc(m.destination_facility.nombre)) : ''}
+      </div>`;
+  } else if (e.medical) {
     const m = e.medical;
     const secs = elapsedSeconds(m.created_at);
     medicalHTML = `
@@ -1552,13 +1562,14 @@ function buildPopup(e) {
   }
 
   const damaged  = isDamaged(e);
-  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity) ? `
+  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity || e.headcount) ? `
       <div class="popup-info">
         ${damaged ? `<p><span class="damaged-badge">${t('popup.damaged')}</span></p>` : ''}
         ${e.descripcion ? `<p>${esc(e.descripcion)}</p>` : ''}
         ${e.observaciones ? `<p><strong>${t('popup.obs')}:</strong> ${esc(e.observaciones)}</p>` : ''}
         ${e.casevac_eligible ? `<p><span class="casevac-badge">${t('popup.casevac')}</span></p>` : ''}
         ${e.capacity ? `<p><strong>${t('popup.capacity')}:</strong> ${e.capacity}</p>` : ''}
+        ${e.headcount ? `<p><strong>${t('popup.headcount')}:</strong> ${e.headcount}</p>` : ''}
       </div>` : '';
 
   return `
@@ -1694,6 +1705,13 @@ async function crearNuevaEntidad() {
     const capacity = parseInt(document.getElementById('capacity').value, 10);
     if (CAPACITY_CATEGORIES.includes(categoria) && payload.alliance === 'friendly' && capacity >= 1) {
       payload.capacity = capacity;
+    }
+
+    // A civilian's record holds only its evacuation fields: the casualty lists skip it.
+    if (categoria === 'civilian') {
+      const headcount = parseInt(document.getElementById('headcount').value, 10);
+      if (headcount >= 1) payload.headcount = headcount;
+      payload.medical = { evac_stage: 'at_poi' };
     }
 
     // A casualty is created with its medical record in the same request: the planner

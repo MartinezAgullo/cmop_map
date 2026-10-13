@@ -129,6 +129,9 @@ const BASE_TABLE = `
     -- notion does not apply (a tank has no litter capacity), so it is nullable rather
     -- than defaulted: a missing value means "not stated", not "one".
     capacity              SMALLINT          CHECK (capacity IS NULL OR capacity >= 1),
+    -- People one civilian entity stands for (a family on a roof is one entity). NULL
+    -- everywhere else: a casualty is one person, a vehicle carries rather than counts.
+    headcount             SMALLINT          CHECK (headcount IS NULL OR headcount >= 1),
     status                asset_status_enum,
     geom                  GEOMETRY(Point, 4326) NOT NULL,
     created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
@@ -140,6 +143,9 @@ const BASE_TABLE = `
 // 3. Medical details table  (1-to-1 with puntos_interes, optional)
 //
 //   - Only populated for casualty_* categories (or any entity that needs it).
+//   - A civilian to evacuate has one too, holding only evac_stage and
+//     destination_facility_id (its shelter). The casualty lists in
+//     routes/medical.js leave civilians out.
 //   - All fields NULLABLE; unknown state is the default.
 //   - vital_signs: JSONB array of timestamped readings
 //       [{ "hr": 80, "bp": "120/80", "spo2": 95, "recorded_at": "2026-..." }, ...]
