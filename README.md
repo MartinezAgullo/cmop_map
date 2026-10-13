@@ -36,13 +36,17 @@ cmop_map/
 │   ├── mascal-generator.js      # Pure, seeded random MASCAL scenario generator
 │   ├── scenario-files.js        # Scenario file paths and name validation
 │   ├── telemetry.js             # OpenTelemetry: traces and logs over OTLP, started first by server.js
-│   └── scenario-loader.js       # Replaces the DB contents with an in-memory scenario, in one transaction
+│   ├── scenario-loader.js       # Replaces the DB contents with an in-memory scenario, in one transaction
+│   ├── hazard-types.js          # Hazard zone types, labels and colours: the one source for DB, API and map
+│   └── hazard-zone-input.js     # Validates hazard zone bodies and GeoJSON (pure)
 ├── models/
-│   └── entity.js                # All queries: puntos_interes + medical_details (LEFT JOIN)
+│   ├── entity.js                # All queries: puntos_interes + medical_details (LEFT JOIN)
+│   └── hazard-zone.js           # All queries on hazard_zones
 ├── routes/
 │   ├── entities.js              # CRUD for entities (/api/entities) — broadcasts SSE on POST, PUT, DELETE
 │   ├── medical.js               # Medical-specific ops (/api/medical)
 │   ├── scenarios.js             # List & load scenarios (/api/scenarios)
+│   ├── hazard-zones.js          # CRUD for hazard zones (/api/hazard-zones) — broadcasts SSE on writes
 │   └── schema.js                # Schema introspection (/api/schema) — for MCP servers
 ├── scripts/
 │   ├── init-db.js               # Creates schema (enums, tables, indexes, triggers). No seed.
@@ -59,8 +63,9 @@ cmop_map/
 │   │   └── README.md            # Icon resolution algorithm docs
 │   ├── index.html
 │   ├── js/i18n.js               # UI strings (en/es) + t() / applyI18n() — no copy lives in app.js
-│   └── js/app.js                # Frontend: scenario selector, map, icon resolution, triage ladder,
-│                                #           medical popups, SSE client, simulation controls
+│   ├── js/app.js                # Frontend: scenario selector, map, icon resolution, triage ladder,
+│   │                            #           medical popups, SSE client, simulation controls
+│   └── js/hazards.js            # Hazard zone layer: hatching, event badge, show/hide and type filter
 ├── docker-compose.yml
 ├── server.js                    # Express entry point. Mounts routes, SSE, planner proxy.
 ├── package.json
@@ -492,12 +497,42 @@ Event types:
 | `evac_stage_updated` | At pickup / delivery milestones | `id`, `evac_stage` |
 | `route_updated` | After threat-triggered reroute | `task_id` |
 | `simulation_stopped` | On stop or completion | `task_id`, `reason` (`cancelled`\|`completed`) |
+| `hazard_zone_changed` | After `POST` or `PUT /api/hazard-zones` | `data` (full zone) |
+| `hazard_zone_deleted` | After `DELETE /api/hazard-zones/:id` | `id` |
 
 #### **POST** `/api/events/notify`
 
 Push an arbitrary event to all connected SSE clients. Used internally by `medevac_planner`.
 
 **Request:** any JSON object with a `type` field.
+
+---
+
+### Hazard zones (`/api/hazard-zones`)
+
+Floods, fires and other disasters: areas that ground routes avoid and that trap the civilians inside them. **One row per hazard event**, whose geometry is a GeoJSON `MultiPolygon` with `[lng, lat]` positions; its parts may lie apart (a flood with several flooded areas is one zone).
+
+| Method | Path | Does |
+|---|---|---|
+| GET | `/api/hazard-zones` | every zone; `?type=flood`, `?active=true` filter |
+| GET | `/api/hazard-zones/meta/types` | the hazard types with `label_en`, `label_es`, `code` and `colors` |
+| GET | `/api/hazard-zones/:id` | one zone |
+| POST | `/api/hazard-zones` | create `{ name, hazard_type, geometry, description?, active? }` |
+| PUT | `/api/hazard-zones/:id` | partial update; a `geometry` replaces the old one whole |
+| DELETE | `/api/hazard-zones/:id` | delete |
+
+`geometry` may be a `Polygon`, a `MultiPolygon` or a `Feature` holding one; it is stored as a `MultiPolygon`, open rings are closed, and PostGIS repairs a self-intersecting polygon (`ST_MakeValid`). A shape with no area is a 400. A zone comes back as:
+
+```json
+{ "id": 1, "name": "Flood DANA", "hazard_type": "flood", "description": null, "active": true,
+  "geometry": { "type": "MultiPolygon", "coordinates": [...] },
+  "icon_point": { "lat": 39.425, "lng": -0.385 }, "area_m2": 1434000.4,
+  "created_at": "...", "updated_at": "..." }
+```
+
+`icon_point` lies on the zone (`ST_PointOnSurface`): the map draws the event badge there. `active: false` keeps a zone on record (dashed and faded on the map) once it no longer has to be avoided. A scenario file may export `hazardZones`, a list of create bodies; loading any scenario replaces every zone.
+
+Types and colours (`lib/hazard-types.js`): fire `#FF5500`/`#E63946`, flood `#00A8E8`/`#1D70B8`, chemical `#FF8C00`/`#D97706`, biological `#10B981`/`#00E676`, nuclear/radiological `#9333EA`/`#FACC15`, earthquake `#A52A2A`/`#B45309`, structural collapse `#64748B`, sinkhole `#334155`. On the map each zone is hatched in its two colours over a light wash; the *Filters* tab shows or hides the layer and filters by type.
 
 ---
 
@@ -603,6 +638,16 @@ Fallback:     default
 | `evac_stage` | enum | at_poi, in_transit, delivered, unknown |
 | `destination_facility_id` | FK | → puntos_interes |
 | `nine_line_data` | JSONB | `{line1..line9}` |
+
+### `hazard_zones` fields
+
+| Column | Type | Values |
+|--------|------|--------|
+| `name` | varchar(100) | the event, e.g. "Flood DANA" |
+| `hazard_type` | enum | fire, flood, chemical, biological, nuclear_radiological, earthquake, structural_collapse, sinkhole |
+| `description` | text | Free text |
+| `active` | boolean | false: kept on record, no longer avoided |
+| `geom` | geometry(MultiPolygon, 4326) | never empty |
 
 ---
 

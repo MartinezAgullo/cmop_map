@@ -15,6 +15,9 @@
   <link rel="stylesheet" href="/css/styles.css"/>
 </head>
 <body>
+  <!-- Hatch patterns for hazard zones, filled in by hazards.js. Kept out of any panel
+       and not display:none: an SVG that is not rendered does not paint its patterns. -->
+  <svg id="hazardPatterns" width="0" height="0" style="position:absolute" aria-hidden="true"><defs></defs></svg>
   <div class="app-container">
     <aside class="sidebar">
 
@@ -215,6 +218,16 @@
               <label class="filter-cb"><input type="checkbox" value="neutral" /><span class="alliance-dot" style="--dot-color:var(--a-neutral)"></span><span data-i18n="alliance.neutral">Neutral</span></label>
               <label class="filter-cb"><input type="checkbox" value="unknown" /><span class="alliance-dot" style="--dot-color:var(--a-unknown)"></span><span data-i18n="alliance.unknown">Unknown</span></label>
             </div>
+          </div>
+
+          <div class="fgroup">
+            <div class="fgroup-head">
+              <h3 data-i18n="filter.hazards">Hazard zones</h3>
+              <button type="button" class="btn-clear" id="clearHazardTypes" data-i18n="action.clear">Clear</button>
+            </div>
+            <label class="filter-cb filter-cb--hazard-show"><input type="checkbox" id="hazardShow" checked /><span data-i18n="filter.hazardShow">Show on map</span></label>
+            <!-- One checkbox per hazard type, from GET /api/hazard-zones/meta/types; none ticked = all -->
+            <div class="checkbox-grid" id="hazardTypeCheckboxes"></div>
           </div>
         </section>
 
@@ -458,5 +471,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/hazards.js"></script>
 </body>
 </html>

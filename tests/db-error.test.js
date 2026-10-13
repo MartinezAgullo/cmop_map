@@ -114,3 +114,9 @@ test('sendError keeps the old 500 and logs the stack for an unknown error', asyn
   assert.deepEqual(res.body, { success: false, message: 'Failed to create entity', error: 'boom' });
   assert.equal(log.lines[0].obj.err, err);
 });
+
+test('a hazard zone with no area gets a readable reason', () => {
+  const err = pgError('23514', 'new row for relation "hazard_zones" violates check constraint "hazard_zones_geom_check"',
+                      { constraint: 'hazard_zones_geom_check' });
+  assert.deepEqual(classifyDbError(err), { status: 400, reason: 'the geometry encloses no area (are its points in a line?)' });
+});

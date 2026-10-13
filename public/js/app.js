@@ -377,6 +377,7 @@ function _rerenderDynamicStrings() {
   markers.forEach(m => m._cmopEntity && m.setPopupContent(buildPopup(m._cmopEntity)));
   if (_lastRoutes) document.getElementById('routesStatus').innerHTML = _routesSummaryHTML(_lastRoutes);
   _rerenderPlanAlerts();
+  rerenderHazardStrings();
 }
 
 // The `categoria` enum values are English words, so English needs no gloss.
@@ -437,6 +438,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initMap();
   initScenarios();
   loadEntities();
+  initHazards();
   setupEventListeners();
   initSSE();
   startClocks();
@@ -899,6 +901,7 @@ async function generateRandomScenario(event) {
       clearPlanAlerts();             // they were about the scenario just replaced
       _shouldFit = true;
       await loadEntities();
+      loadHazardZones();             // a scenario load replaces them too
     } else {
       showMessage(data.message || t('msg.scenarioError'), 'error');
     }
@@ -927,6 +930,7 @@ async function loadSelectedScenario() {
       clearPlanAlerts();             // they were about the scenario just replaced
       _shouldFit = true;          // a new scenario is a new area of operations
       await loadEntities();
+      loadHazardZones();          // a scenario load replaces them too
     } else {
       showMessage(data.message || t('msg.scenarioError'), 'error');
     }
@@ -1088,9 +1092,11 @@ function selectTriageBand(color) {
 /** Reset every filter control in one go. */
 function clearAllFilters() {
   document.querySelectorAll('#pane-filters input[type="checkbox"]').forEach(cb => cb.checked = false);
+  document.getElementById('hazardShow').checked = true;   // "show" is a layer switch, not a filter
   document.getElementById('buscarNombre').value = '';
   toggleSubfilters();
   filterEntities();
+  renderHazardZones();
 }
 
 // ---------------------------------------------------------------------------
@@ -1368,6 +1374,10 @@ function initSSE() {
         _onEntityChanged(msg.data);
       } else if (msg.type === 'entity_deleted') {
         _onEntityDeleted(msg.id);
+      } else if (msg.type === 'hazard_zone_changed') {
+        onHazardZoneChanged(msg.data);
+      } else if (msg.type === 'hazard_zone_deleted') {
+        onHazardZoneDeleted(msg.id);
       } else if (msg.type === 'route_updated' && _currentTaskId) {
         loadMedevacRoutes(_currentTaskId);
       } else if (msg.type === 'preemption') {

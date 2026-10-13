@@ -4,6 +4,7 @@
 // Seed data lives in scripts/scenarios/*.js and is loaded via load-scenario.js
 //
 const pool = require('../config/database');
+const { HAZARD_TYPE_VALUES } = require('../lib/hazard-types');
 
 // ---------------------------------------------------------------------------
 // 1. Enums
@@ -223,6 +224,31 @@ const SCENARIO_TABLE = `
 `;
 
 // ---------------------------------------------------------------------------
+// 3c. Hazard zones  (floods, fires and other disasters)
+//
+//   - One row per hazard event; geom is a MultiPolygon whose parts may lie apart
+//     (a flood with several flooded areas is one row).
+//   - Ground routes avoid them (Valhalla exclude_polygons) and a civilian inside a
+//     flood needs hoist or water rescue.
+//   - The types come from lib/hazard-types.js, which also holds their colours.
+// ---------------------------------------------------------------------------
+
+const HAZARD_TABLE = `
+  CREATE TYPE hazard_type_enum AS ENUM (${HAZARD_TYPE_VALUES.map(v => `'${v}'`).join(', ')});
+
+  CREATE TABLE hazard_zones (
+    id           SERIAL            PRIMARY KEY,
+    name         VARCHAR(100)      NOT NULL,
+    hazard_type  hazard_type_enum  NOT NULL,
+    description  TEXT,
+    active       BOOLEAN           NOT NULL DEFAULT true,   -- false: kept on record, no longer avoided
+    geom         GEOMETRY(MultiPolygon, 4326) NOT NULL CHECK (NOT ST_IsEmpty(geom)),
+    created_at   TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP         DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
+// ---------------------------------------------------------------------------
 // 4. Indexes
 // ---------------------------------------------------------------------------
 
@@ -243,6 +269,10 @@ const INDEXES = `
   CREATE INDEX idx_md_evac_priority   ON medical_details (evac_priority);
   CREATE INDEX idx_md_evac_stage      ON medical_details (evac_stage);
   CREATE INDEX idx_md_destination     ON medical_details (destination_facility_id);
+
+  -- Hazard zones
+  CREATE INDEX idx_hz_geom   ON hazard_zones USING GIST (geom);
+  CREATE INDEX idx_hz_type   ON hazard_zones (hazard_type);
 `;
 
 // ---------------------------------------------------------------------------
@@ -265,6 +295,10 @@ const UPDATED_AT_TRIGGER = `
   CREATE TRIGGER trg_md_updated_at
     BEFORE UPDATE ON medical_details
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+  CREATE TRIGGER trg_hz_updated_at
+    BEFORE UPDATE ON hazard_zones
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 `;
 
 // ---------------------------------------------------------------------------
@@ -273,6 +307,8 @@ const UPDATED_AT_TRIGGER = `
 
 const DROP_ALL = `
   DROP TABLE IF EXISTS loaded_scenario;
+  DROP TABLE IF EXISTS hazard_zones;
+  DROP TYPE IF EXISTS hazard_type_enum;
   DROP TABLE IF EXISTS medical_details CASCADE;
   DROP TABLE IF EXISTS puntos_interes  CASCADE;
 
@@ -316,6 +352,9 @@ const initDatabase = async () => {
 
     await pool.query(SCENARIO_TABLE);
     console.log('✅ Table loaded_scenario created');
+
+    await pool.query(HAZARD_TABLE);
+    console.log('✅ Table hazard_zones created');
 
     await pool.query(INDEXES);
     console.log('✅ Indexes created');
