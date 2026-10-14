@@ -590,10 +590,16 @@ function setupEventListeners() {
   });
 
   // Create entity form
-  document.getElementById('nuevoPuntoForm').addEventListener('submit', async (e) => {
+  const entityForm = document.getElementById('nuevoPuntoForm');
+  entityForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!refreshSaveButton()) { showFormProblems(); return; }
     await crearNuevaEntidad();
   });
+  entityForm.addEventListener('input',  refreshSaveButton);
+  entityForm.addEventListener('change', refreshSaveButton);
+  document.getElementById('mobility').addEventListener('change', refreshCapacityLimit);
+  document.getElementById('capacity').addEventListener('change', reportRefusedCapacity);
 
   document.getElementById('loadScenarioBtn').addEventListener('click', loadSelectedScenario);
   document.getElementById('randomToggleBtn').addEventListener('click', toggleRandomForm);
@@ -623,12 +629,14 @@ function setupEventListeners() {
   // Dynamic tipo_elemento dropdown in modal
   document.getElementById('categoria').addEventListener('change', (e) => {
     updateTipoElementoOptions(e.target.value);
+    refreshCapacityLimit();
   });
 
   // Re-evaluate CASEVAC eligibility and capacity visibility when alliance changes
   document.getElementById('alliance').addEventListener('change', () => {
     const categoria = document.getElementById('categoria').value;
     updateTipoElementoOptions(categoria);
+    refreshSaveButton();
   });
 
   // Casualty status — toggle triage fields when KIA is selected
@@ -760,6 +768,9 @@ const CASEVAC_ELIGIBLE_CATEGORIES = [
 // Hostile, neutral and unknown platforms are never our evacuators, so they have none.
 const CAPACITY_CATEGORIES = ['medevac_unit', ...CASEVAC_ELIGIBLE_CATEGORIES, ...RESPONSE_SERVICE_CATEGORIES];
 
+// Places that receive people: their capacity in places and the people already there.
+const FACILITY_CATEGORIES = ['shelter', 'medical_facility'];
+
 // What can break down: our own evacuation platforms, dedicated or CASEVAC, and the
 // vehicles of the civil emergency services.
 function canBreakDown(e) {
@@ -804,6 +815,15 @@ function updateTipoElementoOptions(categoria) {
   }
 
   document.getElementById('headcountGroup').style.display = categoria === 'civilian' ? 'block' : 'none';
+
+  const facilityGroup = document.getElementById('facilityCapacityGroup');
+  if (FACILITY_CATEGORIES.includes(categoria)) {
+    facilityGroup.style.display = 'block';
+  } else {
+    facilityGroup.style.display = 'none';
+    document.getElementById('maxCapacity').value = '';
+    document.getElementById('initialOccupancy').value = '0';
+  }
 
   const mobilityGroup  = document.getElementById('mobilityGroup');
   const mobilitySelect = document.getElementById('mobility');
@@ -1573,7 +1593,10 @@ function buildPopup(e) {
   }
 
   const damaged  = isDamaged(e);
-  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity || e.headcount) ? `
+  // A shelter or medical facility: people there (derived by the API) over its places.
+  const occupancy = e.occupancy == null ? ''
+    : `${e.occupancy}${e.max_capacity ? ` / ${e.max_capacity}` : ''}`;
+  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity || e.headcount || occupancy) ? `
       <div class="popup-info">
         ${damaged ? `<p><span class="damaged-badge">${t('popup.damaged')}</span></p>` : ''}
         ${e.descripcion ? `<p>${esc(e.descripcion)}</p>` : ''}
@@ -1581,6 +1604,7 @@ function buildPopup(e) {
         ${e.casevac_eligible ? `<p><span class="casevac-badge">${t('popup.casevac')}</span></p>` : ''}
         ${e.capacity ? `<p><strong>${t('popup.capacity')}:</strong> ${e.capacity}</p>` : ''}
         ${e.headcount ? `<p><strong>${t('popup.headcount')}:</strong> ${e.headcount}</p>` : ''}
+        ${occupancy ? `<p><strong>${t('popup.occupancy')}:</strong> ${occupancy}</p>` : ''}
       </div>` : '';
 
   return `
@@ -1674,6 +1698,113 @@ function mostrarFormularioNuevoPunto() {
   const c = map.getCenter();
   document.getElementById('latitud').value  = c.lat.toFixed(6);
   document.getElementById('longitud').value = c.lng.toFixed(6);
+  refreshSaveButton();
+}
+
+// ---------------------------------------------------------------------------
+// New Entity form: what it still needs, and values it does not accept
+// ---------------------------------------------------------------------------
+// Save Entity is not clickable while a required field is empty or a value is not
+// accepted; an attempt to save lists what is wrong. A vehicle's capacity limit comes
+// from the server (lib/capacity-limits.js), which also logs a refused capacity.
+let _capacityLimit = null;   // { max, vehicle } of the vehicle being created
+
+const _field     = id => document.getElementById(id);
+const _isShown   = id => _field(id).style.display !== 'none';
+const _label     = key => t(key).replace(/\s*\*\s*$/, '');
+const _intValue  = id => parseInt(_field(id).value, 10);
+
+async function refreshCapacityLimit() {
+  const categoria = _field('categoria').value;
+  _capacityLimit = null;
+  if (CAPACITY_CATEGORIES.includes(categoria)) {
+    const params = new URLSearchParams({ categoria, mobility: _field('mobility').value });
+    try {
+      const body = await (await fetch(`/api/entities/meta/capacity-limit?${params}`)).json();
+      _capacityLimit = body.data ?? null;
+    } catch (err) {
+      console.warn('Capacity limit unavailable; the server still checks it on save', err);
+    }
+  }
+  refreshSaveButton();
+}
+
+// Asks the server to check the capacity typed in, so a refused one is logged there,
+// once per value: leaving the field fires `change` again for the same number.
+let _reportedCapacity = null;
+async function reportRefusedCapacity() {
+  const capacity = _intValue('capacity');
+  if (!_capacityLimit || !(capacity > _capacityLimit.max) || capacity === _reportedCapacity) return;
+  _reportedCapacity = capacity;
+  const params = new URLSearchParams({
+    categoria: _field('categoria').value, mobility: _field('mobility').value, capacity,
+  });
+  try { await fetch(`/api/entities/meta/capacity-limit?${params}`); } catch (_) { /* logged on save instead */ }
+}
+
+// A capacity is required where it is shown, except for a vehicle that is not
+// CASEVAC eligible: it carries nobody, so its capacity means nothing.
+function _capacityRequired(categoria) {
+  if (!_isShown('capacityGroup')) return false;
+  return !CASEVAC_ELIGIBLE_CATEGORIES.includes(categoria) || _field('casevacEligible').checked;
+}
+
+function formProblems() {
+  const categoria = _field('categoria').value;
+  const missing = [];
+  const refused = [];
+  if (!_field('nombre').value.trim())                              missing.push(_label('form.name'));
+  if (!categoria)                                                  missing.push(_label('form.category'));
+  if (_isShown('tipoElementoGroup') && !_field('tipoElemento').value) missing.push(_label('form.elementType'));
+  if (!_field('alliance').value)                                   missing.push(_label('form.alliance'));
+  if (Number.isNaN(parseFloat(_field('latitud').value)))           missing.push(_label('form.lat'));
+  if (Number.isNaN(parseFloat(_field('longitud').value)))          missing.push(_label('form.lng'));
+  if (_isShown('headcountGroup') && !(_intValue('headcount') >= 1)) missing.push(_label('form.headcount'));
+
+  const capacity = _intValue('capacity');
+  if (_capacityRequired(categoria) && Number.isNaN(capacity))      missing.push(_label('form.capacity'));
+  if (_isShown('capacityGroup') && (capacity < 1 || (_capacityLimit && capacity > _capacityLimit.max))) {
+    refused.push(_label('form.capacity'));
+  }
+
+  if (_isShown('facilityCapacityGroup')) {
+    const places = _intValue('maxCapacity');
+    const already = _intValue('initialOccupancy');
+    if (Number.isNaN(places)) missing.push(_label('form.maxCapacity'));
+    else if (places < 1) refused.push(_label('form.maxCapacity'));
+    if (already < 0 || (places >= 1 && already > places)) refused.push(_label('form.initialOccupancy'));
+  }
+  return { missing, refused };
+}
+
+function refreshSaveButton() {
+  const { missing, refused } = formProblems();
+  const blocked = missing.length + refused.length > 0;
+  const save = _field('saveEntityBtn');
+  save.setAttribute('aria-disabled', String(blocked));
+  save.classList.toggle('is-disabled', blocked);
+  if (!blocked) _field('formProblems').hidden = true;
+
+  const capacity = _intValue('capacity');
+  const capacityError = _field('capacityError');
+  const overLimit = _isShown('capacityGroup') && _capacityLimit && capacity > _capacityLimit.max;
+  capacityError.hidden = !overLimit;
+  if (overLimit) capacityError.textContent = t('form.capacityRejected', { max: _capacityLimit.max });
+
+  const places = _intValue('maxCapacity');
+  _field('occupancyError').hidden = !(_isShown('facilityCapacityGroup') && places >= 1
+                                      && _intValue('initialOccupancy') > places);
+  return !blocked;
+}
+
+function showFormProblems() {
+  const { missing, refused } = formProblems();
+  const parts = [];
+  if (missing.length) parts.push(t('form.missing', { fields: missing.join(', ') }));
+  if (refused.length) parts.push(t('form.refused', { fields: refused.join(', ') }));
+  const box = _field('formProblems');
+  box.textContent = parts.join(' ');
+  box.hidden = parts.length === 0;
 }
 
 function cerrarFormularioNuevoPunto() {
@@ -1682,6 +1813,10 @@ function cerrarFormularioNuevoPunto() {
   document.getElementById('triageColor').value = 'UNKNOWN';
   // Re-run the category update to restore correct visibility state after reset
   updateTipoElementoOptions('');
+  _capacityLimit = null;
+  _reportedCapacity = null;
+  document.getElementById('formProblems').hidden = true;
+  document.getElementById('capacityError').hidden = true;
 }
 
 async function crearNuevaEntidad() {
@@ -1716,6 +1851,11 @@ async function crearNuevaEntidad() {
     const capacity = parseInt(document.getElementById('capacity').value, 10);
     if (CAPACITY_CATEGORIES.includes(categoria) && payload.alliance === 'friendly' && capacity >= 1) {
       payload.capacity = capacity;
+    }
+
+    if (FACILITY_CATEGORIES.includes(categoria)) {
+      payload.max_capacity      = _intValue('maxCapacity');
+      payload.initial_occupancy = _intValue('initialOccupancy') || 0;
     }
 
     // A civilian's record holds only its evacuation fields: the casualty lists skip it.

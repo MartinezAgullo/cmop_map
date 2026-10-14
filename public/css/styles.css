@@ -1450,6 +1450,13 @@ body.dark .brand-light { display: none !important; }
 
 .form-actions { display: flex; gap: 8px; margin-top: 16px; }
 .form-actions .btn { flex: 1; }
+/* Save Entity while something required is missing or not accepted: it still takes the
+   click, which lists what is wrong (#formProblems), but does not save. */
+.btn[aria-disabled="true"] { opacity: .4; cursor: not-allowed; }
+.btn[aria-disabled="true"]:hover { opacity: .4; }
+.field-error { margin: 4px 0 0; font-size: 12px; color: var(--t-red-ink); }
+.form-problems { margin: 12px 0 0; padding: 8px 10px; font-size: 13px;
+                 color: var(--t-red-ink); border-left: 3px solid var(--t-red); }
 
 /* ====================================================================
    Responsive

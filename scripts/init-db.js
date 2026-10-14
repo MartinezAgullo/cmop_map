@@ -133,6 +133,11 @@ const BASE_TABLE = `
     -- People one civilian entity stands for (a family on a roof is one entity). NULL
     -- everywhere else: a casualty is one person, a vehicle carries rather than counts.
     headcount             SMALLINT          CHECK (headcount IS NULL OR headcount >= 1),
+    -- Places of a shelter or medical facility (NULL: not stated, read as no limit),
+    -- and the people already there when it was added. Its occupancy is never stored:
+    -- the API derives it as initial_occupancy plus everyone delivered there.
+    max_capacity          INTEGER           CHECK (max_capacity IS NULL OR max_capacity >= 1),
+    initial_occupancy     INTEGER           CHECK (initial_occupancy IS NULL OR initial_occupancy >= 0),
     status                asset_status_enum,
     geom                  GEOMETRY(Point, 4326) NOT NULL,
     created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,

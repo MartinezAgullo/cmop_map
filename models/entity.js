@@ -42,6 +42,19 @@ class Entity {
         pi.mobility,
         pi.capacity,
         pi.headcount,
+        pi.max_capacity,
+        pi.initial_occupancy,
+        -- Occupancy of a shelter or medical facility: the people already there plus
+        -- everyone delivered there (a civilian counts its headcount, a casualty one).
+        -- Derived on every read, never stored, so it cannot drift from the deliveries.
+        CASE WHEN pi.categoria IN ('shelter', 'medical_facility') THEN
+          COALESCE(pi.initial_occupancy, 0) + COALESCE((
+            SELECT SUM(CASE WHEN p2.categoria = 'civilian' THEN COALESCE(p2.headcount, 1) ELSE 1 END)
+            FROM medical_details md2
+            JOIN puntos_interes p2 ON p2.id = md2.entity_id
+            WHERE md2.destination_facility_id = pi.id AND md2.evac_stage = 'delivered'
+          ), 0)::int
+        END AS occupancy,
         pi.status,
         ST_X(pi.geom) AS longitud,
         ST_Y(pi.geom) AS latitud,
@@ -290,13 +303,15 @@ class Entity {
       `INSERT INTO puntos_interes (
          nombre, descripcion, categoria, country, alliance,
          elemento_identificado, activo, tipo_elemento,
-         observaciones, altitud, casevac_eligible, mobility, capacity, headcount, status, geom
+         observaciones, altitud, casevac_eligible, mobility, capacity, headcount, status, geom,
+         max_capacity, initial_occupancy
        )
        VALUES (
          $1, $2, $3::categoria_militar, $4, $5::alliance_enum,
          $6, $7, $8,
          $9, $10, $11, $12::mobility_enum, $13, $14, $15::asset_status_enum,
-         ST_SetSRID(ST_MakePoint($16, $17), 4326)
+         ST_SetSRID(ST_MakePoint($16, $17), 4326),
+         $18, $19
        )
        RETURNING id`,
       [
@@ -316,7 +331,9 @@ class Entity {
         data.headcount ?? null,
         data.status ?? null,
         data.longitud,
-        data.latitud
+        data.latitud,
+        data.max_capacity ?? null,
+        data.initial_occupancy ?? null
       ]
     );
     return rows[0];
@@ -341,6 +358,8 @@ class Entity {
          capacity               = COALESCE($13, capacity),
          headcount              = COALESCE($14, headcount),
          status                 = COALESCE($15::asset_status_enum, status),
+         max_capacity           = COALESCE($19, max_capacity),
+         initial_occupancy      = COALESCE($20, initial_occupancy),
          geom                   = COALESCE(
                                     ST_SetSRID(ST_MakePoint(
                                       CAST($16 AS DOUBLE PRECISION),
@@ -369,7 +388,9 @@ class Entity {
         data.status ?? null,
         data.longitud ?? null,
         data.latitud ?? null,
-        id
+        id,
+        data.max_capacity ?? null,
+        data.initial_occupancy ?? null
       ]
     );
     return rows[0] ?? null;

@@ -13,6 +13,22 @@ const services   = require('../config/services');
 const { createNotifier } = require('../lib/notifier');
 const log        = require('../lib/logger').child('entities');
 const { sendError } = require('../lib/db-error');
+const { capacityLimit, capacityProblem } = require('../lib/capacity-limits');
+
+// Answers 400 when an entity's capacities are not accepted (a vehicle over its limit,
+// a facility's occupancy above its places) and says whether it did. A vehicle over its
+// limit is also logged as a warning: someone tried to declare an impossible vehicle.
+function refuseCapacity(res, entity, label = '') {
+  const problem = capacityProblem(entity);
+  if (!problem) return false;
+  const message = label ? `${label}: ${problem.message}` : problem.message;
+  if (problem.rejected) log.warn(message);
+  res.status(400).json({ success: false, message, field: problem.field });
+  return true;
+}
+
+// Fields that change what capacityProblem checks on an update.
+const CAPACITY_FIELDS = ['capacity', 'mobility', 'categoria', 'max_capacity', 'initial_occupancy'];
 
 // ---------------------------------------------------------------------------
 // Planner / PFC-agent notifications — fire-and-forget, never block the response
@@ -71,6 +87,7 @@ function _notifyAssetStatus(entity, previousStatus) {
 // GET  /api/entities/alliance/:a  — filter by alliance (friendly|hostile|neutral|unknown)
 // GET  /api/entities/cerca/:lng/:lat?radio=N — spatial radius
 // GET  /api/entities/meta/categorias — enum values
+// GET  /api/entities/meta/capacity-limit?categoria=&mobility=[&capacity=] — a vehicle's maximum capacity
 // POST /api/entities              — create (with optional medical)
 // POST /api/entities/batch        — bulk create (transactional)
 // PUT  /api/entities/:id          — partial update (with optional medical)
@@ -93,6 +110,21 @@ router.get('/meta/categorias', async (req, res) => {
   } catch (err) {
     await sendError(res, log, err, 'Failed to fetch categories');
   }
+});
+
+// The New Entity form asks for the limit of the vehicle being created, so the table
+// stays in lib/capacity-limits.js alone. With `capacity` it also checks that value and
+// returns the refusal, logged here as a warning: the form never sends a refused
+// capacity on to POST, so this is where an over-limit entry is recorded.
+router.get('/meta/capacity-limit', (req, res) => {
+  const vehicle = { categoria: req.query.categoria, mobility: req.query.mobility || undefined };
+  const rule = capacityLimit(vehicle);
+  let problem = null;
+  if (req.query.capacity !== undefined) {
+    problem = capacityProblem({ ...vehicle, capacity: req.query.capacity });
+    if (problem?.rejected) log.warn(problem.message);
+  }
+  res.json({ success: true, data: { max: rule.max, vehicle: rule.vehicle, problem: problem?.message ?? null } });
 });
 
 router.get('/categoria/:categoria', async (req, res) => {
@@ -167,6 +199,7 @@ router.post('/', async (req, res) => {
     if (longitud == null || latitud == null) {
       return res.status(400).json({ success: false, message: 'longitud and latitud are required' });
     }
+    if (refuseCapacity(res, req.body)) return;
 
     const entity = await Entity.create(req.body);
     if (entity.alliance === 'hostile') _notifyThreat(entity);
@@ -183,6 +216,9 @@ router.post('/batch', async (req, res) => {
     const { entities } = req.body;
     if (!Array.isArray(entities) || entities.length === 0) {
       return res.status(400).json({ success: false, message: 'entities array is required and must be non-empty' });
+    }
+    for (const e of entities) {
+      if (refuseCapacity(res, e, e.nombre ?? e.elemento_identificado ?? 'entity')) return;
     }
 
     const data = await Entity.createBatch(entities);
@@ -217,10 +253,12 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Read the old status only when the body carries one, so the simulation's
-    // position PUTs cost no extra query.
-    const statusSent = req.body.status !== undefined;
-    const before = statusSent ? await Entity.getById(req.params.id) : null;
+    // Read the entity before the change only when the body carries a status or a
+    // capacity, so the simulation's position PUTs cost no extra query.
+    const statusSent   = req.body.status !== undefined;
+    const capacitySent = CAPACITY_FIELDS.some(k => req.body[k] !== undefined);
+    const before = statusSent || capacitySent ? await Entity.getById(req.params.id) : null;
+    if (capacitySent && before && refuseCapacity(res, { ...before, ...req.body })) return;
 
     const entity = await Entity.update(req.params.id, req.body);
     if (!entity) {

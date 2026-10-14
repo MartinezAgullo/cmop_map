@@ -72,13 +72,13 @@ const entities = [
   // Medical facilities (Ukrainian)
   // ---------------------------------------------------------------
   // Role 1 — forward aid post near Azovstal
-  { nombre: 'UKR Aid Post-1', descripcion: 'Role-1 aid post (Azovstal sector)', categoria: 'medical_facility', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R1-1', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Under periodic indirect fire', altitud: null, lng: 37.622, lat: 47.089 },
+  { nombre: 'UKR Aid Post-1', descripcion: 'Role-1 aid post (Azovstal sector)', categoria: 'medical_facility', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R1-1', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Under periodic indirect fire', altitud: null, max_capacity: 50, initial_occupancy: 5, lng: 37.622, lat: 47.089 },
 
   // Role 2 — field hospital in western suburbs
-  { nombre: 'UKR Field Hosp-2', descripcion: 'Role-2 surgical facility', categoria: 'medical_facility', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R2-1', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Limited surgical capability', altitud: null, lng: 37.510, lat: 47.085 },
+  { nombre: 'UKR Field Hosp-2', descripcion: 'Role-2 surgical facility', categoria: 'medical_facility', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R2-1', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Limited surgical capability', altitud: null, max_capacity: 100, initial_occupancy: 15, lng: 37.510, lat: 47.085 },
 
   // Role 3 — full hospital (notional — outside city, rear area)
-  { nombre: 'UKR Hospital-3', descripcion: 'Role-3 hospital (Zaporizhzhia)', categoria: 'medical_facility', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R3-1', activo: true, tipo_elemento: 'medical_role_3', observaciones: 'Full surgical + ICU', altitud: null, lng: 37.450, lat: 47.150 },
+  { nombre: 'UKR Hospital-3', descripcion: 'Role-3 hospital (Zaporizhzhia)', categoria: 'medical_facility', country: 'Ukraine', alliance: 'friendly', elemento_identificado: 'UKR-MED-R3-1', activo: true, tipo_elemento: 'medical_role_3', observaciones: 'Full surgical + ICU', altitud: null, max_capacity: 300, initial_occupancy: 50, lng: 37.450, lat: 47.150 },
 
   // ---------------------------------------------------------------
   // MEDEVAC assets

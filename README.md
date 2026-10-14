@@ -17,6 +17,7 @@ The panel is a map legend, not a dashboard: colour is treated as a data type, so
 - **Elapsed clocks** — casualty rows and popups carry a running time since the medical record was written. There is no injury timestamp in the schema yet, so a scenario load starts every clock together; live casualties pushed over SSE are the ones that diverge.
 - **Air routes against threats** — a helicopter route that crosses a hostile unit's air-defence envelope carries the planner's advisory: clicking it opens a red **INCREASE ALTITUDE** banner naming the threat and the legs, and the MEDEVAC tab marks it under the route. With the planner in `divert` mode the route is drawn bent around the threat and the banner reads **DIVERTED ROUTE** instead.
 - **Picking a plan** — every card in the MEDEVAC tab is one plan. Click it and the map zooms to that vehicle's route and fades the others, as a roster row does for an entity; click it again to see them all. The pick survives a route reload (a replan, *Refresh*, a theme change).
+- **New Entity form** — *Save entity* stays greyed out while a required field is empty or a value is not accepted; pressing it then lists what is missing (*Missing: Name, Category.*) or refused (*Not accepted: Evacuation capacity.*) instead of saving. A vehicle's capacity over its limit (see [Capacity limits](#capacity-limits)) shows *Not accepted capacity (maximum N)* under the field, and the server logs the refusal. Shelters and medical facilities ask for their places and the people already there.
 - **Live feed** — the dot next to the scenario selector reports the SSE stream and the seconds since the last event.
 - **Language and theme** — `EN`/`ES` and `LIGHT`/`DARK`, both remembered in `localStorage`. Theme follows the operating system on a first visit. UI copy lives in `public/js/i18n.js`; nothing is hardcoded in `app.js`.
 
@@ -628,6 +629,25 @@ Fallback:     default
 | `mortar` | heavy, medium, light, unknown |
 | `medical_facility` | medical_role_1/2/3/4, medical_role_2basic, medical_role_2enhanced, medical_facility_multinational |
 | `medevac_unit` | medevac_role_1/2/3/4, medevac_fixedwing, medevac_ambulance, medevac_mechanised, medevac_mortuary |
+
+### Capacity limits
+
+`capacity` (people a vehicle carries per trip) is accepted up to a ceiling per kind of vehicle, in `lib/capacity-limits.js`, which the API, the scenario loader and the form share. The first matching rule wins:
+
+| Vehicle | Maximum | Why |
+|---|---|---|
+| `medevac_unit`, ground or air | 2 | the QUBO assignment optimiser plans one or two litters per platform |
+| `armoured` | 10 | the seats of an armoured personnel carrier |
+| `ugv` | 2 | one or two litters |
+| `helicopter`, or any `mobility: air` | 15 | a Bell 412, the largest utility helicopter in civil emergency fleets |
+| any `mobility: sea` | 12 | a large rescue boat |
+| any other ground vehicle | 22 | a transport minibus |
+
+A value over the limit is refused with HTTP 400 and logged as a warning: `Capacity not accepted. Number 30 larger than maximum accepted 15 for a civil_protection helicopter`. A scenario with one fails to load, naming the entity. `GET /api/entities/meta/capacity-limit?categoria=&mobility=` returns `{max, vehicle}`; with `&capacity=N` it also checks that value and logs a refusal (the form calls it when a capacity is typed in).
+
+### Places and occupancy of shelters and medical facilities
+
+`max_capacity` (places; null reads as no limit) and `initial_occupancy` (people already there when it was added) are columns on `puntos_interes`. `occupancy` is returned with every shelter and medical facility and never stored: `initial_occupancy` plus everyone delivered there, from the `medical_details` rows whose `destination_facility_id` is that facility and whose `evac_stage` is `delivered` (a civilian counts its `headcount`, a casualty one). The popup shows *Occupancy: 34 / 200*. Every scenario facility has both, larger for a higher NATO role, with room to spare (`FACILITY_SIZE_BY_ROLE`, role 1: 50 places, role 2: 100, role 3: 300, role 4: 600); a generated MASCAL never gives a facility fewer places than its casualties.
 
 ### `medical_details` fields
 
