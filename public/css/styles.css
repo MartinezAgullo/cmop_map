@@ -1492,3 +1492,15 @@ body.dark .leaflet-tile-pane {
   border: 1px solid var(--hz);
 }
 .filter-cb--hazard-show { margin-bottom: 8px; }
+
+/* Drawing toolbar tooltips (data-tip, set by hazards.js), hidden while a tool's actions are open */
+.leaflet-pm-toolbar a[data-tip] { position: relative; }
+.leaflet-pm-toolbar a[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+  width: max-content; max-width: 260px; padding: 5px 8px;
+  background: rgba(20, 24, 31, 0.92); color: #fff; border-radius: 4px;
+  font-size: 12px; line-height: 1.35; white-space: normal; text-align: left;
+  pointer-events: none; z-index: 1000;
+}
+.leaflet-pm-toolbar .button-container.active a[data-tip]::after { display: none; }

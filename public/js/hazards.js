@@ -11,9 +11,16 @@
 //
 // Drawing (Leaflet-Geoman, served from public/vendor/geoman): the toolbar draws a
 // polygon or a rectangle, and the dialog saves it as a new zone or as one more area
-// of an existing zone (PostGIS fuses the areas that overlap). Edit mode reshapes a
-// zone and saves it on leaving the mode; removal mode deletes it. Only the zones
-// are editable (Geoman opt-in), never the entity markers or the routes.
+// of an existing zone (PostGIS fuses the areas that overlap). Each separate area of
+// a zone is its own map layer, so edit mode reshapes one area and saves the zone on
+// leaving the mode, and removal mode deletes that area only (the zone goes with its
+// last area). Only the zones are editable (Geoman opt-in), never the entity markers
+// or the routes.
+//
+// Clicks: outside the edit and removal modes a zone's areas are background, so a
+// click on a flood opens the add-entity menu like anywhere else on the map; the
+// event badge is the zone's handle (its popup activates, deactivates or deletes it).
+// The areas take clicks only while one of those two modes is on.
 //
 // Globals used from app.js / i18n.js: map, t, getLang, esc, showMessage.
 // ---------------------------------------------------------------------------
@@ -53,7 +60,7 @@ let _drawnLayer = null;    // the shape waiting in the dialog
 function initHazardDrawing() {
   if (!map.pm) { console.warn('Leaflet-Geoman not loaded: hazard drawing disabled'); return; }
   L.PM.setOptIn(true);     // only layers created with pmIgnore:false are editable
-  map.pm.setLang(getLang() === 'es' ? 'es' : 'en');
+  _setDrawingLang();
   map.pm.addControls({
     position: 'topleft',
     drawPolygon: true, drawRectangle: true,
@@ -63,9 +70,45 @@ function initHazardDrawing() {
   });
   map.pm.setPathOptions({ color: '#E63946', weight: 2, dashArray: '4 4' });
   map.on('pm:create', (e) => _openHazardDialog(e.layer));
+  map.on('pm:globaleditmodetoggled pm:globalremovalmodetoggled', _setAreasClickable);
   map.on('pm:remove', (e) => {
-    if (e.layer._hazardZoneId) deleteHazardZone(e.layer._hazardZoneId);
+    if (e.layer._hazardZoneId) deleteHazardPart(e.layer._hazardZoneId, e.layer._hazardPart);
   });
+  // The browser's own title tooltip shows late; move it to data-tip, which the
+  // stylesheet shows at once. Delegated, so it survives Geoman rebuilding the toolbar.
+  map.getContainer().addEventListener('mouseover', (e) => {
+    const box = e.target.closest('.leaflet-pm-toolbar .button-container[title]');
+    const btn = box && box.querySelector('.leaflet-buttons-control-button');
+    if (btn) { btn.dataset.tip = box.title; box.removeAttribute('title'); }
+  });
+}
+
+/** Geoman's own strings in the app language, with the toolbar buttons saying what they do here. */
+function _setDrawingLang() {
+  const lang = getLang() === 'es' ? 'es' : 'en';
+  map.pm.setLang(`hazard-${lang}`, {
+    buttonTitles: {
+      drawPolyButton: t('hazard.tool.polygon'),
+      drawRectButton: t('hazard.tool.rectangle'),
+      editButton: t('hazard.tool.edit'),
+      deleteButton: t('hazard.tool.remove'),
+    },
+  }, lang);
+}
+
+/** The areas take clicks only while Geoman edits or removes them. */
+function _areasClickable() {
+  return !!map.pm && (map.pm.globalEditModeEnabled() || map.pm.globalRemovalModeEnabled());
+}
+
+/** Toggled in place: redrawing would take the layers out of the mode that was just entered. */
+function _setAreasClickable() {
+  const on = _areasClickable();
+  for (const layer of hazardLayer.getLayers()) {
+    if (layer._hazardZoneId === undefined) continue;
+    layer.options.interactive = on;
+    if (layer._path) layer._path.classList.toggle('leaflet-interactive', on);
+  }
 }
 
 /** True while a Geoman mode is on: map clicks belong to it. */
@@ -124,9 +167,14 @@ async function saveHazardArea(event) {
   if (ok) cancelHazardArea();
 }
 
-async function _saveEditedZone(layer) {
-  await _writeZone(`/api/hazard-zones/${layer._hazardZoneId}`, 'PUT',
-                   { geometry: layer.toGeoJSON().geometry });
+/** Edit mode changed one area: save the zone as all its areas look on the map now. */
+async function _saveEditedZone(id) {
+  const coordinates = hazardLayer.getLayers()
+    .filter(layer => layer._hazardZoneId === id)
+    .sort((a, b) => a._hazardPart - b._hazardPart)
+    .map(layer => layer.toGeoJSON().geometry.coordinates);
+  await _writeZone(`/api/hazard-zones/${id}`, 'PUT',
+                   { geometry: { type: 'MultiPolygon', coordinates } });
 }
 
 async function toggleHazardZone(id) {
@@ -141,6 +189,20 @@ async function deleteHazardZone(id) {
     return;
   }
   await _writeZone(`/api/hazard-zones/${id}`, 'DELETE');
+}
+
+/** Delete one separate area of a zone; the last one takes the zone with it. */
+async function deleteHazardPart(id, part) {
+  const zone = hazardZones.find(z => z.id === id);
+  if (!zone) { renderHazardZones(); return; }
+  const parts = zone.geometry.coordinates;
+  if (parts.length <= 1) { await deleteHazardZone(id); return; }
+  if (!confirm(t('hazard.confirmDeletePart', { name: zone.name, left: parts.length - 1 }))) {
+    renderHazardZones();                   // removal mode already took it off the map
+    return;
+  }
+  await _writeZone(`/api/hazard-zones/${id}`, 'PUT', { geometry: {
+    type: 'MultiPolygon', coordinates: parts.filter((_, i) => i !== part) } });
 }
 
 /** Write through the API; the SSE event that follows redraws the layer. */
@@ -202,23 +264,27 @@ function renderHazardZones() {
     if (picked.length && !picked.includes(zone.hazard_type)) continue;
     const type  = _hazardType(zone.hazard_type);
     const main  = type ? type.colors[0] : '#888888';
-    const popup = _hazardPopup(zone, type);
+    const style = {
+      color:       main,
+      weight:      2,
+      opacity:     zone.active ? 0.9 : 0.5,
+      dashArray:   zone.active ? null : '6 6',   // inactive: on record, no longer avoided
+      fillColor:   `url(#${HAZARD_PATTERN_PREFIX}${zone.hazard_type})`,
+      fillOpacity: zone.active ? 0.45 : 0.15,
+    };
 
-    L.geoJSON(zone.geometry, {
-      pmIgnore: false,                          // editable with the Geoman toolbar
-      onEachFeature: (_feature, layer) => {
-        layer._hazardZoneId = zone.id;
-        layer.on('pm:update', () => _saveEditedZone(layer));
-      },
-      style: {
-        color:       main,
-        weight:      2,
-        opacity:     zone.active ? 0.9 : 0.5,
-        dashArray:   zone.active ? null : '6 6',   // inactive: on record, no longer avoided
-        fillColor:   `url(#${HAZARD_PATTERN_PREFIX}${zone.hazard_type})`,
-        fillOpacity: zone.active ? 0.45 : 0.15,
-      },
-    }).bindPopup(popup, { className: 'custom-popup' }).addTo(hazardLayer);
+    // One layer per separate area, so Geoman edits or removes one area at a time.
+    zone.geometry.coordinates.forEach((rings, part) => {
+      const layer = L.polygon(rings.map(ring => ring.map(([lng, lat]) => [lat, lng])), {
+        ...style,
+        pmIgnore: false,                        // editable with the Geoman toolbar
+        interactive: _areasClickable(),         // otherwise a click adds an entity here
+      });
+      layer._hazardZoneId = zone.id;
+      layer._hazardPart   = part;
+      layer.on('pm:update', () => _saveEditedZone(zone.id));
+      layer.addTo(hazardLayer);
+    });
 
     if (zone.icon_point) {
       L.marker([zone.icon_point.lat, zone.icon_point.lng], {
@@ -230,14 +296,14 @@ function renderHazardZones() {
         }),
         keyboard: false,
         pmIgnore: true,
-      }).bindPopup(popup, { className: 'custom-popup' }).addTo(hazardLayer);
+      }).bindPopup(_hazardPopup(zone, type), { className: 'custom-popup' }).addTo(hazardLayer);
     }
   }
 }
 
 /** Labels follow the language switch: app.js calls this from _rerenderDynamicStrings. */
 function rerenderHazardStrings() {
-  if (map && map.pm) map.pm.setLang(getLang() === 'es' ? 'es' : 'en');
+  if (map && map.pm) _setDrawingLang();
   _renderHazardTypeFilters();
   renderHazardZones();
 }
@@ -271,7 +337,7 @@ function _hazardPopup(zone, type) {
       </div>
       <div class="popup-actions">
         <button type="button" class="btn-danger" onclick="toggleHazardZone(${zone.id})">${t(zone.active ? 'hazard.deactivate' : 'hazard.activate')}</button>
-        <button type="button" class="btn-danger" onclick="deleteHazardZone(${zone.id})">${t('action.delete')}</button>
+        <button type="button" class="btn-danger" onclick="deleteHazardZone(${zone.id})">${t(parts > 1 ? 'hazard.deleteZone' : 'action.delete')}</button>
       </div>
     </div>`;
 }
