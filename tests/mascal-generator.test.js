@@ -101,3 +101,11 @@ test('apportion returns exactly n draws in the weighted proportions', () => {
   assert.equal(draws.length, 10);
   assert.deepEqual([...draws].sort().join(''), 'aaaaabbbcc');
 });
+
+test('every generated name follows the agents\' convention, with no status suffix', () => {
+  const s = generateMascalScenario({ preset: 'paris', n_casualties: 12, n_evacuators: 6, n_medical_facilities: 5, seed: 42 });
+  for (const e of s.entities) {
+    assert.match(e.nombre, /^Fra(Cas\d+|Medevac\d+|MedevacHelo\d+|MedRole\d[A-Z])$/);
+    assert.equal(e.elemento_identificado, e.nombre);
+  }
+});

@@ -1154,6 +1154,10 @@ function renderList() {
       : `<span class="ent-name">${esc(e.nombre)}</span>`;
 
     let metaText = e.categoria;
+    // WIA or KIA on the row: names no longer carry it ("FraCas5", not "FRA-CAS-5 (KIA)").
+    if (isCasualty && e.medical?.casualty_status && e.medical.casualty_status !== 'UNKNOWN') {
+      metaText += ` · ${e.medical.casualty_status}`;
+    }
     if (e.tipo_elemento && e.tipo_elemento !== e.categoria) metaText += ` · ${e.tipo_elemento}`;
     if (e.mobility)      metaText += ` · ${e.mobility}`;
     metaText += ` · ${t('alliance.' + (e.alliance || 'unknown'))}`;
@@ -1198,9 +1202,9 @@ function renderList() {
 
 /**
  * True when the entity name adds nothing to the callsign already on the row —
- * "RUS-CAS-2" vs "RUS-CAS-2 (WIA)", or "RUS-ART-1" vs "RUS ART-1".
+ * "RusCas2" vs "RusCas2", or an older name such as "RUS-ART-1" vs "RUS ART-1".
  */
-/** A name with only its letters and digits, so "DEU MEDEVAC-HEL-3" and "deu-medevac-hel-3" meet. */
+/** A name with only its letters and digits, so "GerMedevacHelo3" and "ger-medevac-helo-3" meet. */
 function _flatName(s) {
   return (s || '').normalize('NFD').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
@@ -2220,8 +2224,12 @@ function _airThreatHTML(route) {
   return '';
 }
 
-/** "ITA-CAS-5 (WIA)" as "ITA-CAS-5 (WIA · T1)", the tag in its triage colour. */
+/** "ItaCas5" as "ItaCas5 (T1)", the tag in its triage colour; an older "ITA-CAS-5 (WIA)"
+ * as "ITA-CAS-5 (WIA · T1)". A civilian group shows its people instead: "SpaCiv2 (15 of 25)". */
 function _casualtyWithTriageHTML(route) {
+  if (route.kind === 'civilian') {
+    return `${esc(route.casualty_name || '?')} (${esc(t('assign.people', { n: `${route.people} / ${route.headcount}` }))})`;
+  }
   const meta = TRIAGE_META[_routeTriage(route)] || TRIAGE_META.UNKNOWN;
   const tag  = `<span style="color:${meta.ink}">${meta.tag}</span>`;
   const name = route.casualty_name || '?';

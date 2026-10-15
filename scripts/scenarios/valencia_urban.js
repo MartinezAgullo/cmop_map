@@ -31,55 +31,55 @@ const entities = [
   // ---------------------------------------------------------------
   // Friendly infantry — Spain
   // ---------------------------------------------------------------
-  { nombre: 'ESP INF-A',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-A',    activo: true, tipo_elemento: 'standard', observaciones: 'Urban patrol',           altitud: null, lng: -0.3768, lat: 39.4745 },
-  { nombre: 'ESP INF-B',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-B',    activo: true, tipo_elemento: 'standard', observaciones: 'Holding intersection',   altitud: null, lng: -0.3850, lat: 39.4632 },
-  { nombre: 'ESP INF-C',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-C',    activo: true, tipo_elemento: 'standard', observaciones: 'Near park area',         altitud: null, lng: -0.3650, lat: 39.4841 },
+  { nombre: 'SpaInfA',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaInfA',    activo: true, tipo_elemento: 'standard', observaciones: 'Urban patrol',           altitud: null, lng: -0.3768, lat: 39.4745 },
+  { nombre: 'SpaInfB',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaInfB',    activo: true, tipo_elemento: 'standard', observaciones: 'Holding intersection',   altitud: null, lng: -0.3850, lat: 39.4632 },
+  { nombre: 'SpaInfC',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaInfC',    activo: true, tipo_elemento: 'standard', observaciones: 'Near park area',         altitud: null, lng: -0.3650, lat: 39.4841 },
 
   // ---------------------------------------------------------------
   // Friendly infantry — France
   // ---------------------------------------------------------------
-  { nombre: 'FRA INF-1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'France',  alliance: 'friendly', elemento_identificado: 'FRA-INF-1',    activo: true, tipo_elemento: 'standard', observaciones: 'Supporting ESP',          altitud: null, lng: -0.3530, lat: 39.4525 },
-  { nombre: 'FRA INF-2',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'France',  alliance: 'friendly', elemento_identificado: 'FRA-INF-2',    activo: true, tipo_elemento: 'standard', observaciones: 'Roadblock',              altitud: null, lng: -0.3405, lat: 39.4598 },
+  { nombre: 'FraInf1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'France',  alliance: 'friendly', elemento_identificado: 'FraInf1',    activo: true, tipo_elemento: 'standard', observaciones: 'Supporting ESP',          altitud: null, lng: -0.3530, lat: 39.4525 },
+  { nombre: 'FraInf2',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'France',  alliance: 'friendly', elemento_identificado: 'FraInf2',    activo: true, tipo_elemento: 'standard', observaciones: 'Roadblock',              altitud: null, lng: -0.3405, lat: 39.4598 },
 
   // ---------------------------------------------------------------
   // Friendly infantry — Germany / Portugal
   // ---------------------------------------------------------------
-  { nombre: 'DEU INF-1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-INF-1',    activo: true, tipo_elemento: 'standard', observaciones: 'QR force',               altitud: null, lng: -0.4002, lat: 39.4820 },
-  { nombre: 'PRT INF-1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Portugal',alliance: 'friendly', elemento_identificado: 'PRT-INF-1',    activo: true, tipo_elemento: 'standard', observaciones: 'Rear security',          altitud: null, lng: -0.3925, lat: 39.4682 },
+  { nombre: 'GerInf1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerInf1',    activo: true, tipo_elemento: 'standard', observaciones: 'QR force',               altitud: null, lng: -0.4002, lat: 39.4820 },
+  { nombre: 'PorInf1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',  country: 'Portugal',alliance: 'friendly', elemento_identificado: 'PorInf1',    activo: true, tipo_elemento: 'standard', observaciones: 'Rear security',          altitud: null, lng: -0.3925, lat: 39.4682 },
 
   // ---------------------------------------------------------------
   // Hostile infantry
   // ---------------------------------------------------------------
-  { nombre: 'H-INF-1',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-1',      activo: true, tipo_elemento: 'standard', observaciones: 'Skirmishing',            altitud: null, lng: -0.3609, lat: 39.4705 },
-  { nombre: 'H-INF-2',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-2',      activo: true, tipo_elemento: 'standard', observaciones: 'Advancing',              altitud: null, lng: -0.3452, lat: 39.4769 },
-  { nombre: 'H-INF-3',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-3',      activo: true, tipo_elemento: 'standard', observaciones: 'Occupying block',        altitud: null, lng: -0.3513, lat: 39.4881 },
-  { nombre: 'H-INF-4',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-4',      activo: true, tipo_elemento: 'standard', observaciones: 'Ambush expected',        altitud: null, lng: -0.3687, lat: 39.4611 },
-  { nombre: 'H-INF-5',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-5',      activo: true, tipo_elemento: 'standard', observaciones: 'Sniper activity',        altitud: null, lng: -0.3811, lat: 39.4552 },
-  { nombre: 'H-INF-6',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-6',      activo: true, tipo_elemento: 'standard', observaciones: 'Harassing fire',        altitud: null, lng: -0.3440, lat: 39.4479 },
-  { nombre: 'H-INF-7',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-7',      activo: true, tipo_elemento: 'standard', observaciones: 'Fragmented contact',    altitud: null, lng: -0.3895, lat: 39.4786 },
+  { nombre: 'HosInf1',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosInf1',      activo: true, tipo_elemento: 'standard', observaciones: 'Skirmishing',            altitud: null, lng: -0.3609, lat: 39.4705 },
+  { nombre: 'HosInf2',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosInf2',      activo: true, tipo_elemento: 'standard', observaciones: 'Advancing',              altitud: null, lng: -0.3452, lat: 39.4769 },
+  { nombre: 'HosInf3',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosInf3',      activo: true, tipo_elemento: 'standard', observaciones: 'Occupying block',        altitud: null, lng: -0.3513, lat: 39.4881 },
+  { nombre: 'HosInf4',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosInf4',      activo: true, tipo_elemento: 'standard', observaciones: 'Ambush expected',        altitud: null, lng: -0.3687, lat: 39.4611 },
+  { nombre: 'HosInf5',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosInf5',      activo: true, tipo_elemento: 'standard', observaciones: 'Sniper activity',        altitud: null, lng: -0.3811, lat: 39.4552 },
+  { nombre: 'HosInf6',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosInf6',      activo: true, tipo_elemento: 'standard', observaciones: 'Harassing fire',        altitud: null, lng: -0.3440, lat: 39.4479 },
+  { nombre: 'HosInf7',    descripcion: 'Hostile infantry',        categoria: 'infantry',  country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosInf7',      activo: true, tipo_elemento: 'standard', observaciones: 'Fragmented contact',    altitud: null, lng: -0.3895, lat: 39.4786 },
 
   // ---------------------------------------------------------------
   // Hostile tanks
   // ---------------------------------------------------------------
-  { nombre: 'H-TANK-1',   descripcion: 'Hostile MBT',            categoria: 'armoured',      country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-TNK-1',      activo: true, tipo_elemento: 'MBT', observaciones: 'Covered position',       altitud: null, lng: -0.3700, lat: 39.4930 },
-  { nombre: 'H-TANK-2',   descripcion: 'Hostile MBT',            categoria: 'armoured',      country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-TNK-2',      activo: true, tipo_elemento: 'MBT', observaciones: 'Hull-down',              altitud: null, lng: -0.4040, lat: 39.4665 },
-  { nombre: 'H-TANK-3',   descripcion: 'Hostile MBT',            categoria: 'armoured',      country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-TNK-3',      activo: true, tipo_elemento: 'MBT', observaciones: 'Overwatch',             altitud: null, lng: -0.3960, lat: 39.4505 },
+  { nombre: 'HosTank1',   descripcion: 'Hostile MBT',            categoria: 'armoured',      country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosTank1',      activo: true, tipo_elemento: 'MBT', observaciones: 'Covered position',       altitud: null, lng: -0.3700, lat: 39.4930 },
+  { nombre: 'HosTank2',   descripcion: 'Hostile MBT',            categoria: 'armoured',      country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosTank2',      activo: true, tipo_elemento: 'MBT', observaciones: 'Hull-down',              altitud: null, lng: -0.4040, lat: 39.4665 },
+  { nombre: 'HosTank3',   descripcion: 'Hostile MBT',            categoria: 'armoured',      country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosTank3',      activo: true, tipo_elemento: 'MBT', observaciones: 'Overwatch',             altitud: null, lng: -0.3960, lat: 39.4505 },
 
   // ---------------------------------------------------------------
   // Naval (Valencia coast)
   // ---------------------------------------------------------------
-  { nombre: 'ESP SHIP-1', descripcion: 'Spanish surface combatant', categoria: 'ship',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-SHIP-1',   activo: true, tipo_elemento: 'Frigate', observaciones: 'Patrolling Valencia coast', altitud: null, lng: -0.2700, lat: 39.4500 },
-  { nombre: 'ESP SUB-1',  descripcion: 'Spanish SSK',             categoria: 'submarine', country: 'Spain',  alliance: 'friendly', elemento_identificado: 'ESP-SUB-1',    activo: true, tipo_elemento: 'SSK',observaciones: 'Submerged patrol',      altitud: null, lng: -0.2200, lat: 39.4000 },
-  { nombre: 'H-SHIP-1',   descripcion: 'Unknown surface contact', categoria: 'ship',    country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-SHIP-1',     activo: true, tipo_elemento: 'Corvette', observaciones: 'Shadowing traffic',      altitud: null, lng: -0.2200, lat: 39.5500 },
+  { nombre: 'SpaShip1', descripcion: 'Spanish surface combatant', categoria: 'ship',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaShip1',   activo: true, tipo_elemento: 'Frigate', observaciones: 'Patrolling Valencia coast', altitud: null, lng: -0.2700, lat: 39.4500 },
+  { nombre: 'SpaSub1',  descripcion: 'Spanish SSK',             categoria: 'submarine', country: 'Spain',  alliance: 'friendly', elemento_identificado: 'SpaSub1',    activo: true, tipo_elemento: 'SSK',observaciones: 'Submerged patrol',      altitud: null, lng: -0.2200, lat: 39.4000 },
+  { nombre: 'HosShip1',   descripcion: 'Unknown surface contact', categoria: 'ship',    country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosShip1',     activo: true, tipo_elemento: 'Corvette', observaciones: 'Shadowing traffic',      altitud: null, lng: -0.2200, lat: 39.5500 },
 
   // ---------------------------------------------------------------
   // Fixed assets & air
   // ---------------------------------------------------------------
-  { nombre: 'Manises AB',  descripcion: 'Air base (ESP)',          categoria: 'base',     country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-BASE-ZAZ', activo: true, tipo_elemento: 'Air Base', observaciones: 'Logistics hub',          altitud: null, lng: -0.4760, lat: 39.4910 },
-  { nombre: 'ESP CAP-1',   descripcion: 'Fighter CAP on station', categoria: 'fighter',  country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-CAP-1',    activo: true, tipo_elemento: 'CAP', observaciones: 'Angels 26',              altitud: 8000, lng: -0.3000, lat: 39.5200 },
-  { nombre: 'FRA UAV-ISR', descripcion: 'High-altitude ISR UAV',  categoria: 'uav',      country: 'France',  alliance: 'friendly', elemento_identificado: 'FRA-UAV-1',    activo: true, tipo_elemento: 'ISR', observaciones: 'Wide-area scan',        altitud: 1200, lng: -0.3300, lat: 39.4700 },
-  { nombre: 'H-ARTY-1',    descripcion: 'Hostile artillery battery', categoria: 'artillery', country: 'Unknown', alliance: 'hostile', elemento_identificado: 'H-ARTY-1',  activo: true, tipo_elemento: '155mm', observaciones: 'Counter-battery risk',   altitud: null, lng: -0.2700, lat: 39.6800 },
-  { nombre: 'DEU HEL-1',   descripcion: 'Utility helicopter',     categoria: 'helicopter', country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-HEL-1', activo: true, tipo_elemento: 'Utility', observaciones: 'MEDEVAC on call',       altitud: 500,  lng: -0.3600, lat: 39.4900 },
+  { nombre: 'Manises AB',  descripcion: 'Air base (ESP)',          categoria: 'base',     country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaBaseManises', activo: true, tipo_elemento: 'Air Base', observaciones: 'Logistics hub',          altitud: null, lng: -0.4760, lat: 39.4910 },
+  { nombre: 'SpaFighter1',   descripcion: 'Fighter CAP on station', categoria: 'fighter',  country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaFighter1',    activo: true, tipo_elemento: 'CAP', observaciones: 'Angels 26',              altitud: 8000, lng: -0.3000, lat: 39.5200 },
+  { nombre: 'FraUav1', descripcion: 'High-altitude ISR UAV',  categoria: 'uav',      country: 'France',  alliance: 'friendly', elemento_identificado: 'FraUav1',    activo: true, tipo_elemento: 'ISR', observaciones: 'Wide-area scan',        altitud: 1200, lng: -0.3300, lat: 39.4700 },
+  { nombre: 'HosArt1',    descripcion: 'Hostile artillery battery', categoria: 'artillery', country: 'Unknown', alliance: 'hostile', elemento_identificado: 'HosArt1',  activo: true, tipo_elemento: '155mm', observaciones: 'Counter-battery risk',   altitud: null, lng: -0.2700, lat: 39.6800 },
+  { nombre: 'GerHelo1',   descripcion: 'Utility helicopter',     categoria: 'helicopter', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerHelo1', activo: true, tipo_elemento: 'Utility', observaciones: 'MEDEVAC on call',       altitud: 500,  lng: -0.3600, lat: 39.4900 },
 ];
 
 // No casualties in this scenario — empty array, not undefined.
