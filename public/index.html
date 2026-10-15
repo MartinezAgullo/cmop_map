@@ -7,14 +7,17 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%231C201C'/><path d='M16 4c-5 0-9 4-9 9 0 7 9 15 9 15s9-8 9-15c0-5-4-9-9-9z' fill='%23B4C08A'/><circle cx='16' cy='13' r='3.5' fill='%231C201C'/></svg>">
 
   <script src="/js/client-log.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/vendor/fonts/fonts.css">
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css"/>
+  <!-- Leaflet-Geoman free 2.17.0, for drawing hazard zones -->
+  <link rel="stylesheet" href="/vendor/geoman/leaflet-geoman.css"/>
   <link rel="stylesheet" href="/css/styles.css"/>
 </head>
 <body>
+  <!-- Hatch patterns for hazard zones, filled in by hazards.js. Kept out of any panel
+       and not display:none: an SVG that is not rendered does not paint its patterns. -->
+  <svg id="hazardPatterns" width="0" height="0" style="position:absolute" aria-hidden="true"><defs></defs></svg>
   <div class="app-container">
     <aside class="sidebar">
 
@@ -126,6 +129,13 @@
               <label class="filter-cb filter-cb--medical"><input type="checkbox" value="medevac_unit" /><span data-i18n="cat.medevac_unit">MEDEVAC</span></label>
               <label class="filter-cb filter-cb--medical"><input type="checkbox" id="casevacFilter" /><span data-i18n="cat.casevac">CASEVAC eligible</span></label>
 
+              <!-- Civil emergencies -->
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="civilian" /><span data-i18n="cat.civilian">Civilian</span></label>
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="shelter" /><span data-i18n="cat.shelter">Shelter</span></label>
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="fire_fighting" /><span data-i18n="cat.fire_fighting">Fire and rescue</span></label>
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="civil_protection" /><span data-i18n="cat.civil_protection">Civil protection</span></label>
+              <label class="filter-cb filter-cb--civil"><input type="checkbox" value="law_enforcement" /><span data-i18n="cat.law_enforcement">Police</span></label>
+
               <label class="filter-cb"><input type="checkbox" value="infantry" /><span data-i18n="cat.infantry">Infantry</span></label>
               <label class="filter-cb"><input type="checkbox" value="armoured" /><span data-i18n="cat.armoured">Armoured</span></label>
               <label class="filter-cb"><input type="checkbox" value="artillery" /><span data-i18n="cat.artillery">Artillery</span></label>
@@ -209,6 +219,16 @@
               <label class="filter-cb"><input type="checkbox" value="unknown" /><span class="alliance-dot" style="--dot-color:var(--a-unknown)"></span><span data-i18n="alliance.unknown">Unknown</span></label>
             </div>
           </div>
+
+          <div class="fgroup">
+            <div class="fgroup-head">
+              <h3 data-i18n="filter.hazards">Hazard zones</h3>
+              <button type="button" class="btn-clear" id="clearHazardTypes" data-i18n="action.clear">Clear</button>
+            </div>
+            <label class="filter-cb filter-cb--hazard-show"><input type="checkbox" id="hazardShow" checked /><span data-i18n="filter.hazardShow">Show on map</span></label>
+            <!-- One checkbox per hazard type, from GET /api/hazard-zones/meta/types; none ticked = all -->
+            <div class="checkbox-grid" id="hazardTypeCheckboxes"></div>
+          </div>
         </section>
 
         <!-- ---------- MEDEVAC ---------- -->
@@ -273,6 +293,36 @@
   </div>
 
   <!-- ================================================================
+       Modal — save a drawn hazard area (hazards.js)
+       ================================================================ -->
+  <div class="form-modal" id="hazardModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 data-i18n="hazard.dialogTitle">Hazard area</h2>
+        <button class="close-btn" onclick="cancelHazardArea()" aria-label="Close">&times;</button>
+      </div>
+      <form id="hazardForm" onsubmit="saveHazardArea(event)">
+        <div class="form-group">
+          <label for="hazardTarget" data-i18n="hazard.target">Add to</label>
+          <select id="hazardTarget"></select>
+        </div>
+        <div class="form-group" id="hazardNewGroup">
+          <label for="hazardName" data-i18n="hazard.name">Event name</label>
+          <input type="text" id="hazardName" maxlength="100" placeholder="Flood DANA" />
+          <label for="hazardType" data-i18n="hazard.type">Type</label>
+          <select id="hazardType"></select>
+          <label for="hazardDesc" data-i18n="form.description">Description</label>
+          <input type="text" id="hazardDesc" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" data-i18n="form.save">Save</button>
+          <button type="button" class="btn btn-secondary" onclick="cancelHazardArea()" data-i18n="action.cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================
        Modal — create entity
        ================================================================ -->
   <div class="form-modal" id="formModal">
@@ -282,7 +332,7 @@
         <button class="close-btn" onclick="cerrarFormularioNuevoPunto()" aria-label="Close">&times;</button>
       </div>
 
-      <form id="nuevoPuntoForm">
+      <form id="nuevoPuntoForm" novalidate>
         <div class="form-group">
           <label for="nombre" data-i18n="form.name">Name *</label>
           <input type="text" id="nombre" name="nombre" required />
@@ -332,6 +382,14 @@
               <option value="casualty"></option>
             </optgroup>
 
+            <optgroup label="Civil emergencies" data-i18n-label="form.grpCivil">
+              <option value="civilian"></option>
+              <option value="shelter"></option>
+              <option value="fire_fighting"></option>
+              <option value="civil_protection"></option>
+              <option value="law_enforcement"></option>
+            </optgroup>
+
             <option value="default"></option>
           </select>
         </div>
@@ -362,8 +420,28 @@
 
         <div class="form-group" id="capacityGroup" style="display:none;">
           <label for="capacity" data-i18n="form.capacity">Evacuation capacity</label>
-          <input type="number" id="capacity" name="capacity" min="1" max="20" step="1"
+          <input type="number" id="capacity" name="capacity" min="1" step="1"
                  data-i18n-ph="form.capacityHint" placeholder="Casualties per planning cycle" />
+          <p class="field-error" id="capacityError" hidden></p>
+        </div>
+
+        <div class="form-group" id="headcountGroup" style="display:none;">
+          <label for="headcount" data-i18n="form.headcount">People at this location</label>
+          <input type="number" id="headcount" name="headcount" min="1" max="999" step="1" value="1" />
+        </div>
+
+        <div class="form-group" id="facilityCapacityGroup" style="display:none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="maxCapacity" data-i18n="form.maxCapacity">Places *</label>
+              <input type="number" id="maxCapacity" name="maxCapacity" min="1" step="1" />
+            </div>
+            <div class="form-group">
+              <label for="occupancy" data-i18n="form.occupancy">People already there</label>
+              <input type="number" id="occupancy" name="occupancy" min="0" step="1" value="0" />
+            </div>
+          </div>
+          <p class="field-error" id="occupancyError" hidden data-i18n="form.occupancyAbove">More people than places</p>
         </div>
 
         <div id="casualtyMedicalGroup" class="form-section" style="display:none;">
@@ -427,16 +505,20 @@
           </div>
         </div>
 
+        <p class="form-problems" id="formProblems" hidden></p>
+
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary" data-i18n="form.save">Save entity</button>
+          <button type="submit" id="saveEntityBtn" class="btn btn-primary" data-i18n="form.save">Save entity</button>
           <button type="button" class="btn btn-secondary" onclick="cerrarFormularioNuevoPunto()" data-i18n="action.cancel">Cancel</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script src="/vendor/geoman/leaflet-geoman.min.js"></script>
   <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/hazards.js"></script>
 </body>
 </html>

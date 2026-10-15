@@ -13,10 +13,12 @@ CMOP (Common Medical Operational Picture) map service. Geospatial layer for mili
 The panel is a map legend, not a dashboard: colour is treated as a data type, so the chrome stays graphite and the only saturated pixels on screen belong to triage, alliance and route colours.
 
 - **Triage ladder** — a proportional bar over a six-column count scale (T1 / T2 / T3 / T4 / KIA / unknown). It is the census, the alarm and the triage filter in one object: click a band and both the roster and the map narrow to it. The same colours reappear as the left edge of every roster row and in the map legend, so one colour always means one thing.
-- **Three tabs** — Roster, Filters and MEDEVAC. The roster gets every pixel below the ladder and is sorted by clinical urgency: casualties first, down the triage scale, then units by name.
+- **Three tabs** — Roster, Filters and MEDEVAC. The roster gets every pixel below the ladder and is sorted by clinical urgency: casualties first, down the triage scale, then civilian groups still to evacuate, then units by name. A civilian row shows its people and how far the evacuation has got (*waiting*, *in transit*, *at the shelter*).
+- **Civilian popup** — a civilian group's popup shows its people, its stage, its destination shelter and, from the planner, each vehicle sent for it with the people it carries and its trips. A vehicle carrying civilians shows *8 people* where a casualty shows its triage.
 - **Elapsed clocks** — casualty rows and popups carry a running time since the medical record was written. There is no injury timestamp in the schema yet, so a scenario load starts every clock together; live casualties pushed over SSE are the ones that diverge.
 - **Air routes against threats** — a helicopter route that crosses a hostile unit's air-defence envelope carries the planner's advisory: clicking it opens a red **INCREASE ALTITUDE** banner naming the threat and the legs, and the MEDEVAC tab marks it under the route. With the planner in `divert` mode the route is drawn bent around the threat and the banner reads **DIVERTED ROUTE** instead.
 - **Picking a plan** — every card in the MEDEVAC tab is one plan. Click it and the map zooms to that vehicle's route and fades the others, as a roster row does for an entity; click it again to see them all. The pick survives a route reload (a replan, *Refresh*, a theme change).
+- **New Entity form** — *Save entity* stays greyed out while a required field is empty or a value is not accepted; pressing it then lists what is missing (*Missing: Name, Category.*) or refused (*Not accepted: Evacuation capacity.*) instead of saving. A vehicle's capacity over its limit (see [Capacity limits](#capacity-limits)) shows *Not accepted capacity (maximum N)* under the field, and the server logs the refusal. Shelters and medical facilities ask for their places and the people there now.
 - **Live feed** — the dot next to the scenario selector reports the SSE stream and the seconds since the last event.
 - **Language and theme** — `EN`/`ES` and `LIGHT`/`DARK`, both remembered in `localStorage`. Theme follows the operating system on a first visit. UI copy lives in `public/js/i18n.js`; nothing is hardcoded in `app.js`.
 
@@ -36,13 +38,17 @@ cmop_map/
 │   ├── mascal-generator.js      # Pure, seeded random MASCAL scenario generator
 │   ├── scenario-files.js        # Scenario file paths and name validation
 │   ├── telemetry.js             # OpenTelemetry: traces and logs over OTLP, started first by server.js
-│   └── scenario-loader.js       # Replaces the DB contents with an in-memory scenario, in one transaction
+│   ├── scenario-loader.js       # Replaces the DB contents with an in-memory scenario, in one transaction
+│   ├── hazard-types.js          # Hazard zone types, labels and colours: the one source for DB, API and map
+│   └── hazard-zone-input.js     # Validates hazard zone bodies and GeoJSON (pure)
 ├── models/
-│   └── entity.js                # All queries: puntos_interes + medical_details (LEFT JOIN)
+│   ├── entity.js                # All queries: puntos_interes + medical_details (LEFT JOIN)
+│   └── hazard-zone.js           # All queries on hazard_zones
 ├── routes/
 │   ├── entities.js              # CRUD for entities (/api/entities) — broadcasts SSE on POST, PUT, DELETE
 │   ├── medical.js               # Medical-specific ops (/api/medical)
 │   ├── scenarios.js             # List & load scenarios (/api/scenarios)
+│   ├── hazard-zones.js          # CRUD for hazard zones (/api/hazard-zones) — broadcasts SSE on writes
 │   └── schema.js                # Schema introspection (/api/schema) — for MCP servers
 ├── scripts/
 │   ├── init-db.js               # Creates schema (enums, tables, indexes, triggers). No seed.
@@ -51,6 +57,7 @@ cmop_map/
 │   └── scenarios/
 │       ├── valencia_urban.js    # Military-only baseline (no casualties)
 │       ├── valencia_medevac.js  # Urban + 3 casualties + medical facilities
+│       ├── valencia_dana.js     # DANA flood in l'Horta Sud: hazard zones, civilians, shelters, civil emergency vehicles
 │       ├── mariupol_siege.js    # RUS vs UKR urban combat with MEDEVAC
 │       └── paris_sud_medevac.js # Multinational exercise (ESP/FRA/DEU/ITA)
 ├── public/
@@ -59,8 +66,10 @@ cmop_map/
 │   │   └── README.md            # Icon resolution algorithm docs
 │   ├── index.html
 │   ├── js/i18n.js               # UI strings (en/es) + t() / applyI18n() — no copy lives in app.js
-│   └── js/app.js                # Frontend: scenario selector, map, icon resolution, triage ladder,
-│                                #           medical popups, SSE client, simulation controls
+│   ├── js/app.js                # Frontend: scenario selector, map, icon resolution, triage ladder,
+│   │                            #           medical popups, SSE client, simulation controls
+│   └── js/hazards.js            # Hazard zone layer: hatching, event badge, show/hide and type filter,
+│                                #           drawing and editing with Leaflet-Geoman
 ├── docker-compose.yml
 ├── server.js                    # Express entry point. Mounts routes, SSE, planner proxy.
 ├── package.json
@@ -83,7 +92,7 @@ All entity mutations are pushed to connected browsers without page refresh via *
 - **`entity.js`** — single `baseSelect()` with a LEFT JOIN to `medical_details`. Every read endpoint returns `medical: {...} | null` transparently. No extra queries.
 - **`medical_details`** — 1-to-1 table (FK = PK). Only exists for casualty entities. All fields nullable; defaults to `UNKNOWN`.
 - **`tipo_elemento`** — Used for subtypes within categories (e.g., `infantry` + `tipo_elemento: 'mechanised'` → icon `infantry_mechanised_{country}.svg`). Medical facilities and MEDEVAC units use this for Role 1/2/3/4.
-- **Scenarios** — data lives in `scripts/scenarios/*.js`. Each exports `{ meta, entities, medicalDetails }`. The loader resolves `elemento_identificado` → FK automatically. Adding a new scenario = one new file, zero schema changes.
+- **Scenarios** — data lives in `scripts/scenarios/*.js`. Each exports `{ meta, entities, medicalDetails }`. The loader resolves `elemento_identificado` → FK automatically. Adding a new scenario = one new file, zero schema changes. Entities are named in the agents' convention, `<Country><Type><Number>` in CamelCase with a three-letter English country (`FraCas5`, `SpaMedevac1`, `GerTankPl1`, `HosInf1` for a hostile of unknown country), `elemento_identificado` equal to `nombre`; a real place keeps its display name and only its id follows it ("Hospital La Fe", `SpaHospLaFe`). No `(WIA)` in a name: the icon, the popup and the roster show the status.
 - **Random MASCAL scenarios** — `lib/mascal-generator.js` scatters `n_casualties`, `n_evacuators` and `n_medical_facilities` within a few kilometres of a preset city (Paris, Madrid, Valencia, London, Berlin, Rome, Brussels) or a custom point. See [Random MASCAL scenarios](#random-mascal-scenarios).
 - **Telemetry** — `lib/telemetry.js`, the first thing `server.js` runs, exports traces and every log line over OTLP to the OTel Collector of latacc-medevac (`docker-compose.observability.yml`, Jaeger and Loki behind it, Grafana on `:3001`). API requests continue the caller's `traceparent`, and the hooks to the planner and `pfc_agent` carry it, so a casualty added here and the planning it starts are one trace. A line written inside a trace ends with `(trace 4bf92f35)` on the terminal; on `/logs` the id filters the page to that trace and ↗ opens it in Jaeger. Static files, SSE streams, `/api/logs/*`, `/health` and the dependency probes are not traced. A Collector that is down costs only dropped telemetry. `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4317`), `OTEL_SDK_DISABLED=true` to turn it off.
 - **Errors** — every route answers a failed database call through `sendError(res, log, err, 'Failed to …')` from `lib/db-error.js` instead of its own `catch` body. PostgreSQL's error code decides the status (see the API reference); the valid values of an enum are read from the database itself (`enum_range`) and cached, so they cannot drift from `init-db.js`. The agents read `message`, so the reason there is what lets an LLM correct its own call.
@@ -254,7 +263,7 @@ Get all entities.
   "data": [
     {
       "id": 1,
-      "nombre": "ESP INF-A",
+      "nombre": "SpaInfA",
       "categoria": "infantry",
       "country": "Spain",
       "alliance": "friendly",
@@ -339,7 +348,7 @@ Partial update. Can include `medical` object.
 }
 ```
 
-A PUT that carries only `latitud`/`longitud` does not notify the planner about a casualty: the movement simulation sends one per second while a casualty is carried. Any other change to a casualty does.
+A PUT that carries only `latitud`/`longitud` does not notify the planner about a casualty: the movement simulation sends one per second while a casualty is carried. Any other change to a casualty does. A civilian group works the same way: creating one, or changing anything but its position, posts `{id, name, lat, lng, headcount}` to `POST {MEDEVAC_PLANNER_URL}/civilians/notify`, and the planner gives it a shelter and vehicles in a debounced replan shared with the casualty hook.
 
 `status` (`operational` | `damaged`) is the operational status of an evacuation platform; NULL reads as operational. When a PUT changes it, the MEDEVAC planner is told (`POST {MEDEVAC_PLANNER_URL}/assets/status` with `{id, name, status, previous_status, lat, lng, tipo_elemento}`) and hands the casualties of a damaged vehicle to other vehicles. The popup of a friendly MEDEVAC or CASEVAC platform has a **Mark damaged** / **Back in service** button that sends it. A damaged platform is drawn with its `_damaged` icon (`medevac_role_2_air_damaged_spain.svg` and so on, down to `medevac_damaged.svg`).
 
@@ -492,12 +501,46 @@ Event types:
 | `evac_stage_updated` | At pickup / delivery milestones | `id`, `evac_stage` |
 | `route_updated` | After threat-triggered reroute | `task_id` |
 | `simulation_stopped` | On stop or completion | `task_id`, `reason` (`cancelled`\|`completed`) |
+| `hazard_zone_changed` | After `POST` or `PUT /api/hazard-zones` | `data` (full zone) |
+| `hazard_zone_deleted` | After `DELETE /api/hazard-zones/:id` | `id` |
 
 #### **POST** `/api/events/notify`
 
 Push an arbitrary event to all connected SSE clients. Used internally by `medevac_planner`.
 
 **Request:** any JSON object with a `type` field.
+
+---
+
+### Hazard zones (`/api/hazard-zones`)
+
+Floods, fires and other disasters: areas that ground routes avoid and that trap the civilians inside them. **One row per hazard event**, whose geometry is a GeoJSON `MultiPolygon` with `[lng, lat]` positions; its parts may lie apart (a flood with several flooded areas is one zone).
+
+| Method | Path | Does |
+|---|---|---|
+| GET | `/api/hazard-zones` | every zone; `?type=flood`, `?active=true` filter |
+| GET | `/api/hazard-zones/meta/types` | the hazard types with `label_en`, `label_es`, `code` and `colors` |
+| GET | `/api/hazard-zones/:id` | one zone |
+| POST | `/api/hazard-zones` | create `{ name, hazard_type, geometry, description?, active? }` |
+| PUT | `/api/hazard-zones/:id` | partial update; a `geometry` replaces the old one whole |
+| DELETE | `/api/hazard-zones/:id` | delete |
+
+`geometry` may be a `Polygon`, a `MultiPolygon` or a `Feature` holding one; it is stored as a `MultiPolygon`, open rings are closed, each part is repaired (`ST_MakeValid`) and the parts are unioned, so overlapping or touching parts fuse and separate ones stay apart. Adding an area to a zone is therefore a `PUT` with the zone's parts plus the new one. A shape with no area is a 400. A zone comes back as:
+
+```json
+{ "id": 1, "name": "Flood DANA", "hazard_type": "flood", "description": null, "active": true,
+  "geometry": { "type": "MultiPolygon", "coordinates": [...] },
+  "icon_point": { "lat": 39.425, "lng": -0.385 }, "area_m2": 1434000.4,
+  "created_at": "...", "updated_at": "..." }
+```
+
+`icon_point` lies on the zone (`ST_PointOnSurface`): the map draws the event badge there. `active: false` keeps a zone on record (dashed and faded on the map) once it no longer has to be avoided. A scenario file may export `hazardZones`, a list of create bodies; loading any scenario replaces every zone. A scenario may hold only zones and no entities.
+
+Every write is broadcast over SSE and posted to the planner (`POST /hazards/notify` with `{action, id, name, hazard_type, active}`), which reroutes its live ground assignments and replans; `routing_mcp` excludes the active zones from every ground route. Agents write zones through `cmop_mcp` (`report_hazard_area`, `clear_hazard_area`), which computes the geometry from reported coordinates.
+
+**Drawing on the map.** The Leaflet-Geoman toolbar under the zoom buttons draws a polygon or a rectangle; the dialog saves it as a new zone (name, type, description) or as one more area of an existing zone. Each separate area of a zone is its own map layer: edit mode drags one area's vertices and saves the zone on leaving the mode, and removal mode deletes the clicked area only after confirming (removing a zone's last area deletes the zone). Outside those two modes the areas do not take clicks, so a click on a flooded street opens the add-entity menu like anywhere else; the zone's event badge is its handle, whose popup activates, deactivates or deletes the whole zone. Only hazard zones are editable: entity markers and routes are left out (Geoman opt-in). Geoman (free, 2.17.0) is served from `public/vendor/geoman/`, like Leaflet.
+
+Types and colours (`lib/hazard-types.js`): fire `#FF5500`/`#E63946`, flood `#00A8E8`/`#1D70B8`, chemical `#FF8C00`/`#D97706`, biological `#10B981`/`#00E676`, nuclear/radiological `#9333EA`/`#FACC15`, earthquake `#A52A2A`/`#B45309`, structural collapse `#64748B`, sinkhole `#334155`. On the map each zone is hatched in its two colours over a light wash; the *Filters* tab shows or hides the layer and filters by type.
 
 ---
 
@@ -589,6 +632,25 @@ Fallback:     default
 | `medical_facility` | medical_role_1/2/3/4, medical_role_2basic, medical_role_2enhanced, medical_facility_multinational |
 | `medevac_unit` | medevac_role_1/2/3/4, medevac_fixedwing, medevac_ambulance, medevac_mechanised, medevac_mortuary |
 
+### Capacity limits
+
+`capacity` (people a vehicle carries per trip) is accepted up to a ceiling per kind of vehicle, in `lib/capacity-limits.js`, which the API, the scenario loader and the form share. The first matching rule wins:
+
+| Vehicle | Maximum | Why |
+|---|---|---|
+| `medevac_unit`, ground or air | 2 | the QUBO assignment optimiser plans one or two litters per platform |
+| `armoured` | 10 | the seats of an armoured personnel carrier |
+| `ugv` | 2 | one or two litters |
+| `helicopter`, or any `mobility: air` | 15 | a Bell 412, the largest utility helicopter in civil emergency fleets |
+| any `mobility: sea` | 12 | a large rescue boat |
+| any other ground vehicle | 22 | a transport minibus |
+
+A value over the limit is refused with HTTP 400 and logged as a warning: `Capacity not accepted. Number 30 larger than maximum accepted 15 for a civil_protection helicopter`. A scenario with one fails to load, naming the entity. `GET /api/entities/meta/capacity-limit?categoria=&mobility=` returns `{max, vehicle}`; with `&capacity=N` it also checks that value and logs a refusal (the form calls it when a capacity is typed in).
+
+### Places and occupancy of shelters and medical facilities
+
+`max_capacity` (places; null reads as no limit) and `occupancy` (people there now) are columns on `puntos_interes`. An operator or a scenario sets the occupancy; every delivery then adds to it in the database itself, through the `trg_md_count_delivery` trigger on `medical_details`, so no writer can forget it: a record that becomes `delivered` with a `destination_facility_id` adds its people to that facility (a civilian counts its `headcount`, a casualty one), and one that stops being delivered there takes them back. Deleting a delivered person from the map changes nothing, since they are still in the facility. The popup shows *Occupancy: 34 / 200*. Every scenario facility has both, larger for a higher NATO role, with room to spare (`FACILITY_SIZE_BY_ROLE`, role 1: 50 places, role 2: 100, role 3: 300, role 4: 600); a generated MASCAL never gives a facility fewer places than its casualties.
+
 ### `medical_details` fields
 
 | Column | Type | Values |
@@ -603,6 +665,16 @@ Fallback:     default
 | `evac_stage` | enum | at_poi, in_transit, delivered, unknown |
 | `destination_facility_id` | FK | → puntos_interes |
 | `nine_line_data` | JSONB | `{line1..line9}` |
+
+### `hazard_zones` fields
+
+| Column | Type | Values |
+|--------|------|--------|
+| `name` | varchar(100) | the event, e.g. "Flood DANA" |
+| `hazard_type` | enum | fire, flood, chemical, biological, nuclear_radiological, earthquake, structural_collapse, sinkhole |
+| `description` | text | Free text |
+| `active` | boolean | false: kept on record, no longer avoided |
+| `geom` | geometry(MultiPolygon, 4326) | never empty |
 
 ---
 

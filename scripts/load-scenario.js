@@ -5,7 +5,7 @@
 //   node scripts/load-scenario.js <scenario_name>   — load a scenario
 //   node scripts/load-scenario.js --list            — list available scenarios
 //
-// Requires scripts/scenarios/<n>.js → { meta, entities, medicalDetails } and hands it to
+// Requires scripts/scenarios/<n>.js → { meta, entities, medicalDetails, hazardZones? } and hands it to
 // lib/scenario-loader.js, which replaces the database contents in one transaction.
 // ---------------------------------------------------------------------------
 
@@ -53,17 +53,18 @@ async function main() {
     process.exit(1);
   }
 
-  const { meta, entities, medicalDetails } = require(scenarioPath);
+  const { meta, entities, medicalDetails, hazardZones } = require(scenarioPath);
 
   console.log(`\n🎬 Loading scenario: ${meta.name}`);
   console.log(`   ${meta.description}`);
   console.log(`   Entities: ${entities.length} | Medical records: ${medicalDetails?.length ?? 0}\n`);
 
   try {
-    const counts = await loadScenarioData(pool, { meta, entities, medicalDetails });
+    const counts = await loadScenarioData(pool, { meta, entities, medicalDetails, hazardZones });
     console.log('🗑️  Tables cleared');
     console.log(`✅ ${counts.entities} entities inserted`);
     if (counts.medicalRecords > 0) console.log(`✅ ${counts.medicalRecords} medical records inserted`);
+    if (counts.hazardZones > 0)    console.log(`✅ ${counts.hazardZones} hazard zones inserted`);
     console.log('\n🎉 Scenario loaded successfully\n');
   } catch (error) {
     console.error('❌ Load failed (rolled back):', error.message);

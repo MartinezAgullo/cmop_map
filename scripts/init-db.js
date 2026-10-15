@@ -4,6 +4,7 @@
 // Seed data lives in scripts/scenarios/*.js and is loaded via load-scenario.js
 //
 const pool = require('../config/database');
+const { HAZARD_TYPE_VALUES } = require('../lib/hazard-types');
 
 // ---------------------------------------------------------------------------
 // 1. Enums
@@ -40,6 +41,12 @@ const ENUMS = `
     'medevac_unit',         -- Unidad MEDEVAC (helicóptero, ambulancia, etc.)
     -- Casualties (use alliance + medical_details.casualty_status for WIA/KIA)
     'casualty',             -- Baja
+    -- Civil emergencies: response services and the people they evacuate
+    'fire_fighting',        -- Bomberos (mobility air = helicóptero)
+    'law_enforcement',      -- Policía (mobility air = helicóptero)
+    'civil_protection',     -- Protección Civil (mobility air = helicóptero)
+    'civilian',             -- Civil a evacuar (sin heridas; con heridas es casualty)
+    'shelter',              -- Albergue / punto de reunión de evacuados
     -- Fallback
     'default'
   );
@@ -123,6 +130,14 @@ const BASE_TABLE = `
     -- notion does not apply (a tank has no litter capacity), so it is nullable rather
     -- than defaulted: a missing value means "not stated", not "one".
     capacity              SMALLINT          CHECK (capacity IS NULL OR capacity >= 1),
+    -- People one civilian entity stands for (a family on a roof is one entity). NULL
+    -- everywhere else: a casualty is one person, a vehicle carries rather than counts.
+    headcount             SMALLINT          CHECK (headcount IS NULL OR headcount >= 1),
+    -- Places of a shelter or medical facility (NULL: not stated, read as no limit),
+    -- and the people there now. An operator or a scenario sets the occupancy; every
+    -- delivery adds to it through trg_md_count_delivery (see DELIVERY_TRIGGER).
+    max_capacity          INTEGER           CHECK (max_capacity IS NULL OR max_capacity >= 1),
+    occupancy             INTEGER           CHECK (occupancy IS NULL OR occupancy >= 0),
     status                asset_status_enum,
     geom                  GEOMETRY(Point, 4326) NOT NULL,
     created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
@@ -134,6 +149,9 @@ const BASE_TABLE = `
 // 3. Medical details table  (1-to-1 with puntos_interes, optional)
 //
 //   - Only populated for casualty_* categories (or any entity that needs it).
+//   - A civilian to evacuate has one too, holding only evac_stage and
+//     destination_facility_id (its shelter). The casualty lists in
+//     routes/medical.js leave civilians out.
 //   - All fields NULLABLE; unknown state is the default.
 //   - vital_signs: JSONB array of timestamped readings
 //       [{ "hr": 80, "bp": "120/80", "spo2": 95, "recorded_at": "2026-..." }, ...]
@@ -211,6 +229,31 @@ const SCENARIO_TABLE = `
 `;
 
 // ---------------------------------------------------------------------------
+// 3c. Hazard zones  (floods, fires and other disasters)
+//
+//   - One row per hazard event; geom is a MultiPolygon whose parts may lie apart
+//     (a flood with several flooded areas is one row).
+//   - Ground routes avoid them (Valhalla exclude_polygons) and a civilian inside a
+//     flood needs hoist or water rescue.
+//   - The types come from lib/hazard-types.js, which also holds their colours.
+// ---------------------------------------------------------------------------
+
+const HAZARD_TABLE = `
+  CREATE TYPE hazard_type_enum AS ENUM (${HAZARD_TYPE_VALUES.map(v => `'${v}'`).join(', ')});
+
+  CREATE TABLE hazard_zones (
+    id           SERIAL            PRIMARY KEY,
+    name         VARCHAR(100)      NOT NULL,
+    hazard_type  hazard_type_enum  NOT NULL,
+    description  TEXT,
+    active       BOOLEAN           NOT NULL DEFAULT true,   -- false: kept on record, no longer avoided
+    geom         GEOMETRY(MultiPolygon, 4326) NOT NULL CHECK (NOT ST_IsEmpty(geom)),
+    created_at   TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP         DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
+// ---------------------------------------------------------------------------
 // 4. Indexes
 // ---------------------------------------------------------------------------
 
@@ -231,6 +274,10 @@ const INDEXES = `
   CREATE INDEX idx_md_evac_priority   ON medical_details (evac_priority);
   CREATE INDEX idx_md_evac_stage      ON medical_details (evac_stage);
   CREATE INDEX idx_md_destination     ON medical_details (destination_facility_id);
+
+  -- Hazard zones
+  CREATE INDEX idx_hz_geom   ON hazard_zones USING GIST (geom);
+  CREATE INDEX idx_hz_type   ON hazard_zones (hazard_type);
 `;
 
 // ---------------------------------------------------------------------------
@@ -253,6 +300,45 @@ const UPDATED_AT_TRIGGER = `
   CREATE TRIGGER trg_md_updated_at
     BEFORE UPDATE ON medical_details
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+  CREATE TRIGGER trg_hz_updated_at
+    BEFORE UPDATE ON hazard_zones
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+`;
+
+// Occupancy follows the deliveries in the database itself, so no writer (the API, the
+// planner's simulation, a scenario load) can forget it: when a medical record becomes
+// `delivered` with a destination, its people are added to that facility, and a record
+// that stops being delivered there takes them back. A civilian counts its headcount, a
+// casualty one. Deleting a delivered person from the map changes nothing: they are
+// still in the facility.
+const DELIVERY_TRIGGER = `
+  CREATE OR REPLACE FUNCTION people_of(entity INTEGER)
+  RETURNS INTEGER AS $$
+    SELECT CASE WHEN categoria = 'civilian' THEN COALESCE(headcount, 1) ELSE 1 END
+    FROM puntos_interes WHERE id = entity;
+  $$ LANGUAGE sql STABLE;
+
+  CREATE OR REPLACE FUNCTION count_delivery()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    IF TG_OP = 'UPDATE' AND OLD.evac_stage = 'delivered' AND OLD.destination_facility_id IS NOT NULL THEN
+      UPDATE puntos_interes
+         SET occupancy = GREATEST(0, COALESCE(occupancy, 0) - COALESCE(people_of(OLD.entity_id), 1))
+       WHERE id = OLD.destination_facility_id;
+    END IF;
+    IF NEW.evac_stage = 'delivered' AND NEW.destination_facility_id IS NOT NULL THEN
+      UPDATE puntos_interes
+         SET occupancy = COALESCE(occupancy, 0) + COALESCE(people_of(NEW.entity_id), 1)
+       WHERE id = NEW.destination_facility_id;
+    END IF;
+    RETURN NULL;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER trg_md_count_delivery
+    AFTER INSERT OR UPDATE OF evac_stage, destination_facility_id ON medical_details
+    FOR EACH ROW EXECUTE FUNCTION count_delivery();
 `;
 
 // ---------------------------------------------------------------------------
@@ -261,6 +347,8 @@ const UPDATED_AT_TRIGGER = `
 
 const DROP_ALL = `
   DROP TABLE IF EXISTS loaded_scenario;
+  DROP TABLE IF EXISTS hazard_zones;
+  DROP TYPE IF EXISTS hazard_type_enum;
   DROP TABLE IF EXISTS medical_details CASCADE;
   DROP TABLE IF EXISTS puntos_interes  CASCADE;
 
@@ -274,6 +362,8 @@ const DROP_ALL = `
   DROP TYPE IF EXISTS categoria_militar;
 
   DROP FUNCTION IF EXISTS set_updated_at();
+  DROP FUNCTION IF EXISTS count_delivery();
+  DROP FUNCTION IF EXISTS people_of(INTEGER);
 `;
 
 // ---------------------------------------------------------------------------
@@ -305,11 +395,17 @@ const initDatabase = async () => {
     await pool.query(SCENARIO_TABLE);
     console.log('✅ Table loaded_scenario created');
 
+    await pool.query(HAZARD_TABLE);
+    console.log('✅ Table hazard_zones created');
+
     await pool.query(INDEXES);
     console.log('✅ Indexes created');
 
     await pool.query(UPDATED_AT_TRIGGER);
     console.log('✅ updated_at triggers created');
+
+    await pool.query(DELIVERY_TRIGGER);
+    console.log('✅ occupancy trigger created');
 
     console.log('\n🎉 CMOP schema ready. Load a scenario with:\n   node scripts/load-scenario.js <scenario_name>\n');
     process.exit(0);

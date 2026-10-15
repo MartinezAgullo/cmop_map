@@ -12,6 +12,7 @@ const entitiesRoutes  = require('./routes/entities');
 const medicalRoutes   = require('./routes/medical');
 const scenariosRoutes = require('./routes/scenarios');
 const schemaRoutes    = require('./routes/schema');
+const hazardZoneRoutes = require('./routes/hazard-zones');
 const clientLogRoutes = require('./routes/client-log');
 const logsRoutes      = require('./routes/logs');
 
@@ -109,6 +110,7 @@ app.use('/api/entities',   entitiesRoutes);
 app.use('/api/medical',    medicalRoutes);
 app.use('/api/scenarios',  scenariosRoutes);
 app.use('/api/schema',     schemaRoutes);
+app.use('/api/hazard-zones', hazardZoneRoutes);
 app.use('/api/client-log', clientLogRoutes);
 
 // ---------------------------------------------------------------------------

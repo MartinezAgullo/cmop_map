@@ -11,6 +11,10 @@
 //   GET  /api/medical/casualties              — all entities that have a medical record
 //   GET  /api/medical/triage/:color           — casualties filtered by triage colour
 //   GET  /api/medical/evac-stage/:stage       — casualties filtered by evac stage
+//
+// A civilian to evacuate also has a record, for its evac_stage and destination
+// shelter, but it is not a casualty: the three lists above leave civilians out, so
+// the Raspberry Pi selector, the planner and pfc_agent never see one.
 //   GET  /api/medical/:entity_id/nine-line    — get the 9-Line MEDEVAC data for an entity
 //   PUT  /api/medical/:entity_id              — partial update of medical fields
 //   POST /api/medical/:entity_id/vitals       — append a vital-signs reading
@@ -162,14 +166,17 @@ function normaliseNineLineData(data) {
 // Reads
 // ---------------------------------------------------------------------------
 
+// Civilians carry a record only for their evacuation fields (see the header).
+const NOT_CIVILIAN = `pi.categoria <> 'civilian'`;
+
 /**
- * All entities that have a medical_details record.
+ * All entities that have a medical_details record, civilians excepted.
  * Uses the same baseSelect so the shape is identical to /api/entities.
  */
 router.get('/casualties', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `${Entity.baseSelect()} WHERE md.entity_id IS NOT NULL ORDER BY pi.nombre`
+      `${Entity.baseSelect()} WHERE md.entity_id IS NOT NULL AND ${NOT_CIVILIAN} ORDER BY pi.nombre`
     );
     res.json({ success: true, count: rows.length, data: rows });
   } catch (err) {
@@ -182,7 +189,7 @@ router.get('/triage/:color', async (req, res) => {
   try {
     const color = req.params.color.toUpperCase();
     const { rows } = await pool.query(
-      `${Entity.baseSelect()} WHERE md.triage_color = $1::triage_color_enum ORDER BY pi.nombre`,
+      `${Entity.baseSelect()} WHERE md.triage_color = $1::triage_color_enum AND ${NOT_CIVILIAN} ORDER BY pi.nombre`,
       [color]
     );
     res.json({ success: true, count: rows.length, data: rows });
@@ -196,7 +203,7 @@ router.get('/evac-stage/:stage', async (req, res) => {
   try {
     const stage = req.params.stage.toLowerCase();
     const { rows } = await pool.query(
-      `${Entity.baseSelect()} WHERE md.evac_stage = $1::evac_stage_enum ORDER BY pi.nombre`,
+      `${Entity.baseSelect()} WHERE md.evac_stage = $1::evac_stage_enum AND ${NOT_CIVILIAN} ORDER BY pi.nombre`,
       [stage]
     );
     res.json({ success: true, count: rows.length, data: rows });

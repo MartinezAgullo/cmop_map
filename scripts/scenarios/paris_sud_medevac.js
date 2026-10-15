@@ -33,97 +33,97 @@ const entities = [
   // ---------------------------------------------------------------
   // Brigade & Battalion HQ
   // ---------------------------------------------------------------
-  { nombre: 'SpBde', descripcion: 'Spanish Brigade HQ', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPBDE', activo: true, tipo_elemento: 'mechanised', observaciones: 'Brigade command element', altitud: null, lng: 2.24439, lat: 48.57078 },
-  { nombre: 'SpBatt', descripcion: 'Spanish Battalion HQ', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPBATT', activo: true, tipo_elemento: 'mechanised', observaciones: 'Battalion tactical CP', altitud: null, lng: 2.27546, lat: 48.57436 },
+  { nombre: 'SpaBde', descripcion: 'Spanish Brigade HQ', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaBde', activo: true, tipo_elemento: 'mechanised', observaciones: 'Brigade command element', altitud: null, lng: 2.24439, lat: 48.57078 },
+  { nombre: 'SpaBatt', descripcion: 'Spanish Battalion HQ', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaBatt', activo: true, tipo_elemento: 'mechanised', observaciones: 'Battalion tactical CP', altitud: null, lng: 2.27546, lat: 48.57436 },
 
   // ---------------------------------------------------------------
   // Company-level units
   // ---------------------------------------------------------------
-  { nombre: 'FrCoy', descripcion: 'French mechanised company (wheeled)', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FRCOY', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'VBCI equipped', altitud: null, lng: 2.32724, lat: 48.5993 },
-  { nombre: 'GeCoy', descripcion: 'German armoured company', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GECOY', activo: true, tipo_elemento: 'MBT', observaciones: 'Leopard 2A7', altitud: null, lng: 2.3461, lat: 48.6025 },
-  { nombre: 'SpCoy', descripcion: 'Spanish mechanised company', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPCOY', activo: true, tipo_elemento: 'mechanised', observaciones: 'Pizarro IFV equipped', altitud: null, lng: 2.33113, lat: 48.5839 },
+  { nombre: 'FraCoy', descripcion: 'French mechanised company (wheeled)', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FraCoy', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'VBCI equipped', altitud: null, lng: 2.32724, lat: 48.5993 },
+  { nombre: 'GerCoy', descripcion: 'German armoured company', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerCoy', activo: true, tipo_elemento: 'MBT', observaciones: 'Leopard 2A7', altitud: null, lng: 2.3461, lat: 48.6025 },
+  { nombre: 'SpaCoy', descripcion: 'Spanish mechanised company', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaCoy', activo: true, tipo_elemento: 'mechanised', observaciones: 'Pizarro IFV equipped', altitud: null, lng: 2.33113, lat: 48.5839 },
 
   // ---------------------------------------------------------------
   // Platoon-level units
   // ---------------------------------------------------------------
-  { nombre: 'SpPl', descripcion: 'Spanish platoon (wheeled)', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPPL', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'VEC reconnaissance', altitud: null, lng: 2.33113, lat: 48.5839 },
-  { nombre: 'SpPlSq1', descripcion: 'Spanish squad 1', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPPLSQ1', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Forward element', altitud: null, lng: 2.34094, lat: 48.58778 },
-  { nombre: 'SpPlSq2', descripcion: 'Spanish squad 2', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPPLSQ2', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Overwatch position', altitud: null, lng: 2.33734, lat: 48.58498 },
-  { nombre: 'SpPlSq3', descripcion: 'Spanish squad 3', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPPLSQ3', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Reserve', altitud: null, lng: 2.33106, lat: 48.58372 },
+  { nombre: 'SpaPl', descripcion: 'Spanish platoon (wheeled)', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaPl', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'VEC reconnaissance', altitud: null, lng: 2.33113, lat: 48.5839 },
+  { nombre: 'SpaPlSq1', descripcion: 'Spanish squad 1', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaPlSq1', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Forward element', altitud: null, lng: 2.34094, lat: 48.58778 },
+  { nombre: 'SpaPlSq2', descripcion: 'Spanish squad 2', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaPlSq2', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Overwatch position', altitud: null, lng: 2.33734, lat: 48.58498 },
+  { nombre: 'SpaPlSq3', descripcion: 'Spanish squad 3', categoria: 'infantry', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaPlSq3', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Reserve', altitud: null, lng: 2.33106, lat: 48.58372 },
 
-  { nombre: 'FrPl', descripcion: 'French platoon (wheeled)', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FRPL', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'VAB equipped', altitud: null, lng: 2.32724, lat: 48.5993 },
-  { nombre: 'FrPlSq1', descripcion: 'French squad 1', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FRPLSQ1', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Northern sector', altitud: null, lng: 2.35133, lat: 48.59762 },
-  { nombre: 'FrPlSq2', descripcion: 'French squad 2', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FRPLSQ2', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Securing flank', altitud: null, lng: 2.35161, lat: 48.60343 },
-  { nombre: 'FrPlSq3', descripcion: 'French squad 3', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FRPLSQ3', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Support by fire', altitud: null, lng: 2.34987, lat: 48.60101 },
+  { nombre: 'FraPl', descripcion: 'French platoon (wheeled)', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FraPl', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'VAB equipped', altitud: null, lng: 2.32724, lat: 48.5993 },
+  { nombre: 'FraPlSq1', descripcion: 'French squad 1', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FraPlSq1', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Northern sector', altitud: null, lng: 2.35133, lat: 48.59762 },
+  { nombre: 'FraPlSq2', descripcion: 'French squad 2', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FraPlSq2', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Securing flank', altitud: null, lng: 2.35161, lat: 48.60343 },
+  { nombre: 'FraPlSq3', descripcion: 'French squad 3', categoria: 'infantry', country: 'France', alliance: 'friendly', elemento_identificado: 'FraPlSq3', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Support by fire', altitud: null, lng: 2.34987, lat: 48.60101 },
 
-  { nombre: 'ItPl', descripcion: 'Italian platoon (wheeled)', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITPL', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Centauro equipped', altitud: null, lng: 2.3461, lat: 48.6025 },
-  { nombre: 'ItPlSq1', descripcion: 'Italian squad 1', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITPLSQ1', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Screening', altitud: null, lng: 2.32936, lat: 48.59644 },
-  { nombre: 'ItPlSq2', descripcion: 'Italian squad 2', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITPLSQ2', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Eastern approach', altitud: null, lng: 2.34901, lat: 48.61559 },
-  { nombre: 'ItPlSq3', descripcion: 'Italian squad 3', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITPLSQ3', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Reserve force', altitud: null, lng: 2.35183, lat: 48.61745 },
+  { nombre: 'ItaPl', descripcion: 'Italian platoon (wheeled)', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ItaPl', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Centauro equipped', altitud: null, lng: 2.3461, lat: 48.6025 },
+  { nombre: 'ItaPlSq1', descripcion: 'Italian squad 1', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ItaPlSq1', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Screening', altitud: null, lng: 2.32936, lat: 48.59644 },
+  { nombre: 'ItaPlSq2', descripcion: 'Italian squad 2', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ItaPlSq2', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Eastern approach', altitud: null, lng: 2.34901, lat: 48.61559 },
+  { nombre: 'ItaPlSq3', descripcion: 'Italian squad 3', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ItaPlSq3', activo: true, tipo_elemento: 'mechanised_wheeled', observaciones: 'Reserve force', altitud: null, lng: 2.35183, lat: 48.61745 },
 
   // ---------------------------------------------------------------
-  // German armoured platoon (tank platoon supporting GeCoy)
+  // German armoured platoon (tank platoon supporting GerCoy)
   // ---------------------------------------------------------------
-  { nombre: 'GeTankPl', descripcion: 'German tank platoon', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GETANKPL', activo: true, tipo_elemento: 'MBT', observaciones: 'Leopard 2A7 platoon', altitud: null, lng: 2.36, lat: 48.605 },
-  { nombre: 'GeTankSq1', descripcion: 'German tank squad 1', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GETANKSQ1', activo: true, tipo_elemento: 'MBT', observaciones: 'Lead tank', altitud: null, lng: 2.365, lat: 48.606 },
-  { nombre: 'GeTankSq2', descripcion: 'German tank squad 2', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GETANKSQ2', activo: true, tipo_elemento: 'MBT', observaciones: 'Wingman', altitud: null, lng: 2.37, lat: 48.607 },
-  { nombre: 'GeTankSq3', descripcion: 'German tank squad 3', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GETANKSQ3', activo: true, tipo_elemento: 'MBT', observaciones: 'Trail tank', altitud: null, lng: 2.375, lat: 48.608 },
+  { nombre: 'GerTankPl', descripcion: 'German tank platoon', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerTankPl', activo: true, tipo_elemento: 'MBT', observaciones: 'Leopard 2A7 platoon', altitud: null, lng: 2.36, lat: 48.605 },
+  { nombre: 'GerTankSq1', descripcion: 'German tank squad 1', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerTankSq1', activo: true, tipo_elemento: 'MBT', observaciones: 'Lead tank', altitud: null, lng: 2.365, lat: 48.606 },
+  { nombre: 'GerTankSq2', descripcion: 'German tank squad 2', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerTankSq2', activo: true, tipo_elemento: 'MBT', observaciones: 'Wingman', altitud: null, lng: 2.37, lat: 48.607 },
+  { nombre: 'GerTankSq3', descripcion: 'German tank squad 3', categoria: 'armoured', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerTankSq3', activo: true, tipo_elemento: 'MBT', observaciones: 'Trail tank', altitud: null, lng: 2.375, lat: 48.608 },
 
   // ---------------------------------------------------------------
   // Engineer unit
   // ---------------------------------------------------------------
-  { nombre: 'SpEngUnit', descripcion: 'Spanish engineer unit', categoria: 'engineer', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPENGUNIT', activo: true, tipo_elemento: 'standard', observaciones: 'Mobility/counter-mobility', altitud: null, lng: 2.31772, lat: 48.59366 },
-  { nombre: 'SpEngSq1', descripcion: 'Spanish engineer squad 1', categoria: 'engineer', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPENGSQ1', activo: true, tipo_elemento: 'standard', observaciones: 'Obstacle emplacement', altitud: null, lng: 2.32838, lat: 48.59604 },
-  { nombre: 'SpEngSq2', descripcion: 'Spanish engineer squad 2', categoria: 'engineer', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPENGSQ2', activo: true, tipo_elemento: 'standard', observaciones: 'Breaching team', altitud: null, lng: 2.32068, lat: 48.59081 },
-  { nombre: 'SpEngSq3', descripcion: 'Spanish engineer squad 3', categoria: 'engineer', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPENGSQ3', activo: true, tipo_elemento: 'standard', observaciones: 'Mine clearance', altitud: null, lng: 2.3257, lat: 48.59441 },
+  { nombre: 'SpaEngUnit', descripcion: 'Spanish engineer unit', categoria: 'engineer', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaEngUnit', activo: true, tipo_elemento: 'standard', observaciones: 'Mobility/counter-mobility', altitud: null, lng: 2.31772, lat: 48.59366 },
+  { nombre: 'SpaEngSq1', descripcion: 'Spanish engineer squad 1', categoria: 'engineer', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaEngSq1', activo: true, tipo_elemento: 'standard', observaciones: 'Obstacle emplacement', altitud: null, lng: 2.32838, lat: 48.59604 },
+  { nombre: 'SpaEngSq2', descripcion: 'Spanish engineer squad 2', categoria: 'engineer', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaEngSq2', activo: true, tipo_elemento: 'standard', observaciones: 'Breaching team', altitud: null, lng: 2.32068, lat: 48.59081 },
+  { nombre: 'SpaEngSq3', descripcion: 'Spanish engineer squad 3', categoria: 'engineer', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaEngSq3', activo: true, tipo_elemento: 'standard', observaciones: 'Mine clearance', altitud: null, lng: 2.3257, lat: 48.59441 },
 
   // ---------------------------------------------------------------
   // Mortar section
   // ---------------------------------------------------------------
-  { nombre: 'SpMoSq', descripcion: 'Spanish heavy mortar section', categoria: 'mortar', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPMOSQ', activo: true, tipo_elemento: 'heavy', observaciones: '120mm mortars', altitud: null, lng: 2.3369, lat: 48.60439 },
+  { nombre: 'SpaMoSq', descripcion: 'Spanish heavy mortar section', categoria: 'mortar', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaMoSq', activo: true, tipo_elemento: 'heavy', observaciones: '120mm mortars', altitud: null, lng: 2.3369, lat: 48.60439 },
 
   // ---------------------------------------------------------------
   // ISR & Reconnaissance
   // ---------------------------------------------------------------
-  { nombre: 'ItUavTm1', descripcion: 'Italian UAV team', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITUAVTM1', activo: true, tipo_elemento: 'uav', observaciones: 'UAV-Small1', altitud: null, lng: 2.33952, lat: 48.61024 },
-  { nombre: 'SpSvTm1', descripcion: 'Spanish reconnaissance team', categoria: 'reconnaissance', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SPSVTM1', activo: true, tipo_elemento: 'wheeled', mobility: 'ground', observaciones: 'Forward scouts', altitud: null, lng: 2.3352, lat: 48.58266 },
+  { nombre: 'ItaUavTm1', descripcion: 'Italian UAV team', categoria: 'infantry', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ItaUavTm1', activo: true, tipo_elemento: 'uav', observaciones: 'UAV-Small1', altitud: null, lng: 2.33952, lat: 48.61024 },
+  { nombre: 'SpaSvTm1', descripcion: 'Spanish reconnaissance team', categoria: 'reconnaissance', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaSvTm1', activo: true, tipo_elemento: 'wheeled', mobility: 'ground', observaciones: 'Forward scouts', altitud: null, lng: 2.3352, lat: 48.58266 },
 
   // ---------------------------------------------------------------
   // Medical facilities
   // ---------------------------------------------------------------
-  { nombre: 'ESP MED Role-1', descripcion: 'Spanish Role-1 aid post', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MED-R1', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Forward medical point', altitud: null, lng: 2.30, lat: 48.58 },
-  { nombre: 'FRA MED Role-2', descripcion: 'French Role-2 surgical facility', categoria: 'medical_facility', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-MED-R2', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Forward surgical team', altitud: null, lng: 2.25, lat: 48.60 },
-  { nombre: 'DEU MED Role-3', descripcion: 'German Role-3 field hospital', categoria: 'medical_facility', country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-MED-R3', activo: true, tipo_elemento: 'medical_role_3', observaciones: 'Full surgical capability', altitud: null, lng: 2.20, lat: 48.62 },
+  { nombre: 'SpaMedRole1', descripcion: 'Spanish Role-1 aid post', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaMedRole1', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Forward medical point', altitud: null, max_capacity: 50, occupancy: 5, lng: 2.30, lat: 48.58 },
+  { nombre: 'FraMedRole2', descripcion: 'French Role-2 surgical facility', categoria: 'medical_facility', country: 'France', alliance: 'friendly', elemento_identificado: 'FraMedRole2', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Forward surgical team', altitud: null, max_capacity: 100, occupancy: 15, lng: 2.25, lat: 48.60 },
+  { nombre: 'GerMedRole3', descripcion: 'German Role-3 field hospital', categoria: 'medical_facility', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerMedRole3', activo: true, tipo_elemento: 'medical_role_3', observaciones: 'Full surgical capability', altitud: null, max_capacity: 300, occupancy: 50, lng: 2.20, lat: 48.62 },
 
   // ---------------------------------------------------------------
   // MEDEVAC assets
   // ---------------------------------------------------------------
-  { nombre: 'ESP MEDEVAC-1', descripcion: 'Spanish MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation', altitud: null, lng: 2.305, lat: 48.58 },
-  { nombre: 'FRA MEDEVAC-2', descripcion: 'French MEDEVAC ambulance', categoria: 'medevac_unit', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-MEDEVAC-2', activo: true, tipo_elemento: 'medevac_role_2', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation', altitud: null, lng: 2.255, lat: 48.60 },
-  { nombre: 'ITA MEDEVAC-1', descripcion: 'Italian MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation', altitud: null, lng: 2.34, lat: 48.595 },
+  { nombre: 'SpaMedevac1', descripcion: 'Spanish MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaMedevac1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation', altitud: null, lng: 2.305, lat: 48.58 },
+  { nombre: 'FraMedevac2', descripcion: 'French MEDEVAC ambulance', categoria: 'medevac_unit', country: 'France', alliance: 'friendly', elemento_identificado: 'FraMedevac2', activo: true, tipo_elemento: 'medevac_role_2', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation', altitud: null, lng: 2.255, lat: 48.60 },
+  { nombre: 'ItaMedevac1', descripcion: 'Italian MEDEVAC ambulance', categoria: 'medevac_unit', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ItaMedevac1', activo: true, tipo_elemento: 'medevac_role_1', mobility: 'ground', capacity: 1, observaciones: 'Ground evacuation', altitud: null, lng: 2.34, lat: 48.595 },
 
   // ---------------------------------------------------------------
   // Casualties
   // ---------------------------------------------------------------
   // French KIA
-  { nombre: 'FRA-CAS-1 (KIA)', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.353, lat: 48.598 },
-  { nombre: 'FRA-CAS-2 (KIA)', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-2', activo: true, tipo_elemento: 'casualty', observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.354, lat: 48.5985 },
-  // { nombre: 'FRA-CAS-4 (WIA)', descripcion: 'French WIA — penetrating thoracic trauma', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-4', activo: true, tipo_elemento: 'casualty', observaciones: 'Penetrating chest wound, tension pneumothorax decompressed on scene', altitud: null, lng: 2.3532, lat: 48.5978 },
+  { nombre: 'FraCas1', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FraCas1', activo: true, tipo_elemento: 'casualty', observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.353, lat: 48.598 },
+  { nombre: 'FraCas2', descripcion: 'French KIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FraCas2', activo: true, tipo_elemento: 'casualty', observaciones: 'Training accident — vehicle rollover', altitud: null, lng: 2.354, lat: 48.5985 },
+  // { nombre: 'FraCas4', descripcion: 'French WIA — penetrating thoracic trauma', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FraCas4', activo: true, tipo_elemento: 'casualty', observaciones: 'Penetrating chest wound, tension pneumothorax decompressed on scene', altitud: null, lng: 2.3532, lat: 48.5978 },
 
   // French T4 Expectant (new — demonstrates BLUE triage in training exercise)
-  // { nombre: 'FRA-CAS-3 (WIA)', descripcion: 'French WIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-CAS-3', activo: true, tipo_elemento: 'casualty', observaciones: 'Third occupant from vehicle rollover. Massive internal injuries. Triaged T4 given MASCAL conditions.', altitud: null, lng: 2.3535, lat: 48.5983 },
+  // { nombre: 'FraCas3', descripcion: 'French WIA', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FraCas3', activo: true, tipo_elemento: 'casualty', observaciones: 'Third occupant from vehicle rollover. Massive internal injuries. Triaged T4 given MASCAL conditions.', altitud: null, lng: 2.3535, lat: 48.5983 },
 
   // German WIA
-  // { nombre: 'GER-CAS-1 (WIA)', descripcion: 'German WIA — blast injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Shrapnel wounds, stable', altitud: null, lng: 2.368, lat: 48.606 },
-  { nombre: 'GER-CAS-2 (WIA)', descripcion: 'German WIA — crush injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GER-CAS-2', activo: true, tipo_elemento: 'casualty', observaciones: 'Lower limb trauma', altitud: null, lng: 2.372, lat: 48.607 },
+  // { nombre: 'GerCas1', descripcion: 'German WIA — blast injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerCas1', activo: true, tipo_elemento: 'casualty', observaciones: 'Shrapnel wounds, stable', altitud: null, lng: 2.368, lat: 48.606 },
+  { nombre: 'GerCas2', descripcion: 'German WIA — crush injury', categoria: 'casualty', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerCas2', activo: true, tipo_elemento: 'casualty', observaciones: 'Lower limb trauma', altitud: null, lng: 2.372, lat: 48.607 },
 
   // Italian WIA
-  // { nombre: 'ITA-CAS-1 (WIA)', descripcion: 'Italian WIA — heat exhaustion', categoria: 'casualty', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Heat exhaustion, dehydration', altitud: null, lng: 2.348, lat: 48.615 },
-  { nombre: 'ITA-CAS-2 (WIA)', descripcion: 'Italian WIA — fragmentation wound', categoria: 'casualty', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ITA-CAS-2', activo: true, tipo_elemento: 'casualty', observaciones: 'Fragmentation wound to left thigh, tourniquet applied', altitud: null, lng: 2.3493, lat: 48.6141 },
+  // { nombre: 'ItaCas1', descripcion: 'Italian WIA — heat exhaustion', categoria: 'casualty', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ItaCas1', activo: true, tipo_elemento: 'casualty', observaciones: 'Heat exhaustion, dehydration', altitud: null, lng: 2.348, lat: 48.615 },
+  { nombre: 'ItaCas2', descripcion: 'Italian WIA — fragmentation wound', categoria: 'casualty', country: 'Italy', alliance: 'friendly', elemento_identificado: 'ItaCas2', activo: true, tipo_elemento: 'casualty', observaciones: 'Fragmentation wound to left thigh, tourniquet applied', altitud: null, lng: 2.3493, lat: 48.6141 },
 
   // Spanish WIA
-  // { nombre: 'ESP-CAS-1 (WIA)', descripcion: 'Spanish WIA — laceration', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Facial laceration, conscious', altitud: null, lng: 2.328, lat: 48.587 },
-  //{ nombre: 'ESP-CAS-2 (WIA)', descripcion: 'Spanish WIA — sprain', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-CAS-2', activo: true, tipo_elemento: 'casualty', observaciones: 'Ankle sprain during dismount', altitud: null, lng: 2.332, lat: 48.585 },
+  // { nombre: 'SpaCas1', descripcion: 'Spanish WIA — laceration', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaCas1', activo: true, tipo_elemento: 'casualty', observaciones: 'Facial laceration, conscious', altitud: null, lng: 2.328, lat: 48.587 },
+  //{ nombre: 'SpaCas2', descripcion: 'Spanish WIA — sprain', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaCas2', activo: true, tipo_elemento: 'casualty', observaciones: 'Ankle sprain during dismount', altitud: null, lng: 2.332, lat: 48.585 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -135,7 +135,7 @@ const entities = [
 const medicalDetails = [
   // French KIA
   {
-    entity_ref: 'FRA-CAS-1',
+    entity_ref: 'FraCas1',
     triage_color: 'BLACK',       // Dead — immediate death
     casualty_status: 'KIA',
     injury_mechanism: 'Vehicle rollover',
@@ -148,7 +148,7 @@ const medicalDetails = [
     nine_line_data: null
   },
   {
-    entity_ref: 'FRA-CAS-2',
+    entity_ref: 'FraCas2',
     triage_color: 'BLACK',       // Dead — immediate death
     casualty_status: 'KIA',
     injury_mechanism: 'Vehicle rollover',
@@ -163,7 +163,7 @@ const medicalDetails = [
 
   // French RED
   // {
-  //   entity_ref: 'FRA-CAS-4',
+  //   entity_ref: 'FraCas4',
   //   triage_color: 'RED',
   //   casualty_status: 'WIA',
   //   injury_mechanism: 'Penetrating trauma (shrapnel)',
@@ -178,7 +178,7 @@ const medicalDetails = [
   //   destination_facility_ref: null,
   //   nine_line_data: {
   //     line1_location: '48.5978,2.3532',
-  //     line2_callsign: 'FRPLSQ1 MEDIC',
+  //     line2_callsign: 'FraPlSq1 MEDIC',
   //     line2_frequency: 'FM 45.100',
   //     line3_precedence: 'A',
   //     line3_count: 1,
@@ -196,7 +196,7 @@ const medicalDetails = [
 
   // French T4 Expectant (new — demonstrates BLUE triage)
   // {
-  //   entity_ref: 'FRA-CAS-3',
+  //   entity_ref: 'FraCas3',
   //   triage_color: 'BLUE',        // T4 Expectant — expected to die given MASCAL conditions
   //   casualty_status: 'WIA',
   //   injury_mechanism: 'Vehicle rollover',
@@ -214,7 +214,7 @@ const medicalDetails = [
 
   // German WIA
   // {
-  //   entity_ref: 'GER-CAS-1',
+  //   entity_ref: 'GerCas1',
   //   triage_color: 'YELLOW',
   //   casualty_status: 'WIA',
   //   injury_mechanism: 'Blast (training ordnance)',
@@ -225,10 +225,10 @@ const medicalDetails = [
   //   prehospital_treatment: 'Wounds cleaned, dressed. IV access established.',
 
   //   evac_stage: 'in_transit',
-  //   destination_facility_ref: 'FRA-MED-R2',
+  //   destination_facility_ref: 'FraMedRole2',
   //   nine_line_data: {
   //     line1_location: '48.606,2.368',
-  //     line2_callsign: 'GETANKPL MEDIC',
+  //     line2_callsign: 'GerTankPl MEDIC',
   //     line2_frequency: 'FM 45.100',
   //     line3_precedence: 'C',
   //     line3_count: 1,
@@ -244,7 +244,7 @@ const medicalDetails = [
   //   }
   // },
   {
-    entity_ref: 'GER-CAS-2',
+    entity_ref: 'GerCas2',
     triage_color: 'YELLOW',
     casualty_status: 'WIA',
     injury_mechanism: 'Crush injury (vehicle incident)',
@@ -255,10 +255,10 @@ const medicalDetails = [
     prehospital_treatment: 'Splinted, IV morphine, IV fluids',
 
     evac_stage: 'at_poi',
-    destination_facility_ref: 'FRA-MED-R2',
+    destination_facility_ref: 'FraMedRole2',
     nine_line_data: {
       line1_location: '48.607,2.372',
-      line2_callsign: 'GETANKSQ2 MEDIC',
+      line2_callsign: 'GerTankSq2 MEDIC',
       line2_frequency: 'FM 45.100',
       line3_precedence: 'C',
       line3_count: 1,
@@ -276,7 +276,7 @@ const medicalDetails = [
 
   // Italian WIA
   {
-    entity_ref: 'ITA-CAS-2',
+    entity_ref: 'ItaCas2',
     triage_color: 'YELLOW',
     casualty_status: 'WIA',
     injury_mechanism: 'Fragmentation (training ordnance)',
@@ -290,7 +290,7 @@ const medicalDetails = [
     destination_facility_ref: null,
     nine_line_data: {
       line1_location: '48.6141,2.3493',
-      line2_callsign: 'ITPLSQ2 MEDIC',
+      line2_callsign: 'ItaPlSq2 MEDIC',
       line2_frequency: 'FM 45.150',
       line3_precedence: 'C',
       line3_count: 1,
@@ -306,7 +306,7 @@ const medicalDetails = [
     }
   },
   // {
-  //   entity_ref: 'ITA-CAS-1',
+  //   entity_ref: 'ItaCas1',
   //   triage_color: 'GREEN',
   //   casualty_status: 'WIA',
   //   injury_mechanism: 'Heat exhaustion',
@@ -317,13 +317,13 @@ const medicalDetails = [
   //   prehospital_treatment: 'Oral rehydration, cooling measures',
 
   //   evac_stage: 'delivered',
-  //   destination_facility_ref: 'ESP-MED-R1',
+  //   destination_facility_ref: 'SpaMedRole1',
   //   nine_line_data: null
   // },
 
   // Spanish WIA
   // {
-  //   entity_ref: 'ESP-CAS-1',
+  //   entity_ref: 'SpaCas1',
   //   triage_color: 'GREEN',
   //   casualty_status: 'WIA',
   //   injury_mechanism: 'Laceration (equipment)',
@@ -334,11 +334,11 @@ const medicalDetails = [
   //   prehospital_treatment: 'Wound cleaned, sutured at Role-1',
 
   //   evac_stage: 'delivered',
-  //   destination_facility_ref: 'ESP-MED-R1',
+  //   destination_facility_ref: 'SpaMedRole1',
   //   nine_line_data: null
   // },
   // {
-  //   entity_ref: 'ESP-CAS-2',
+  //   entity_ref: 'SpaCas2',
   //   triage_color: 'GREEN',
   //   casualty_status: 'WIA',
   //   injury_mechanism: 'Sprain (dismount)',
@@ -349,7 +349,7 @@ const medicalDetails = [
   //   prehospital_treatment: 'RICE protocol, wrapped, crutches issued',
 
   //   evac_stage: 'delivered',
-  //   destination_facility_ref: 'ESP-MED-R1',
+  //   destination_facility_ref: 'SpaMedRole1',
   //   nine_line_data: null
   // }
 ];

@@ -23,51 +23,51 @@ const entities = [
   // ---------------------------------------------------------------
   // Friendly infantry (subset of valencia_urban — kept for context)
   // ---------------------------------------------------------------
-  { nombre: 'ESP INF-A',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-A',     activo: true, tipo_elemento: 'standard', observaciones: 'Urban patrol',          altitud: null, lng: -0.3768, lat: 39.4745 },
-  { nombre: 'ESP INF-B',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-B',     activo: true, tipo_elemento: 'standard', observaciones: 'Holding intersection',  altitud: null, lng: -0.3850, lat: 39.4632 },
-  { nombre: 'ESP INF-C',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-INF-C',     activo: true, tipo_elemento: 'standard', observaciones: 'Near park area',       altitud: null, lng: -0.3650, lat: 39.4841 },
-  { nombre: 'FRA INF-1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'France',  alliance: 'friendly', elemento_identificado: 'FRA-INF-1',     activo: true, tipo_elemento: 'standard', observaciones: 'Supporting ESP',       altitud: null, lng: -0.3530, lat: 39.4525 },
-  { nombre: 'DEU INF-1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-INF-1',     activo: true, tipo_elemento: 'standard', observaciones: 'QR force',              altitud: null, lng: -0.4002, lat: 39.4820 },
+  { nombre: 'SpaInfA',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaInfA',     activo: true, tipo_elemento: 'standard', observaciones: 'Urban patrol',          altitud: null, lng: -0.3768, lat: 39.4745 },
+  { nombre: 'SpaInfB',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaInfB',     activo: true, tipo_elemento: 'standard', observaciones: 'Holding intersection',  altitud: null, lng: -0.3850, lat: 39.4632 },
+  { nombre: 'SpaInfC',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaInfC',     activo: true, tipo_elemento: 'standard', observaciones: 'Near park area',       altitud: null, lng: -0.3650, lat: 39.4841 },
+  { nombre: 'FraInf1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'France',  alliance: 'friendly', elemento_identificado: 'FraInf1',     activo: true, tipo_elemento: 'standard', observaciones: 'Supporting ESP',       altitud: null, lng: -0.3530, lat: 39.4525 },
+  { nombre: 'GerInf1',  descripcion: 'Infantry squad (urban)',  categoria: 'infantry',   country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerInf1',     activo: true, tipo_elemento: 'standard', observaciones: 'QR force',              altitud: null, lng: -0.4002, lat: 39.4820 },
 
   // ---------------------------------------------------------------
   // Hostile forces (reduced subset)
   // ---------------------------------------------------------------
-  { nombre: 'H-INF-1',    descripcion: 'Hostile infantry',        categoria: 'infantry',   country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-1',      activo: true, tipo_elemento: 'standard', observaciones: 'Skirmishing',           altitud: null, lng: -0.3609, lat: 39.4705 },
-  { nombre: 'H-INF-4',    descripcion: 'Hostile infantry',        categoria: 'infantry',   country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-INF-4',      activo: true, tipo_elemento: 'standard', observaciones: 'Ambush expected',      altitud: null, lng: -0.3687, lat: 39.4611 },
-  { nombre: 'H-TANK-1',   descripcion: 'Hostile MBT',            categoria: 'armoured',       country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'H-TNK-1',      activo: true, tipo_elemento: 'MBT', observaciones: 'Covered position',     altitud: null, lng: -0.3700, lat: 39.4930 },
+  { nombre: 'HosInf1',    descripcion: 'Hostile infantry',        categoria: 'infantry',   country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosInf1',      activo: true, tipo_elemento: 'standard', observaciones: 'Skirmishing',           altitud: null, lng: -0.3609, lat: 39.4705 },
+  { nombre: 'HosInf4',    descripcion: 'Hostile infantry',        categoria: 'infantry',   country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosInf4',      activo: true, tipo_elemento: 'standard', observaciones: 'Ambush expected',      altitud: null, lng: -0.3687, lat: 39.4611 },
+  { nombre: 'HosTank1',   descripcion: 'Hostile MBT',            categoria: 'armoured',       country: 'Unknown', alliance: 'hostile',  elemento_identificado: 'HosTank1',      activo: true, tipo_elemento: 'MBT', observaciones: 'Covered position',     altitud: null, lng: -0.3700, lat: 39.4930 },
 
   // ---------------------------------------------------------------
   // Medical facilities
   // ---------------------------------------------------------------
   // Role 1 — forward aid post, near the contact area
-  { nombre: 'Aid Post Alpha', descripcion: 'Role-1 forward aid post', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R1-ALPHA', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Co-located with ESP INF-B', altitud: null, lng: -0.3840, lat: 39.4640 },
+  { nombre: 'Aid Post Alpha', descripcion: 'Role-1 forward aid post', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaAidPostAlpha', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Co-located with SpaInfB', altitud: null, max_capacity: 50, occupancy: 5, lng: -0.3840, lat: 39.4640 },
 
   // Role 2 — at Manises AB, limited surgical capability
-  { nombre: 'Manises Role-2', descripcion: 'Role-2 surgical facility at Manises AB', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R2-MANISES', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Surgical + stabilisation', altitud: null, lng: -0.4755, lat: 39.4915 },
+  { nombre: 'Manises Role-2', descripcion: 'Role-2 surgical facility at Manises AB', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaMedRole2Manises', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Surgical + stabilisation', altitud: null, max_capacity: 100, occupancy: 15, lng: -0.4755, lat: 39.4915 },
 
   // ---------------------------------------------------------------
   // MEDEVAC asset
   // ---------------------------------------------------------------
-  { nombre: 'ESP MEDEVAC-1', descripcion: 'Spanish MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MEDEVAC-1', activo: true, tipo_elemento: 'medevac_role_2', mobility: 'air', capacity: 1, observaciones: 'On standby at Manises', altitud: 0, lng: -0.4760, lat: 39.4910 },
+  { nombre: 'SpaMedevac1', descripcion: 'Spanish MEDEVAC helicopter', categoria: 'medevac_unit', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaMedevac1', activo: true, tipo_elemento: 'medevac_role_2', mobility: 'air', capacity: 1, observaciones: 'On standby at Manises', altitud: 0, lng: -0.4760, lat: 39.4910 },
 
   // ---------------------------------------------------------------
   // Air / ISR (context)
   // ---------------------------------------------------------------
-  { nombre: 'Manises AB',   descripcion: 'Air base (ESP)',          categoria: 'base',       country: 'Spain',   alliance: 'friendly', elemento_identificado: 'ESP-BASE-ZAZ', activo: true, tipo_elemento: 'Air Base', observaciones: 'Logistics hub',         altitud: null, lng: -0.4760, lat: 39.4910 },
-  { nombre: 'FRA UAV-ISR',  descripcion: 'High-altitude ISR UAV',  categoria: 'uav',        country: 'France',  alliance: 'friendly', elemento_identificado: 'FRA-UAV-1',    activo: true, tipo_elemento: 'ISR', observaciones: 'Wide-area scan',     altitud: 1200, lng: -0.3300, lat: 39.4700 },
-  { nombre: 'DEU HEL-1',    descripcion: 'Utility helicopter',     categoria: 'helicopter', country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-HEL-1',    activo: true, tipo_elemento: 'Utility', observaciones: 'General transport', altitud: 500,  lng: -0.3600, lat: 39.4900 },
+  { nombre: 'Manises AB',   descripcion: 'Air base (ESP)',          categoria: 'base',       country: 'Spain',   alliance: 'friendly', elemento_identificado: 'SpaBaseManises', activo: true, tipo_elemento: 'Air Base', observaciones: 'Logistics hub',         altitud: null, lng: -0.4760, lat: 39.4910 },
+  { nombre: 'FraUav1',  descripcion: 'High-altitude ISR UAV',  categoria: 'uav',        country: 'France',  alliance: 'friendly', elemento_identificado: 'FraUav1',    activo: true, tipo_elemento: 'ISR', observaciones: 'Wide-area scan',     altitud: 1200, lng: -0.3300, lat: 39.4700 },
+  { nombre: 'GerHelo1',    descripcion: 'Utility helicopter',     categoria: 'helicopter', country: 'Germany', alliance: 'friendly', elemento_identificado: 'GerHelo1',    activo: true, tipo_elemento: 'Utility', observaciones: 'General transport', altitud: 500,  lng: -0.3600, lat: 39.4900 },
 
   // ---------------------------------------------------------------
   // Casualties (these are the entities that get medical_details)
   // ---------------------------------------------------------------
-  // CAS-1: RED — blast injury, still at POI, urgent evacuation needed
-  { nombre: 'CAS-1 (RED)',  descripcion: 'Friendly casualty — blast injury, critical', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-1', activo: true, tipo_elemento: 'casualty', observaciones: 'Bilateral leg amputation, tourniquet applied', altitud: null, lng: -0.3770, lat: 39.4740 },
+  // SpaCas1: RED — blast injury, still at POI, urgent evacuation needed
+  { nombre: 'SpaCas1',  descripcion: 'Friendly casualty — blast injury, critical', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaCas1', activo: true, tipo_elemento: 'casualty', observaciones: 'Bilateral leg amputation, tourniquet applied', altitud: null, lng: -0.3770, lat: 39.4740 },
 
-  // CAS-2: YELLOW — GSW, being moved to Aid Post Alpha
-  { nombre: 'CAS-2 (YEL)', descripcion: 'Friendly casualty — GSW, in transit to R1', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'CAS-2', activo: true, tipo_elemento: 'casualty',  observaciones: 'Abdominal GSW, IV fluids started', altitud: null, lng: -0.3800, lat: 39.4650 },
+  // SpaCas2: YELLOW — GSW, being moved to Aid Post Alpha
+  { nombre: 'SpaCas2', descripcion: 'Friendly casualty — GSW, in transit to R1', categoria: 'casualty', country: 'Spain', alliance: 'friendly', elemento_identificado: 'SpaCas2', activo: true, tipo_elemento: 'casualty',  observaciones: 'Abdominal GSW, IV fluids started', altitud: null, lng: -0.3800, lat: 39.4650 },
 
-  // CAS-3: GREEN — minor laceration, already at Aid Post
-  { nombre: 'CAS-3 (GRN)', descripcion: 'Friendly casualty — minor laceration, stable', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'CAS-3', activo: true, tipo_elemento: 'casualty',  observaciones: 'Facial laceration, conscious and alert', altitud: null, lng: -0.3843, lat: 39.4638 },
+  // FraCas1: GREEN — minor laceration, already at Aid Post
+  { nombre: 'FraCas1', descripcion: 'Friendly casualty — minor laceration, stable', categoria: 'casualty', country: 'France', alliance: 'friendly', elemento_identificado: 'FraCas1', activo: true, tipo_elemento: 'casualty',  observaciones: 'Facial laceration, conscious and alert', altitud: null, lng: -0.3843, lat: 39.4638 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -83,7 +83,7 @@ const entities = [
 // ---------------------------------------------------------------------------
 const medicalDetails = [
   {
-    entity_ref: 'CAS-1',
+    entity_ref: 'SpaCas1',
     triage_color: 'RED',
     casualty_status: 'WIA',
     injury_mechanism: 'Blast (IED)',
@@ -95,13 +95,13 @@ const medicalDetails = [
     prehospital_treatment: 'Bilateral tourniquet (CoTCCC), IO access, 1L Hetastarch',
 
     evac_stage: 'at_poi',
-    destination_facility_ref: 'MED-R1-ALPHA',   // → Aid Post Alpha (first stop)
+    destination_facility_ref: 'SpaAidPostAlpha',   // → Aid Post Alpha (first stop)
     nine_line_data: {
       line1_location: '39.4740,-0.3770',
       line2_frequency: 'FM 34.250',
       line3_casualties: '1 URGENT',
       line4_equipment: 'None available at POI',
-      line5_patient_info: 'Male, 28y, ESP INF-A',
+      line5_patient_info: 'Male, 28y, SpaInfA',
       line6_terrain: 'Urban street, accessible by vehicle from south',
       line7_friendly_fire: 'N/A',
       line8_patient_packaging: 'Stretcher',
@@ -109,7 +109,7 @@ const medicalDetails = [
     }
   },
   {
-    entity_ref: 'CAS-2',
+    entity_ref: 'SpaCas2',
     triage_color: 'YELLOW',
     casualty_status: 'WIA',
     injury_mechanism: 'GSW (rifle)',
@@ -121,17 +121,17 @@ const medicalDetails = [
     prehospital_treatment: 'IV access (18G AC), 500ml crystalloid, wound packed',
 
     evac_stage: 'in_transit',
-    destination_facility_ref: 'MED-R1-ALPHA',
+    destination_facility_ref: 'SpaAidPostAlpha',
     nine_line_data: {
       line1_location: '39.4650,-0.3800',
       line2_frequency: 'FM 34.250',
       line3_casualties: '1 PRIORITY',
-      line5_patient_info: 'Male, 31y, ESP INF-B',
+      line5_patient_info: 'Male, 31y, SpaInfB',
       line9_remarks: 'Being moved on foot to Aid Post Alpha. ETA ~8 min.'
     }
   },
   {
-    entity_ref: 'CAS-3',
+    entity_ref: 'FraCas1',
     triage_color: 'GREEN',
     casualty_status: 'WIA',
     injury_mechanism: 'Blast (fragmentation)',
@@ -142,7 +142,7 @@ const medicalDetails = [
     prehospital_treatment: 'Wound cleaned and dressed at POI',
 
     evac_stage: 'delivered',                     // already at Aid Post
-    destination_facility_ref: 'MED-R1-ALPHA',
+    destination_facility_ref: 'SpaAidPostAlpha',
     nine_line_data: null                         // not yet extracted
   }
 ];
