@@ -65,6 +65,21 @@ function _notifyNewCasualty(entity) {
   pfcAgent('/casualties/notify', payload);
 }
 
+// A civilian group was created or changed (its headcount, its place): the planner
+// gives it a shelter and vehicles. Shares the casualty debounce on the planner side.
+function _notifyCivilians(entity) {
+  const lat = entity.lat ?? entity.latitud;
+  const lng = entity.lng ?? entity.longitud;
+  if (lat == null || lng == null) return;
+  planner('/civilians/notify', {
+    id:        entity.id,
+    name:      entity.name ?? entity.nombre ?? `Entity-${entity.id}`,
+    lat:       Number(lat),
+    lng:       Number(lng),
+    headcount: entity.headcount ?? 1,
+  });
+}
+
 // A platform's operational status changed (a breakdown, or back in service). Sent on
 // the change only: the movement simulation PUTs vehicle positions every second, and
 // the planner reassigns casualties on each of these.
@@ -204,6 +219,7 @@ router.post('/', async (req, res) => {
     const entity = await Entity.create(req.body);
     if (entity.alliance === 'hostile') _notifyThreat(entity);
     if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
+    if (entity.categoria === 'civilian') _notifyCivilians(entity);
     sseBroker.broadcast({ type: 'entity_created', data: entity });
     res.status(201).json({ success: true, data: entity });
   } catch (err) {
@@ -226,6 +242,7 @@ router.post('/batch', async (req, res) => {
       sseBroker.broadcast({ type: 'entity_created', data: entity });
       if (entity.alliance === 'hostile') _notifyThreat(entity);
       if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
+      if (entity.categoria === 'civilian') _notifyCivilians(entity);
     });
     res.status(201).json({ success: true, count: data.length, data });
   } catch (err) {
@@ -270,6 +287,7 @@ router.put('/:id', async (req, res) => {
     const positionOnly = Object.keys(req.body).every(k => k === 'latitud' || k === 'longitud');
     if (entity.alliance === 'hostile') _notifyThreat(entity);
     if (entity.categoria === 'casualty' && !positionOnly) _notifyNewCasualty(entity);
+    if (entity.categoria === 'civilian' && !positionOnly) _notifyCivilians(entity);
     const statusChanged = statusSent && (before?.status ?? 'operational') !== (entity.status ?? 'operational');
     if (statusChanged) _notifyAssetStatus(entity, before?.status);
     sseBroker.broadcast({
