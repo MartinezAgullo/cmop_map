@@ -1167,6 +1167,10 @@ function renderList() {
         ? `<span class="ent-clock">—</span>`
         : `<span class="ent-clock${triage === 'RED' ? ' hot' : ''}" data-since="${esc(e.medical.created_at)}">${fmtElapsed(secs)}</span>`;
       right = `<span class="ent-right"><span class="ent-tag">${meta.tag}</span>${clock}</span>`;
+    } else if (e.categoria === 'civilian') {
+      // How many people, and how far their evacuation has got.
+      right = `<span class="ent-right"><span class="ent-tag">${e.headcount ?? 1}</span>` +
+              `<span class="ent-clock">${esc(civilianStage(e.medical?.evac_stage))}</span></span>`;
     } else if (e.casevac_eligible) {
       right = `<span class="ent-right"><span class="ent-flag">CASEVAC</span></span>`;
     }
@@ -1216,6 +1220,8 @@ function _matchesSearch(e, query) {
 
 /** Casualties rank above units; inside casualties, down the triage scale. */
 function _urgencyRank(e) {
+  // Civilians still to evacuate come after the casualties and before every unit.
+  if (e.categoria === 'civilian') return e.medical?.evac_stage === 'delivered' ? 99 : 95;
   if (e.categoria !== 'casualty') return 100;
   const idx = TRIAGE_ORDER.indexOf(e.medical?.triage_color || 'UNKNOWN');
   return idx === -1 ? 90 : idx;
@@ -1567,13 +1573,15 @@ function buildPopup(e) {
     `<span class="med-value${big ? ' big' : ''}">${value}</span></div>`;
 
   let medicalHTML = '';
-  if (e.medical && e.categoria === 'civilian') {
-    const m = e.medical;
+  if (e.categoria === 'civilian') {
+    const m = e.medical || {};
     medicalHTML = `
       <div class="popup-medical">
         <h4>${t('popup.evacuation')}</h4>
-        ${row(t('popup.stage'), esc(m.evac_stage || '—'))}
+        ${row(t('popup.headcount'), e.headcount ?? 1, true)}
+        ${row(t('popup.stage'), esc(civilianStage(m.evac_stage)))}
         ${m.destination_facility ? row(t('popup.destination'), esc(m.destination_facility.nombre)) : ''}
+        ${m.evac_stage === 'delivered' ? '' : _groupVehiclesHTML(e)}
       </div>`;
   } else if (e.medical) {
     const m = e.medical;
@@ -1596,14 +1604,13 @@ function buildPopup(e) {
   // A shelter or medical facility: people there (derived by the API) over its places.
   const occupancy = e.occupancy == null ? ''
     : `${e.occupancy}${e.max_capacity ? ` / ${e.max_capacity}` : ''}`;
-  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity || e.headcount || occupancy) ? `
+  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity || occupancy) ? `
       <div class="popup-info">
         ${damaged ? `<p><span class="damaged-badge">${t('popup.damaged')}</span></p>` : ''}
         ${e.descripcion ? `<p>${esc(e.descripcion)}</p>` : ''}
         ${e.observaciones ? `<p><strong>${t('popup.obs')}:</strong> ${esc(e.observaciones)}</p>` : ''}
         ${e.casevac_eligible ? `<p><span class="casevac-badge">${t('popup.casevac')}</span></p>` : ''}
         ${e.capacity ? `<p><strong>${t('popup.capacity')}:</strong> ${e.capacity}</p>` : ''}
-        ${e.headcount ? `<p><strong>${t('popup.headcount')}:</strong> ${e.headcount}</p>` : ''}
         ${occupancy ? `<p><strong>${t('popup.occupancy')}:</strong> ${occupancy}</p>` : ''}
       </div>` : '';
 
@@ -1660,7 +1667,9 @@ function _assignmentHTML(e) {
   }
   const legs = mine.map(a => {
     const meta = TRIAGE_META[a.triage];
-    const tag  = meta ? `<span style="color:${meta.ink}">${meta.tag}</span> ` : '';
+    const tag  = a.kind === 'civilian'
+      ? `<span class="med-label">${t('assign.people', { n: a.people })}</span> `
+      : meta ? `<span style="color:${meta.ink}">${meta.tag}</span> ` : '';
     const dest = a.destination_name ? ` → ${esc(a.destination_name)}` : '';
     const what = a.stage === 'in_transit' ? t('assign.inTransit') : t('assign.toPickup');
     return row(what, `${tag}${_entityName(a.casualty_id, a.casualty_name)}${dest}`);
@@ -1668,9 +1677,30 @@ function _assignmentHTML(e) {
   return section(row(t('popup.status'), `<span class="assign-badge busy">${t('assign.busy')}</span>`) + legs.join(''));
 }
 
+/** A civilian group's evac_stage in words: waiting, in transit, at the shelter. */
+function civilianStage(stage) {
+  return stage ? t('stage.' + stage) : '—';
+}
+
+/** The vehicles the planner sent for a civilian group: each one's people, trips and leg. */
+function _groupVehiclesHTML(e) {
+  const row = (label, value) =>
+    `<div class="med-row"><span class="med-label">${label}</span><span class="med-value">${value}</span></div>`;
+  if (_assignments === undefined) return row(t('assign.vehicles'), t('assign.asking'));
+  if (_assignments === null)      return row(t('assign.vehicles'), t('assign.unknown'));
+  const mine = _assignments.filter(a => a.casualty_id === e.id);
+  if (mine.length === 0) return row(t('assign.vehicles'), t('assign.noVehicle'));
+  return mine.map(a => {
+    const trips = a.trips > 1 ? ` · ${t('assign.trips', { n: a.trips })}` : '';
+    const what  = a.stage === 'in_transit' ? t('assign.inTransit') : t('assign.toPickup');
+    return row(what, `${_entityName(a.asset_id, a.asset_name)} · ${t('assign.people', { n: a.people })}${trips}`);
+  }).join('');
+}
+
 /** Ask the planner again and rebuild the popup of *marker*, if it shows an assignment. */
 async function _refreshAssignmentPopup(marker) {
-  if (!_showsAssignment(marker._cmopEntity)) return;
+  const e = marker._cmopEntity;
+  if (!_showsAssignment(e) && e?.categoria !== 'civilian') return;
   await refreshAssignments();
   if (marker.isPopupOpen()) marker.setPopupContent(buildPopup(marker._cmopEntity));
 }

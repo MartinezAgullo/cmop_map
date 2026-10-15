@@ -13,7 +13,8 @@ CMOP (Common Medical Operational Picture) map service. Geospatial layer for mili
 The panel is a map legend, not a dashboard: colour is treated as a data type, so the chrome stays graphite and the only saturated pixels on screen belong to triage, alliance and route colours.
 
 - **Triage ladder** — a proportional bar over a six-column count scale (T1 / T2 / T3 / T4 / KIA / unknown). It is the census, the alarm and the triage filter in one object: click a band and both the roster and the map narrow to it. The same colours reappear as the left edge of every roster row and in the map legend, so one colour always means one thing.
-- **Three tabs** — Roster, Filters and MEDEVAC. The roster gets every pixel below the ladder and is sorted by clinical urgency: casualties first, down the triage scale, then units by name.
+- **Three tabs** — Roster, Filters and MEDEVAC. The roster gets every pixel below the ladder and is sorted by clinical urgency: casualties first, down the triage scale, then civilian groups still to evacuate, then units by name. A civilian row shows its people and how far the evacuation has got (*waiting*, *in transit*, *at the shelter*).
+- **Civilian popup** — a civilian group's popup shows its people, its stage, its destination shelter and, from the planner, each vehicle sent for it with the people it carries and its trips. A vehicle carrying civilians shows *8 people* where a casualty shows its triage.
 - **Elapsed clocks** — casualty rows and popups carry a running time since the medical record was written. There is no injury timestamp in the schema yet, so a scenario load starts every clock together; live casualties pushed over SSE are the ones that diverge.
 - **Air routes against threats** — a helicopter route that crosses a hostile unit's air-defence envelope carries the planner's advisory: clicking it opens a red **INCREASE ALTITUDE** banner naming the threat and the legs, and the MEDEVAC tab marks it under the route. With the planner in `divert` mode the route is drawn bent around the threat and the banner reads **DIVERTED ROUTE** instead.
 - **Picking a plan** — every card in the MEDEVAC tab is one plan. Click it and the map zooms to that vehicle's route and fades the others, as a roster row does for an entity; click it again to see them all. The pick survives a route reload (a replan, *Refresh*, a theme change).
@@ -533,7 +534,7 @@ Floods, fires and other disasters: areas that ground routes avoid and that trap 
   "created_at": "...", "updated_at": "..." }
 ```
 
-`icon_point` lies on the zone (`ST_PointOnSurface`): the map draws the event badge there. `active: false` keeps a zone on record (dashed and faded on the map) once it no longer has to be avoided. A scenario file may export `hazardZones`, a list of create bodies; loading any scenario replaces every zone.
+`icon_point` lies on the zone (`ST_PointOnSurface`): the map draws the event badge there. `active: false` keeps a zone on record (dashed and faded on the map) once it no longer has to be avoided. A scenario file may export `hazardZones`, a list of create bodies; loading any scenario replaces every zone. A scenario may hold only zones and no entities.
 
 Every write is broadcast over SSE and posted to the planner (`POST /hazards/notify` with `{action, id, name, hazard_type, active}`), which reroutes its live ground assignments and replans; `routing_mcp` excludes the active zones from every ground route. Agents write zones through `cmop_mcp` (`report_hazard_area`, `clear_hazard_area`), which computes the geometry from reported coordinates.
 
