@@ -6,7 +6,7 @@
 // through Paiporta, Benetússer, Alfafar, Sedaví, Massanassa and Catarroja, south of
 // the city. The flooded area is much smaller than the real one on purpose: Valhalla
 // refuses a route whose exclusion rings add up to more than 10 km of perimeter
-// (max_exclude_polygons_length), and these zones total about 8.5 km.
+// (max_exclude_polygons_length), and these zones total about 8.8 km.
 //
 //   - Hazard zones: one flood event in three parts along the barranco, and a
 //     building collapse in Paiporta.
@@ -28,7 +28,7 @@ const meta = {
   tags: ['civil-emergencies', 'flood', 'dana', 'valencia', 'civilians', 'shelters', 'hazard-zones']
 };
 
-const E = { country: 'Spain', activo: true, altitud: null };
+const E = { country: null, activo: true, altitud: null };
 
 const entities = [
   // ── Hospitals (sized by role, see FACILITY_SIZE_BY_ROLE) ───────────────────
@@ -64,8 +64,8 @@ const entities = [
   { ...E, nombre: 'SpaCas6', elemento_identificado: 'SpaCas6', categoria: 'casualty', alliance: 'neutral', tipo_elemento: 'casualty', descripcion: 'Bruises and cuts', observaciones: 'Walking', lat: 39.4180, lng: -0.3870 },
 
   // ── Ambulances and medical helicopter (SAMU) ───────────────────────────────
-  { ...E, nombre: 'SpaMedevac1',     elemento_identificado: 'SpaMedevac1',     categoria: 'medevac_unit', alliance: 'friendly', tipo_elemento: 'medevac_ambulance', mobility: 'ground', capacity: 2, descripcion: 'SAMU advanced life support ambulance', observaciones: 'Two litters', lat: 39.4440, lng: -0.3770 },
-  { ...E, nombre: 'SpaMedevac2',     elemento_identificado: 'SpaMedevac2',     categoria: 'medevac_unit', alliance: 'friendly', tipo_elemento: 'medevac_ambulance', mobility: 'ground', capacity: 1, descripcion: 'SAMU advanced life support ambulance', observaciones: 'One litter', lat: 39.4560, lng: -0.3910 },
+  { ...E, nombre: 'SpaMedevac1',     elemento_identificado: 'SpaMedevac1',     categoria: 'medevac_unit', alliance: 'friendly', tipo_elemento: 'medevac_role_1',    mobility: 'ground', capacity: 2, descripcion: 'SAMU advanced life support ambulance', observaciones: 'Two litters', lat: 39.4440, lng: -0.3770 },
+  { ...E, nombre: 'SpaMedevac2',     elemento_identificado: 'SpaMedevac2',     categoria: 'medevac_unit', alliance: 'friendly', tipo_elemento: 'medevac_role_1',    mobility: 'ground', capacity: 1, descripcion: 'SAMU advanced life support ambulance', observaciones: 'One litter', lat: 39.4560, lng: -0.3910 },
   { ...E, nombre: 'SpaMedevacHelo1', elemento_identificado: 'SpaMedevacHelo1', categoria: 'medevac_unit', alliance: 'friendly', tipo_elemento: 'medevac_role_1',    mobility: 'air',    capacity: 1, descripcion: 'Medical helicopter (HEMS)', observaciones: 'Hoist fitted', lat: 39.4895, lng: -0.4816 },
 
   // ── Fire and rescue (Consorcio Provincial de Bomberos) ─────────────────────
@@ -104,7 +104,8 @@ const medicalDetails = [
 ];
 
 // ---------------------------------------------------------------------------
-// Hazard zones, [lng, lat]. Kept small so their perimeters fit Valhalla's 10 km.
+// Hazard zones, [lng, lat]. Irregular outlines that spread along the barranco, kept
+// small so their perimeters (about 8.8 km in all) fit Valhalla's 10 km.
 // ---------------------------------------------------------------------------
 const ring = coords => [...coords, coords[0]];
 
@@ -117,11 +118,26 @@ const hazardZones = [
       type: 'MultiPolygon',
       coordinates: [
         // Paiporta, along the barranco through the town centre
-        [ring([[-0.4240, 39.4300], [-0.4130, 39.4300], [-0.4100, 39.4262], [-0.4210, 39.4262]])],
+        [ring([
+          [-0.4070, 39.4302], [-0.4074, 39.4307], [-0.4094, 39.4308], [-0.4115, 39.4306], [-0.4132, 39.4306], [-0.4148, 39.4306],
+          [-0.4168, 39.4305], [-0.4189, 39.4301], [-0.4208, 39.4295], [-0.4223, 39.4289], [-0.4238, 39.4283], [-0.4247, 39.4277],
+          [-0.4249, 39.4272], [-0.4248, 39.4267], [-0.4251, 39.4262], [-0.4254, 39.4255], [-0.4247, 39.4250], [-0.4225, 39.4250],
+          [-0.4199, 39.4255], [-0.4176, 39.4262], [-0.4158, 39.4267], [-0.4141, 39.4271], [-0.4126, 39.4276], [-0.4113, 39.4281],
+          [-0.4098, 39.4287], [-0.4081, 39.4294],
+        ])],
         // Benetússer and Alfafar
-        [ring([[-0.4000, 39.4255], [-0.3880, 39.4255], [-0.3880, 39.4205], [-0.4000, 39.4205]])],
+        [ring([
+          [-0.3865, 39.4210], [-0.3863, 39.4217], [-0.3873, 39.4226], [-0.3890, 39.4233], [-0.3906, 39.4238], [-0.3918, 39.4243],
+          [-0.3930, 39.4248], [-0.3944, 39.4253], [-0.3962, 39.4257], [-0.3979, 39.4258], [-0.3994, 39.4257], [-0.4004, 39.4252],
+          [-0.4006, 39.4245], [-0.3999, 39.4237], [-0.3988, 39.4230], [-0.3980, 39.4224], [-0.3973, 39.4217], [-0.3964, 39.4209],
+          [-0.3949, 39.4202], [-0.3931, 39.4199], [-0.3916, 39.4201], [-0.3906, 39.4204], [-0.3894, 39.4205], [-0.3879, 39.4206],
+        ])],
         // Massanassa
-        [ring([[-0.4050, 39.4110], [-0.3990, 39.4110], [-0.3990, 39.4070], [-0.4050, 39.4070]])],
+        [ring([
+          [-0.3983, 39.4110], [-0.3993, 39.4113], [-0.4005, 39.4113], [-0.4016, 39.4113], [-0.4028, 39.4111], [-0.4040, 39.4106],
+          [-0.4049, 39.4098], [-0.4053, 39.4091], [-0.4055, 39.4084], [-0.4057, 39.4076], [-0.4054, 39.4069], [-0.4044, 39.4065],
+          [-0.4029, 39.4069], [-0.4017, 39.4075], [-0.4008, 39.4081], [-0.3998, 39.4086], [-0.3987, 39.4093], [-0.3980, 39.4102],
+        ])],
       ],
     },
   },
@@ -131,7 +147,9 @@ const hazardZones = [
     description: 'A house undermined by the water collapsed; people trapped under the rubble',
     geometry: {
       type: 'MultiPolygon',
-      coordinates: [[ring([[-0.4173, 39.4321], [-0.4159, 39.4321], [-0.4159, 39.4311], [-0.4173, 39.4311]])]],
+      coordinates: [[ring([
+        [-0.4172, 39.4320], [-0.4165, 39.4322], [-0.4159, 39.4319], [-0.4160, 39.4313], [-0.4167, 39.4311], [-0.4173, 39.4314],
+      ])]],
     },
   },
 ];
