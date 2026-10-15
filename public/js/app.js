@@ -446,11 +446,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 const TILE_LAYERS = {
   light: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '© OpenStreetMap contributors'
   },
   dark: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '© OpenStreetMap contributors'
   }
 };
@@ -460,7 +460,7 @@ function setTileLayer(theme) {
   const cfg = TILE_LAYERS[theme];
   tileLayer = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 19 });
   // A constant message, so client-log's throttle folds a screenful of failed tiles into one line.
-  tileLayer.on('tileerror', () => console.warn(`Map tiles failing to load from ${new URL(cfg.url.replace('{s}', 'a')).host}`));
+  tileLayer.on('tileerror', () => console.warn(`Map tiles failing to load from ${new URL(cfg.url).host}`));
   tileLayer.addTo(map);
 }
 
