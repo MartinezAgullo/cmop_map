@@ -28,7 +28,7 @@ function refuseCapacity(res, entity, label = '') {
 }
 
 // Fields that change what capacityProblem checks on an update.
-const CAPACITY_FIELDS = ['capacity', 'mobility', 'categoria', 'max_capacity', 'initial_occupancy'];
+const CAPACITY_FIELDS = ['capacity', 'mobility', 'categoria', 'max_capacity', 'occupancy'];
 
 // ---------------------------------------------------------------------------
 // Planner / PFC-agent notifications — fire-and-forget, never block the response

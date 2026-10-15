@@ -40,10 +40,10 @@ test('capacities at the limit, absent, or not whole numbers', () => {
 });
 
 test('a facility cannot hold more people than places', () => {
-  assert.equal(capacityProblem({ categoria: 'shelter', max_capacity: 100, initial_occupancy: 100 }), null);
-  assert.match(capacityProblem({ categoria: 'shelter', max_capacity: 100, initial_occupancy: 101 }).message, /above max_capacity/);
+  assert.equal(capacityProblem({ categoria: 'shelter', max_capacity: 100, occupancy: 100 }), null);
+  assert.match(capacityProblem({ categoria: 'shelter', max_capacity: 100, occupancy: 101 }).message, /above max_capacity/);
   assert.match(capacityProblem({ categoria: 'shelter', max_capacity: 0 }).message, /max_capacity/);
-  assert.match(capacityProblem({ categoria: 'shelter', initial_occupancy: -1 }).message, /0 or more/);
+  assert.match(capacityProblem({ categoria: 'shelter', occupancy: -1 }).message, /0 or more/);
 });
 
 test('a higher role is a larger facility', () => {
@@ -57,7 +57,7 @@ test('every scenario facility has places, and every capacity is accepted', () =>
     for (const e of require(path.join(dir, file)).entities) {
       assert.equal(capacityProblem(e), null, `${file}: ${e.nombre}`);
       if (e.categoria === 'medical_facility') {
-        assert.ok(e.max_capacity >= 1 && e.initial_occupancy >= 0, `${file}: ${e.nombre} has no places`);
+        assert.ok(e.max_capacity >= 1 && e.occupancy >= 0, `${file}: ${e.nombre} has no places`);
       }
     }
   }
@@ -67,5 +67,5 @@ test('a generated MASCAL never runs out of places', () => {
   const { entities } = generateMascalScenario({ n_casualties: 200, n_medical_facilities: 1, seed: 7 });
   const facilities = entities.filter(e => e.categoria === 'medical_facility');
   assert.equal(facilities.length, 1);
-  assert.ok(facilities[0].max_capacity - facilities[0].initial_occupancy >= 200);
+  assert.ok(facilities[0].max_capacity - facilities[0].occupancy >= 200);
 });

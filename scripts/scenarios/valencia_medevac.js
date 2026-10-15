@@ -40,10 +40,10 @@ const entities = [
   // Medical facilities
   // ---------------------------------------------------------------
   // Role 1 — forward aid post, near the contact area
-  { nombre: 'Aid Post Alpha', descripcion: 'Role-1 forward aid post', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R1-ALPHA', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Co-located with ESP INF-B', altitud: null, max_capacity: 50, initial_occupancy: 5, lng: -0.3840, lat: 39.4640 },
+  { nombre: 'Aid Post Alpha', descripcion: 'Role-1 forward aid post', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R1-ALPHA', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Co-located with ESP INF-B', altitud: null, max_capacity: 50, occupancy: 5, lng: -0.3840, lat: 39.4640 },
 
   // Role 2 — at Manises AB, limited surgical capability
-  { nombre: 'Manises Role-2', descripcion: 'Role-2 surgical facility at Manises AB', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R2-MANISES', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Surgical + stabilisation', altitud: null, max_capacity: 100, initial_occupancy: 15, lng: -0.4755, lat: 39.4915 },
+  { nombre: 'Manises Role-2', descripcion: 'Role-2 surgical facility at Manises AB', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'MED-R2-MANISES', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Surgical + stabilisation', altitud: null, max_capacity: 100, occupancy: 15, lng: -0.4755, lat: 39.4915 },
 
   // ---------------------------------------------------------------
   // MEDEVAC asset

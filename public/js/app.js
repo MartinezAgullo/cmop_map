@@ -822,7 +822,7 @@ function updateTipoElementoOptions(categoria) {
   } else {
     facilityGroup.style.display = 'none';
     document.getElementById('maxCapacity').value = '';
-    document.getElementById('initialOccupancy').value = '0';
+    document.getElementById('occupancy').value = '0';
   }
 
   const mobilityGroup  = document.getElementById('mobilityGroup');
@@ -1769,10 +1769,10 @@ function formProblems() {
 
   if (_isShown('facilityCapacityGroup')) {
     const places = _intValue('maxCapacity');
-    const already = _intValue('initialOccupancy');
+    const already = _intValue('occupancy');
     if (Number.isNaN(places)) missing.push(_label('form.maxCapacity'));
     else if (places < 1) refused.push(_label('form.maxCapacity'));
-    if (already < 0 || (places >= 1 && already > places)) refused.push(_label('form.initialOccupancy'));
+    if (already < 0 || (places >= 1 && already > places)) refused.push(_label('form.occupancy'));
   }
   return { missing, refused };
 }
@@ -1793,7 +1793,7 @@ function refreshSaveButton() {
 
   const places = _intValue('maxCapacity');
   _field('occupancyError').hidden = !(_isShown('facilityCapacityGroup') && places >= 1
-                                      && _intValue('initialOccupancy') > places);
+                                      && _intValue('occupancy') > places);
   return !blocked;
 }
 
@@ -1855,7 +1855,7 @@ async function crearNuevaEntidad() {
 
     if (FACILITY_CATEGORIES.includes(categoria)) {
       payload.max_capacity      = _intValue('maxCapacity');
-      payload.initial_occupancy = _intValue('initialOccupancy') || 0;
+      payload.occupancy = _intValue('occupancy') || 0;
     }
 
     // A civilian's record holds only its evacuation fields: the casualty lists skip it.

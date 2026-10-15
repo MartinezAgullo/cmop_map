@@ -91,9 +91,9 @@ const entities = [
   // ---------------------------------------------------------------
   // Medical facilities
   // ---------------------------------------------------------------
-  { nombre: 'ESP MED Role-1', descripcion: 'Spanish Role-1 aid post', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MED-R1', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Forward medical point', altitud: null, max_capacity: 50, initial_occupancy: 5, lng: 2.30, lat: 48.58 },
-  { nombre: 'FRA MED Role-2', descripcion: 'French Role-2 surgical facility', categoria: 'medical_facility', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-MED-R2', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Forward surgical team', altitud: null, max_capacity: 100, initial_occupancy: 15, lng: 2.25, lat: 48.60 },
-  { nombre: 'DEU MED Role-3', descripcion: 'German Role-3 field hospital', categoria: 'medical_facility', country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-MED-R3', activo: true, tipo_elemento: 'medical_role_3', observaciones: 'Full surgical capability', altitud: null, max_capacity: 300, initial_occupancy: 50, lng: 2.20, lat: 48.62 },
+  { nombre: 'ESP MED Role-1', descripcion: 'Spanish Role-1 aid post', categoria: 'medical_facility', country: 'Spain', alliance: 'friendly', elemento_identificado: 'ESP-MED-R1', activo: true, tipo_elemento: 'medical_role_1', observaciones: 'Forward medical point', altitud: null, max_capacity: 50, occupancy: 5, lng: 2.30, lat: 48.58 },
+  { nombre: 'FRA MED Role-2', descripcion: 'French Role-2 surgical facility', categoria: 'medical_facility', country: 'France', alliance: 'friendly', elemento_identificado: 'FRA-MED-R2', activo: true, tipo_elemento: 'medical_role_2', observaciones: 'Forward surgical team', altitud: null, max_capacity: 100, occupancy: 15, lng: 2.25, lat: 48.60 },
+  { nombre: 'DEU MED Role-3', descripcion: 'German Role-3 field hospital', categoria: 'medical_facility', country: 'Germany', alliance: 'friendly', elemento_identificado: 'DEU-MED-R3', activo: true, tipo_elemento: 'medical_role_3', observaciones: 'Full surgical capability', altitud: null, max_capacity: 300, occupancy: 50, lng: 2.20, lat: 48.62 },
 
   // ---------------------------------------------------------------
   // MEDEVAC assets

@@ -134,10 +134,10 @@ const BASE_TABLE = `
     -- everywhere else: a casualty is one person, a vehicle carries rather than counts.
     headcount             SMALLINT          CHECK (headcount IS NULL OR headcount >= 1),
     -- Places of a shelter or medical facility (NULL: not stated, read as no limit),
-    -- and the people already there when it was added. Its occupancy is never stored:
-    -- the API derives it as initial_occupancy plus everyone delivered there.
+    -- and the people there now. An operator or a scenario sets the occupancy; every
+    -- delivery adds to it through trg_md_count_delivery (see DELIVERY_TRIGGER).
     max_capacity          INTEGER           CHECK (max_capacity IS NULL OR max_capacity >= 1),
-    initial_occupancy     INTEGER           CHECK (initial_occupancy IS NULL OR initial_occupancy >= 0),
+    occupancy             INTEGER           CHECK (occupancy IS NULL OR occupancy >= 0),
     status                asset_status_enum,
     geom                  GEOMETRY(Point, 4326) NOT NULL,
     created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
@@ -306,6 +306,41 @@ const UPDATED_AT_TRIGGER = `
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 `;
 
+// Occupancy follows the deliveries in the database itself, so no writer (the API, the
+// planner's simulation, a scenario load) can forget it: when a medical record becomes
+// `delivered` with a destination, its people are added to that facility, and a record
+// that stops being delivered there takes them back. A civilian counts its headcount, a
+// casualty one. Deleting a delivered person from the map changes nothing: they are
+// still in the facility.
+const DELIVERY_TRIGGER = `
+  CREATE OR REPLACE FUNCTION people_of(entity INTEGER)
+  RETURNS INTEGER AS $$
+    SELECT CASE WHEN categoria = 'civilian' THEN COALESCE(headcount, 1) ELSE 1 END
+    FROM puntos_interes WHERE id = entity;
+  $$ LANGUAGE sql STABLE;
+
+  CREATE OR REPLACE FUNCTION count_delivery()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    IF TG_OP = 'UPDATE' AND OLD.evac_stage = 'delivered' AND OLD.destination_facility_id IS NOT NULL THEN
+      UPDATE puntos_interes
+         SET occupancy = GREATEST(0, COALESCE(occupancy, 0) - COALESCE(people_of(OLD.entity_id), 1))
+       WHERE id = OLD.destination_facility_id;
+    END IF;
+    IF NEW.evac_stage = 'delivered' AND NEW.destination_facility_id IS NOT NULL THEN
+      UPDATE puntos_interes
+         SET occupancy = COALESCE(occupancy, 0) + COALESCE(people_of(NEW.entity_id), 1)
+       WHERE id = NEW.destination_facility_id;
+    END IF;
+    RETURN NULL;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER trg_md_count_delivery
+    AFTER INSERT OR UPDATE OF evac_stage, destination_facility_id ON medical_details
+    FOR EACH ROW EXECUTE FUNCTION count_delivery();
+`;
+
 // ---------------------------------------------------------------------------
 // 6. Drop helpers  (order matters due to FKs)
 // ---------------------------------------------------------------------------
@@ -327,6 +362,8 @@ const DROP_ALL = `
   DROP TYPE IF EXISTS categoria_militar;
 
   DROP FUNCTION IF EXISTS set_updated_at();
+  DROP FUNCTION IF EXISTS count_delivery();
+  DROP FUNCTION IF EXISTS people_of(INTEGER);
 `;
 
 // ---------------------------------------------------------------------------
@@ -366,6 +403,9 @@ const initDatabase = async () => {
 
     await pool.query(UPDATED_AT_TRIGGER);
     console.log('✅ updated_at triggers created');
+
+    await pool.query(DELIVERY_TRIGGER);
+    console.log('✅ occupancy trigger created');
 
     console.log('\n🎉 CMOP schema ready. Load a scenario with:\n   node scripts/load-scenario.js <scenario_name>\n');
     process.exit(0);
