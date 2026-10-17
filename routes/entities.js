@@ -11,6 +11,7 @@ const Entity     = require('../models/entity');
 const sseBroker  = require('../lib/sse-broker');
 const services   = require('../config/services');
 const { createNotifier } = require('../lib/notifier');
+const { createCasualtyNotifier } = require('../lib/casualty-hooks');
 const log        = require('../lib/logger').child('entities');
 const { sendError } = require('../lib/db-error');
 const { capacityLimit, capacityProblem } = require('../lib/capacity-limits');
@@ -35,6 +36,7 @@ const CAPACITY_FIELDS = ['capacity', 'mobility', 'categoria', 'max_capacity', 'o
 // ---------------------------------------------------------------------------
 const planner  = createNotifier({ service: 'planner',   baseUrl: services.planner,  logger: log });
 const pfcAgent = createNotifier({ service: 'pfc_agent', baseUrl: services.pfcAgent, logger: log });
+const notifyCasualty = createCasualtyNotifier({ planner, pfcAgent });
 
 function _notifyThreat(entity) {
   const lat  = entity.lat  ?? entity.latitud;
@@ -42,27 +44,6 @@ function _notifyThreat(entity) {
   const name = entity.name ?? entity.nombre ?? `Entity-${entity.id}`;
   if (lat == null || lng == null) return;
   planner('/threats/notify', { lat: Number(lat), lng: Number(lng), name, id: entity.id });
-}
-
-function _notifyNewCasualty(entity) {
-  const lat  = entity.lat  ?? entity.latitud;
-  const lng  = entity.lng  ?? entity.longitud;
-  const name = entity.name ?? entity.nombre ?? `Entity-${entity.id}`;
-  if (lat == null || lng == null) return;
-  const medical = entity.medical ?? {};
-  const payload = {
-    id:            entity.id,
-    name,
-    lat:           Number(lat),
-    lng:           Number(lng),
-    triage_color:    medical.triage_color    ?? null,
-    casualty_status: medical.casualty_status ?? null,
-    evac_priority:   medical.evac_priority   ?? null,
-  };
-  planner('/casualties/notify', payload);
-  // Also notify pfc_agent so it can spawn a PFC session as a safety-net
-  // (in case the planner is slow or offline when the casualty is created).
-  pfcAgent('/casualties/notify', payload);
 }
 
 // A civilian group was created or changed (its headcount, its place): the planner
@@ -218,7 +199,7 @@ router.post('/', async (req, res) => {
 
     const entity = await Entity.create(req.body);
     if (entity.alliance === 'hostile') _notifyThreat(entity);
-    if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
+    if (entity.categoria === 'casualty') notifyCasualty(entity);
     if (entity.categoria === 'civilian') _notifyCivilians(entity);
     sseBroker.broadcast({ type: 'entity_created', data: entity });
     res.status(201).json({ success: true, data: entity });
@@ -241,7 +222,7 @@ router.post('/batch', async (req, res) => {
     data.forEach(entity => {
       sseBroker.broadcast({ type: 'entity_created', data: entity });
       if (entity.alliance === 'hostile') _notifyThreat(entity);
-      if (entity.categoria === 'casualty') _notifyNewCasualty(entity);
+      if (entity.categoria === 'casualty') notifyCasualty(entity);
       if (entity.categoria === 'civilian') _notifyCivilians(entity);
     });
     res.status(201).json({ success: true, count: data.length, data });
@@ -286,7 +267,7 @@ router.put('/:id', async (req, res) => {
     // used to restart the planner's replan debounce until the delivery.
     const positionOnly = Object.keys(req.body).every(k => k === 'latitud' || k === 'longitud');
     if (entity.alliance === 'hostile') _notifyThreat(entity);
-    if (entity.categoria === 'casualty' && !positionOnly) _notifyNewCasualty(entity);
+    if (entity.categoria === 'casualty' && !positionOnly) notifyCasualty(entity);
     if (entity.categoria === 'civilian' && !positionOnly) _notifyCivilians(entity);
     const statusChanged = statusSent && (before?.status ?? 'operational') !== (entity.status ?? 'operational');
     if (statusChanged) _notifyAssetStatus(entity, before?.status);

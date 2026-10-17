@@ -16,7 +16,7 @@
 // shelter, but it is not a casualty: the three lists above leave civilians out, so
 // the Raspberry Pi selector, the planner and pfc_agent never see one.
 //   GET  /api/medical/:entity_id/nine-line    — get the 9-Line MEDEVAC data for an entity
-//   PUT  /api/medical/:entity_id              — partial update of medical fields
+//   PUT  /api/medical/:entity_id              — partial update of medical fields (a new triage, priority or status notifies the planner and pfc_agent)
 //   POST /api/medical/:entity_id/vitals       — append a vital-signs reading
 //   POST /api/medical/:entity_id/nine-line    — create or replace the 9-Line MEDEVAC data
 //   DELETE /api/medical/:entity_id            — remove the medical record (entity stays)
@@ -28,6 +28,16 @@ const pool    = require('../config/database');
 const Entity  = require('../models/entity');
 const log     = require('../lib/logger').child('medical');
 const { sendError } = require('../lib/db-error');
+const services = require('../config/services');
+const { createNotifier } = require('../lib/notifier');
+const { createCasualtyNotifier, planningChange } = require('../lib/casualty-hooks');
+
+// A triage, priority or status changed here must reach the planner as an entity
+// update would (see lib/casualty-hooks.js).
+const notifyCasualty = createCasualtyNotifier({
+  planner:  createNotifier({ service: 'planner',   baseUrl: services.planner,  logger: log }),
+  pfcAgent: createNotifier({ service: 'pfc_agent', baseUrl: services.pfcAgent, logger: log }),
+});
 
 // ---------------------------------------------------------------------------
 // 9-Line MEDEVAC validation
@@ -319,6 +329,9 @@ router.put('/:entity_id', async (req, res) => {
 
     const updated = await Entity.getById(id);
     res.json({ success: true, data: updated });
+
+    const previous = planningChange(entity.medical, updated.medical);
+    if (updated.categoria === 'casualty' && previous) notifyCasualty(updated, previous);
   } catch (err) {
     await sendError(res, log, err, 'Failed to update medical record');
   }
