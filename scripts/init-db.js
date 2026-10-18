@@ -140,8 +140,10 @@ const BASE_TABLE = `
     occupancy             INTEGER           CHECK (occupancy IS NULL OR occupancy >= 0),
     status                asset_status_enum,
     geom                  GEOMETRY(Point, 4326) NOT NULL,
-    created_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
-    updated_at            TIMESTAMP         DEFAULT CURRENT_TIMESTAMP
+    -- Instants, so TIMESTAMPTZ: a zoneless TIMESTAMP holding UTC is read back by
+    -- node-postgres as host-local time, two hours early on a CEST host.
+    created_at            TIMESTAMPTZ       DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMPTZ       DEFAULT CURRENT_TIMESTAMP
   );
 `;
 
@@ -204,8 +206,8 @@ const MEDICAL_TABLE = `
     nine_line_data        JSONB,
 
     -- Timestamps
-    created_at            TIMESTAMP           DEFAULT CURRENT_TIMESTAMP,
-    updated_at            TIMESTAMP           DEFAULT CURRENT_TIMESTAMP
+    created_at            TIMESTAMPTZ         DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMPTZ         DEFAULT CURRENT_TIMESTAMP
   );
 `;
 
@@ -248,8 +250,8 @@ const HAZARD_TABLE = `
     description  TEXT,
     active       BOOLEAN           NOT NULL DEFAULT true,   -- false: kept on record, no longer avoided
     geom         GEOMETRY(MultiPolygon, 4326) NOT NULL CHECK (NOT ST_IsEmpty(geom)),
-    created_at   TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP         DEFAULT CURRENT_TIMESTAMP
+    created_at   TIMESTAMPTZ       DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMPTZ       DEFAULT CURRENT_TIMESTAMP
   );
 `;
 

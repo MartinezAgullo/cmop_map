@@ -1250,11 +1250,8 @@ function _updateRosterHead() {
 // ---------------------------------------------------------------------------
 function elapsedSeconds(iso) {
   if (!iso) return null;
-  // A zone-less "2026-09-02T14:57:11.123" is stored UTC but would be parsed as
-  // local time, which reads as hours of skew. Pin it to UTC when no zone is given.
-  const s = String(iso);
-  const stamped = /(?:Z|[+-]\d{2}:?\d{2})$/.test(s) ? s : s.replace(' ', 'T') + 'Z';
-  const ms = Date.now() - new Date(stamped).getTime();
+  // The column is TIMESTAMPTZ, so the value always carries its zone.
+  const ms = Date.now() - new Date(iso).getTime();
   if (!Number.isFinite(ms) || ms < 0 || ms > 30 * 86400000) return null;
   return Math.floor(ms / 1000);
 }
