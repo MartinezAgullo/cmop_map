@@ -15,6 +15,7 @@ const { createCasualtyNotifier } = require('../lib/casualty-hooks');
 const log        = require('../lib/logger').child('entities');
 const { sendError } = require('../lib/db-error');
 const { capacityLimit, capacityProblem } = require('../lib/capacity-limits');
+const { coordinateProblem } = require('../lib/coordinates');
 
 // Answers 400 when an entity's capacities are not accepted (a vehicle over its limit,
 // a facility's occupancy above its places) and says whether it did. A vehicle over its
@@ -25,6 +26,16 @@ function refuseCapacity(res, entity, label = '') {
   const message = label ? `${label}: ${problem.message}` : problem.message;
   if (problem.rejected) log.warn(message);
   res.status(400).json({ success: false, message, field: problem.field });
+  return true;
+}
+
+// Answers 400 when a position cannot be a place on Earth and says whether it did. Only
+// called with both halves present: their presence is checked by each route.
+function refusePosition(res, { longitud, latitud }, label = '') {
+  const problem = coordinateProblem(longitud, latitud);
+  if (!problem) return false;
+  const field = problem.startsWith('longitude ') ? 'longitud' : 'latitud';
+  res.status(400).json({ success: false, message: label ? `${label}: ${problem}` : problem, field });
   return true;
 }
 
@@ -195,6 +206,7 @@ router.post('/', async (req, res) => {
     if (longitud == null || latitud == null) {
       return res.status(400).json({ success: false, message: 'longitud and latitud are required' });
     }
+    if (refusePosition(res, req.body)) return;
     if (refuseCapacity(res, req.body)) return;
 
     const entity = await Entity.create(req.body);
@@ -215,7 +227,12 @@ router.post('/batch', async (req, res) => {
       return res.status(400).json({ success: false, message: 'entities array is required and must be non-empty' });
     }
     for (const e of entities) {
-      if (refuseCapacity(res, e, e.nombre ?? e.elemento_identificado ?? 'entity')) return;
+      const label = e.nombre ?? e.elemento_identificado ?? 'entity';
+      if (e.longitud == null || e.latitud == null) {
+        return res.status(400).json({ success: false, message: `${label}: longitud and latitud are required` });
+      }
+      if (refusePosition(res, e, label)) return;
+      if (refuseCapacity(res, e, label)) return;
     }
 
     const data = await Entity.createBatch(entities);
@@ -244,6 +261,7 @@ router.put('/:id', async (req, res) => {
         message: 'longitud and latitud must be supplied together'
       });
     }
+    if (longitud != null && refusePosition(res, req.body)) return;
     if (req.body.status !== undefined && !ASSET_STATUSES.includes(req.body.status)) {
       return res.status(400).json({
         success: false,
