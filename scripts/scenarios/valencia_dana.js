@@ -3,13 +3,18 @@
 // Scenario: DANA flood in l'Horta Sud (Valencia)
 // ----------------------------------------------
 // Modelled on the flood of 29 October 2024, when the Barranco del Poyo overflowed
-// through Paiporta, Benetússer, Alfafar, Sedaví, Massanassa and Catarroja, south of
-// the city. The flooded area is much smaller than the real one on purpose: Valhalla
-// refuses a route whose exclusion rings add up to more than 10 km of perimeter
-// (max_exclude_polygons_length), and these zones total about 9.2 km.
+// from Picanya through Paiporta, Benetússer, Alfafar, Sedaví, Massanassa and Catarroja,
+// south of the city, and the Barranco de la Saleta through Aldaia and Alaquàs. The
+// flooded areas follow the real beds (OpenStreetMap's "Barranc de Xiva" and "Barranc
+// de la Saleta") but are narrower than the real flood. Their rings add up to about
+// 26.9 km of perimeter, over Valhalla's default max_exclude_polygons_length of 10 km:
+// raise it to 40 km in valhalla.json, together with latacc-medevac's
+// ROUTING_MAX_EXCLUDE_PERIMETER_M. Below about 25 km the routing MCP leaves every zone
+// out of the routes and warns.
 //
-//   - Hazard zones: one flood event in three parts along the barranco, and a
-//     building collapse in Paiporta.
+//   - Hazard zones: the Poyo flood in six parts along the barranco (it closes the
+//     CV-33 at Picanya and the V-31 at Catarroja), the Saleta flood in Aldaia and
+//     Alaquàs, and building collapses in Paiporta, Picanya, Massanassa and Catarroja.
 //   - Civilians, most of them trapped inside a zone, from a couple to a nursing
 //     home of 25 (larger than any vehicle: it needs several vehicles or trips).
 //   - Casualties of every urgency, one of them inside the flood.
@@ -24,7 +29,7 @@
 
 const meta = {
   name: 'valencia_dana',
-  description: 'DANA flood in l\'Horta Sud, Valencia: a flood along the Barranco del Poyo (Paiporta, Benetússer, Alfafar, Massanassa) and a building collapse, trapped civilians, casualties, hospitals, shelters and the civil emergency services.',
+  description: 'DANA flood in l\'Horta Sud, Valencia: floods along the Barranco del Poyo (Picanya, Paiporta, Benetússer, Alfafar, La Torre, Massanassa, Catarroja) and the Barranco de la Saleta (Aldaia, Alaquàs), four building collapses, trapped civilians, casualties, hospitals, shelters and the civil emergency services.',
   tags: ['civil-emergencies', 'flood', 'dana', 'valencia', 'civilians', 'shelters', 'hazard-zones']
 };
 
@@ -104,8 +109,9 @@ const medicalDetails = [
 ];
 
 // ---------------------------------------------------------------------------
-// Hazard zones, [lng, lat]. Irregular outlines that spread along the barranco, kept
-// small so their perimeters (about 9.2 km in all) fit Valhalla's 10 km.
+// Hazard zones, [lng, lat]. Irregular outlines that spread along the barrancos; the
+// parts added on 2026-10-22 are the OSM beds widened by a varying width. About 26.9 km
+// of perimeter in all: see the header for the Valhalla limit this needs.
 // ---------------------------------------------------------------------------
 const ring = coords => [...coords, coords[0]];
 
@@ -113,7 +119,7 @@ const hazardZones = [
   {
     name: 'DANA Barranco del Poyo',
     hazard_type: 'flood',
-    description: 'The Barranco del Poyo overflowed: water at first-floor level in Paiporta, Benetússer, Alfafar and Massanassa',
+    description: 'The Barranco del Poyo overflowed: water at first-floor level from Picanya and Paiporta to Benetússer, Alfafar, La Torre, Massanassa and Catarroja',
     geometry: {
       type: 'MultiPolygon',
       coordinates: [
@@ -148,6 +154,33 @@ const hazardZones = [
           [-0.40061, 39.40950], [-0.40105, 39.40923], [-0.40233, 39.40887], [-0.40284, 39.40861], [-0.40345, 39.40813], [-0.40468, 39.40691],
           [-0.40496, 39.40684], [-0.40543, 39.40696], [-0.40568, 39.40728],
         ])],
+        // Picanya: the water spills south into the town; the north bank and the CV-36 stay dry
+        [ring([
+          [-0.44432, 39.43755], [-0.44551, 39.43822], [-0.44593, 39.43828], [-0.44675, 39.43867], [-0.44726, 39.43915], [-0.44799, 39.43921],
+          [-0.44929, 39.43998], [-0.44985, 39.43995], [-0.45058, 39.44020], [-0.45078, 39.44057], [-0.45058, 39.44095], [-0.45010, 39.44111],
+          [-0.44926, 39.44087], [-0.44841, 39.44090], [-0.44808, 39.44068], [-0.44719, 39.44070], [-0.44553, 39.44009], [-0.44489, 39.43967],
+          [-0.44376, 39.43965], [-0.44313, 39.43919], [-0.44205, 39.43885], [-0.44138, 39.43832], [-0.44062, 39.43803], [-0.43920, 39.43794],
+          [-0.43885, 39.43772], [-0.43824, 39.43776], [-0.43782, 39.43727], [-0.43824, 39.43678], [-0.43955, 39.43658], [-0.43998, 39.43667],
+          [-0.44138, 39.43654], [-0.44180, 39.43661], [-0.44249, 39.43703], [-0.44298, 39.43710], [-0.44355, 39.43752],
+        ])],
+        // Catarroja: the barranco's last stretch toward the port, over the V-31 (Pista de Silla)
+        [ring([
+          [-0.39865, 39.40210], [-0.39900, 39.40252], [-0.39913, 39.40300], [-0.39900, 39.40348], [-0.39865, 39.40390], [-0.39821, 39.40412],
+          [-0.39846, 39.40463], [-0.39883, 39.40483], [-0.39921, 39.40550], [-0.39991, 39.40621], [-0.40000, 39.40656], [-0.39965, 39.40721],
+          [-0.39887, 39.40754], [-0.39798, 39.40721], [-0.39732, 39.40659], [-0.39642, 39.40618], [-0.39607, 39.40564], [-0.39535, 39.40511],
+          [-0.39433, 39.40524], [-0.39348, 39.40511], [-0.39299, 39.40485], [-0.39247, 39.40491], [-0.39117, 39.40473], [-0.39073, 39.40451],
+          [-0.38966, 39.40443], [-0.38879, 39.40405], [-0.38807, 39.40395], [-0.38643, 39.40315], [-0.38556, 39.40309], [-0.38505, 39.40282],
+          [-0.38430, 39.40286], [-0.38271, 39.40260], [-0.38176, 39.40226], [-0.38085, 39.40228], [-0.38013, 39.40194], [-0.37950, 39.40142],
+          [-0.37927, 39.40099], [-0.37950, 39.40057], [-0.38005, 39.40039], [-0.38110, 39.40065], [-0.38234, 39.40076], [-0.38325, 39.40048],
+          [-0.38392, 39.40063], [-0.38451, 39.40054], [-0.38698, 39.40098], [-0.38776, 39.40083], [-0.38845, 39.40093], [-0.38952, 39.40142],
+          [-0.39044, 39.40140], [-0.39149, 39.40166], [-0.39276, 39.40165], [-0.39367, 39.40183], [-0.39433, 39.40176], [-0.39519, 39.40189],
+          [-0.39616, 39.40233], [-0.39688, 39.40183], [-0.39750, 39.40173], [-0.39812, 39.40183],
+        ])],
+        // La Torre (València): the sheet of water that crossed Sedaví, south of the V-30
+        [ring([
+          [-0.38820, 39.43279], [-0.38861, 39.43424], [-0.39008, 39.43472], [-0.39200, 39.43449], [-0.39375, 39.43350], [-0.39371, 39.43269],
+          [-0.39224, 39.43162], [-0.38982, 39.43153], [-0.38909, 39.43164],
+        ])],
       ],
     },
   },
@@ -159,6 +192,69 @@ const hazardZones = [
       type: 'MultiPolygon',
       coordinates: [[ring([
         [-0.4172, 39.4320], [-0.4165, 39.4322], [-0.4159, 39.4319], [-0.4160, 39.4313], [-0.4167, 39.4311], [-0.4173, 39.4314],
+      ])]],
+    },
+  },
+  {
+    name: 'DANA Barranco de la Saleta',
+    hazard_type: 'flood',
+    description: 'The Barranco de la Saleta overflowed: water through the centres of Aldaia and Alaquàs and on toward Xirivella',
+    geometry: {
+      type: 'MultiPolygon',
+      coordinates: [[ring([
+        [-0.46945, 39.46351], [-0.46976, 39.46388], [-0.47057, 39.46417], [-0.47108, 39.46493], [-0.47329, 39.46591], [-0.47391, 39.46679],
+        [-0.47434, 39.46699], [-0.47457, 39.46726], [-0.47455, 39.46792], [-0.47492, 39.46845], [-0.47496, 39.46890], [-0.47547, 39.46935],
+        [-0.47575, 39.46989], [-0.47622, 39.47003], [-0.47663, 39.47046], [-0.47650, 39.47097], [-0.47607, 39.47111], [-0.47551, 39.47082],
+        [-0.47521, 39.47087], [-0.47468, 39.47070], [-0.47448, 39.47005], [-0.47407, 39.47002], [-0.47361, 39.46965], [-0.47356, 39.46934],
+        [-0.47319, 39.46901], [-0.47291, 39.46820], [-0.47265, 39.46795], [-0.47209, 39.46773], [-0.47185, 39.46745], [-0.47181, 39.46692],
+        [-0.47039, 39.46662], [-0.46849, 39.46559], [-0.46772, 39.46552], [-0.46627, 39.46452], [-0.46590, 39.46400], [-0.46479, 39.46352],
+        [-0.46452, 39.46320], [-0.46398, 39.46294], [-0.46274, 39.46273], [-0.46195, 39.46279], [-0.46224, 39.46350], [-0.46211, 39.46402],
+        [-0.46173, 39.46446], [-0.46117, 39.46475], [-0.46050, 39.46486], [-0.45983, 39.46475], [-0.45927, 39.46446], [-0.45889, 39.46402],
+        [-0.45876, 39.46350], [-0.45897, 39.46288], [-0.45828, 39.46299], [-0.45674, 39.46267], [-0.45591, 39.46288], [-0.45514, 39.46270],
+        [-0.45472, 39.46277], [-0.45362, 39.46262], [-0.45155, 39.46209], [-0.45044, 39.46141], [-0.44951, 39.46131], [-0.44876, 39.46076],
+        [-0.44818, 39.46089], [-0.44771, 39.46082], [-0.44639, 39.46034], [-0.44562, 39.45989], [-0.44506, 39.45983], [-0.44385, 39.45906],
+        [-0.44287, 39.45865], [-0.44261, 39.45820], [-0.44217, 39.45802], [-0.44183, 39.45727], [-0.44143, 39.45706], [-0.44120, 39.45657],
+        [-0.44071, 39.45621], [-0.44070, 39.45573], [-0.43983, 39.45481], [-0.43946, 39.45466], [-0.43925, 39.45427], [-0.43845, 39.45372],
+        [-0.43832, 39.45322], [-0.43864, 39.45297], [-0.43910, 39.45297], [-0.43944, 39.45330], [-0.44025, 39.45362], [-0.44064, 39.45405],
+        [-0.44099, 39.45419], [-0.44282, 39.45653], [-0.44335, 39.45681], [-0.44394, 39.45754], [-0.44473, 39.45806], [-0.44581, 39.45841],
+        [-0.44631, 39.45873], [-0.44683, 39.45862], [-0.44756, 39.45874], [-0.44946, 39.45934], [-0.45050, 39.45944], [-0.45113, 39.45981],
+        [-0.45381, 39.46025], [-0.45435, 39.46057], [-0.45519, 39.46058], [-0.45591, 39.46043], [-0.45653, 39.46053], [-0.45729, 39.46027],
+        [-0.45865, 39.46018], [-0.45965, 39.45993], [-0.46091, 39.46026], [-0.46144, 39.46002], [-0.46216, 39.45991], [-0.46317, 39.46018],
+        [-0.46399, 39.46006], [-0.46470, 39.46017], [-0.46530, 39.46049], [-0.46598, 39.46136], [-0.46657, 39.46145], [-0.46711, 39.46172],
+        [-0.46784, 39.46263],
+      ])]],
+    },
+  },
+  {
+    name: 'Derrumbe Picanya',
+    hazard_type: 'structural_collapse',
+    description: 'A house on the barranco bank collapsed when the water undermined it',
+    geometry: {
+      type: 'MultiPolygon',
+      coordinates: [[ring([
+        [-0.44024, 39.43801], [-0.44034, 39.43820], [-0.44072, 39.43814], [-0.44081, 39.43797], [-0.44064, 39.43780], [-0.44033, 39.43786],
+      ])]],
+    },
+  },
+  {
+    name: 'Derrumbe Massanassa',
+    hazard_type: 'structural_collapse',
+    description: 'An old ground-floor house collapsed after hours under water',
+    geometry: {
+      type: 'MultiPolygon',
+      coordinates: [[ring([
+        [-0.40430, 39.41123], [-0.40449, 39.41140], [-0.40474, 39.41139], [-0.40493, 39.41122], [-0.40480, 39.41104], [-0.40445, 39.41103],
+      ])]],
+    },
+  },
+  {
+    name: 'Derrumbe Catarroja',
+    hazard_type: 'structural_collapse',
+    description: 'A house next to the barranco collapsed onto the street',
+    geometry: {
+      type: 'MultiPolygon',
+      coordinates: [[ring([
+        [-0.39873, 39.40398], [-0.39884, 39.40417], [-0.39915, 39.40415], [-0.39931, 39.40404], [-0.39913, 39.40383], [-0.39885, 39.40377],
       ])]],
     },
   },
