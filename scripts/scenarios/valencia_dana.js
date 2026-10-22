@@ -39,9 +39,9 @@ const entities = [
   { ...E, nombre: 'PMA Alfafar',           elemento_identificado: 'SpaPmaAlfafar',  categoria: 'medical_facility', alliance: 'friendly', tipo_elemento: 'medical_role_1', descripcion: 'Advanced medical post (Puesto Médico Avanzado)', observaciones: 'Triage and stabilisation, east of the flood', max_capacity: 50, occupancy: 5, lat: 39.4190, lng: -0.3820 },
 
   // ── Shelters ───────────────────────────────────────────────────────────────
-  { ...E, nombre: 'Pabellón Fuente de San Luis', elemento_identificado: 'SpaShelterSanLuis',  categoria: 'shelter', alliance: 'neutral', descripcion: 'Municipal sports hall, Valencia', observaciones: 'Camp beds, food and dry clothes', max_capacity: 500, occupancy: 120, lat: 39.4560, lng: -0.3735 },
-  { ...E, nombre: 'Polideportivo de Torrent',    elemento_identificado: 'SpaShelterTorrent',  categoria: 'shelter', alliance: 'neutral', descripcion: 'Municipal sports centre, Torrent', observaciones: 'Upstream of the flood, dry', max_capacity: 300, occupancy: 40, lat: 39.4380, lng: -0.4630 },
-  { ...E, nombre: 'Pabellón de Xirivella',       elemento_identificado: 'SpaShelterXirivella', categoria: 'shelter', alliance: 'neutral', descripcion: 'Municipal sports hall, Xirivella', observaciones: 'North of the flood', max_capacity: 250, occupancy: 30, lat: 39.4655, lng: -0.4270 },
+  { ...E, nombre: 'Pabellón Fuente de San Luis', elemento_identificado: 'SpaShelterSanLuis',  categoria: 'shelter', alliance: 'friendly', descripcion: 'Municipal sports hall, Valencia', observaciones: 'Camp beds, food and dry clothes', max_capacity: 500, occupancy: 120, lat: 39.4560, lng: -0.3735 },
+  { ...E, nombre: 'Polideportivo de Torrent',    elemento_identificado: 'SpaShelterTorrent',  categoria: 'shelter', alliance: 'friendly', descripcion: 'Municipal sports centre, Torrent', observaciones: 'Upstream of the flood, dry', max_capacity: 300, occupancy: 40, lat: 39.4380, lng: -0.4630 },
+  { ...E, nombre: 'Pabellón de Xirivella',       elemento_identificado: 'SpaShelterXirivella', categoria: 'shelter', alliance: 'friendly', descripcion: 'Municipal sports hall, Xirivella', observaciones: 'North of the flood', max_capacity: 250, occupancy: 30, lat: 39.4655, lng: -0.4270 },
 
   // ── Civilians (everyone at one location is one entity, `headcount` people) ──
   { ...E, nombre: 'SpaCiv1',  elemento_identificado: 'SpaCiv1',  categoria: 'civilian', alliance: 'neutral', headcount: 4,  descripcion: 'Family on a roof', observaciones: 'Two children; water at the first floor', lat: 39.4285, lng: -0.4180 },
