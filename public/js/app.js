@@ -167,6 +167,42 @@ const COUNTRY_ALIASES = {
   morroco:            'morocco',
   marroco:            'morocco',
   morrocco:           'morocco',
+
+  // Demonyms (English) and Spanish names, so "french" resolves like "france".
+  spanish: 'spain',          espana: 'spain',          espanol: 'spain',        espanola: 'spain',
+  french: 'france',          francia: 'france',        frances: 'france',       francesa: 'france',
+  german: 'germany',         alemania: 'germany',      aleman: 'germany',       alemana: 'germany',
+  italian: 'italy',          italia: 'italy',          italiano: 'italy',       italiana: 'italy',
+  portuguese: 'portugal',    portugues: 'portugal',    portuguesa: 'portugal',
+  ukrainian: 'ukraine',      ucrania: 'ukraine',       ucraniano: 'ukraine',    ucraniana: 'ukraine',
+  american: 'usa',           eeuu: 'usa',             estados_unidos: 'usa',
+  united_states: 'usa',      united_states_of_america: 'usa',
+  british: 'uk',             english: 'uk',            united_kingdom: 'uk',    great_britain: 'uk',
+  reino_unido: 'uk',         britanico: 'uk',          britanica: 'uk',
+  chinese: 'china',          chino: 'china',
+  polish: 'poland',          polonia: 'poland',        polaco: 'poland',        polaca: 'poland',
+  turkish: 'turkey',         turquia: 'turkey',        turco: 'turkey',         turca: 'turkey',
+  russian: 'russia',         rusia: 'russia',          ruso: 'russia',          rusa: 'russia',
+  lithuanian: 'lithuania',   lituania: 'lithuania',    lituano: 'lithuania',    lituana: 'lithuania',
+  canadian: 'canada',        canadiense: 'canada',
+  norwegian: 'norway',       noruega: 'norway',        noruego: 'norway',
+  dutch: 'netherlands',      holland: 'netherlands',   paises_bajos: 'netherlands', holandes: 'netherlands',
+  australian: 'australia',   australiano: 'australia', australiana: 'australia',
+  greek: 'greece',           grecia: 'greece',         griego: 'greece',        griega: 'greece',
+  japanese: 'japan',         japon: 'japan',           japones: 'japan',        japonesa: 'japan',
+  iranian: 'iran',           irani: 'iran',
+  swedish: 'sweden',         suecia: 'sweden',         sueco: 'sweden',         sueca: 'sweden',
+  moroccan: 'morocco',       marroqui: 'morocco',
+  israeli: 'israel',
+  finnish: 'finland',        finlandia: 'finland',     finlandes: 'finland',    finlandesa: 'finland',
+  danish: 'denmark',         dinamarca: 'denmark',     danes: 'denmark',        danesa: 'denmark',
+  brazilian: 'brazil',       brasil: 'brazil',         brasileno: 'brazil',     brasilena: 'brazil',
+  argentinian: 'argentina',  argentine: 'argentina',   argentino: 'argentina',
+  algerian: 'algeria',       argelia: 'algeria',       argelino: 'algeria',     argelina: 'algeria',
+  venezuelan: 'venezuela',   venezolano: 'venezuela',  venezolana: 'venezuela',
+  serbian: 'serbia',         serbio: 'serbia',
+  belarusian: 'belarus',     bielorrusia: 'belarus',   bielorruso: 'belarus',
+  eritrean: 'eritrea',       eritreo: 'eritrea',
 };
 
 function normalizeCountry(country) {
@@ -789,7 +825,7 @@ function updateTipoElementoOptions(categoria) {
     select.innerHTML = '<option value="">— Selecciona tipo —</option>';
   } else {
     group.style.display = 'block';
-    select.innerHTML = '<option value="">— Selecciona tipo —</option>' +
+    select.innerHTML = '<option value="">— Selecciona tipo —</option>'
       TIPO_ELEMENTO_OPTIONS[categoria]
         .map(opt => `<option value="${opt.value}">${opt.label}</option>`)
         .join('');
@@ -1173,7 +1209,7 @@ function renderList() {
       right = `<span class="ent-right"><span class="ent-tag">${meta.tag}</span>${clock}</span>`;
     } else if (e.categoria === 'civilian') {
       // How many people, and how far their evacuation has got.
-      right = `<span class="ent-right"><span class="ent-tag">${e.headcount ?? 1}</span>` +
+      right = `<span class="ent-right"><span class="ent-tag">${e.headcount ?? 1}</span>`
               `<span class="ent-clock">${esc(civilianStage(e.medical?.evac_stage))}</span></span>`;
     } else if (e.casevac_eligible) {
       right = `<span class="ent-right"><span class="ent-flag">CASEVAC</span></span>`;
@@ -1570,7 +1606,7 @@ function buildPopup(e) {
   if (e.country) subtitle += ` · ${e.country}`;
 
   const row = (label, value, big) =>
-    `<div class="med-row"><span class="med-label">${label}</span>` +
+    `<div class="med-row"><span class="med-label">${label}</span>`
     `<span class="med-value${big ? ' big' : ''}">${value}</span></div>`;
 
   let medicalHTML = '';
@@ -2024,7 +2060,7 @@ function _planAlertHTML(ev) {
     t1Triage:        esc(ev.t1_triage || 'RED'),
   });
   const note = ev.care_breach ? `<span class="plan-alert-note">${t('alert.careBreach')}</span>` : '';
-  return `<span class="plan-alert-text">${text}${note}</span>` +
+  return `<span class="plan-alert-text">${text}${note}</span>`
          `<button type="button" aria-label="${t('alert.dismiss')}" title="${t('alert.dismiss')}">×</button>`;
 }
 
@@ -2253,7 +2289,7 @@ function _routePopup(route, leg) {
     </div>`;
 
   const row = (label, value, big) =>
-    `<div class="med-row"><span class="med-label">${label}</span>` +
+    `<div class="med-row"><span class="med-label">${label}</span>`
     `<span class="med-value${big ? ' big' : ''}">${value}</span></div>`;
 
   return `
@@ -2291,7 +2327,7 @@ function _callsignAliasHTML(id, name) {
 function _routeEntityHTML(id, name) {
   const label = esc(name || '?');
   if (!allEntities.some(e => e.id === id)) return label;
-  return `<span class="route-entity" title="${t('routes.locate')}"` +
+  return `<span class="route-entity" title="${t('routes.locate')}"`
     ` onclick="event.stopPropagation(); selectEntity(${id})">${label}</span>${_callsignAliasHTML(id, name)}`;
 }
 
