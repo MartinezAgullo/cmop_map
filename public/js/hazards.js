@@ -43,6 +43,9 @@ async function initHazards() {
   _buildHazardPatterns();
   _renderHazardTypeFilters();
   document.getElementById('hazardShow').addEventListener('change', renderHazardZones);
+  document.getElementById('hazardName').addEventListener('input', () => {
+    document.getElementById('hazardNameError').hidden = true;
+  });
   document.getElementById('clearHazardTypes').addEventListener('click', () => {
     document.querySelectorAll('#hazardTypeCheckboxes input').forEach(cb => { cb.checked = false; });
     renderHazardZones();
@@ -129,6 +132,7 @@ function _openHazardDialog(layer) {
   document.getElementById('hazardType').innerHTML = hazardTypes
     .map(ht => `<option value="${esc(ht.value)}">${esc(_hazardLabel(ht))}</option>`).join('');
   document.getElementById('hazardName').value = '';
+  document.getElementById('hazardNameError').hidden = true;
   document.getElementById('hazardDesc').value = '';
   target.value = 'new';
   target.onchange();
@@ -150,7 +154,11 @@ async function saveHazardArea(event) {
   let url, method, body;
   if (target === 'new') {
     const name = document.getElementById('hazardName').value.trim();
-    if (!name) { showMessage(t('hazard.nameRequired'), 'error'); return; }
+    if (!name) {
+      document.getElementById('hazardNameError').hidden = false;
+      document.getElementById('hazardName').focus();
+      return;
+    }
     url = '/api/hazard-zones'; method = 'POST';
     body = { name, hazard_type: document.getElementById('hazardType').value,
              description: document.getElementById('hazardDesc').value.trim() || null,

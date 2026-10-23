@@ -308,7 +308,8 @@
         </div>
         <div class="form-group" id="hazardNewGroup">
           <label for="hazardName" data-i18n="hazard.name">Event name</label>
-          <input type="text" id="hazardName" maxlength="100" placeholder="Flood DANA" />
+          <input type="text" id="hazardName" maxlength="100" placeholder="Flood DANA" aria-describedby="hazardNameError" />
+          <p class="field-error" id="hazardNameError" role="alert" hidden data-i18n="hazard.nameRequired">Give the new zone a name</p>
           <label for="hazardType" data-i18n="hazard.type">Type</label>
           <select id="hazardType"></select>
           <label for="hazardDesc" data-i18n="form.description">Description</label>
