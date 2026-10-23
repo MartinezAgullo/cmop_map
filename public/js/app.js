@@ -1209,7 +1209,7 @@ function renderList() {
       right = `<span class="ent-right"><span class="ent-tag">${meta.tag}</span>${clock}</span>`;
     } else if (e.categoria === 'civilian') {
       // How many people, and how far their evacuation has got.
-      right = `<span class="ent-right"><span class="ent-tag">${e.headcount ?? 1}</span>`
+      right = `<span class="ent-right"><span class="ent-tag">${e.headcount ?? 1}</span>` +
               `<span class="ent-clock">${esc(civilianStage(e.medical?.evac_stage))}</span></span>`;
     } else if (e.casevac_eligible) {
       right = `<span class="ent-right"><span class="ent-flag">CASEVAC</span></span>`;
@@ -1606,7 +1606,7 @@ function buildPopup(e) {
   if (e.country) subtitle += ` · ${e.country}`;
 
   const row = (label, value, big) =>
-    `<div class="med-row"><span class="med-label">${label}</span>`
+    `<div class="med-row"><span class="med-label">${label}</span>` +
     `<span class="med-value${big ? ' big' : ''}">${value}</span></div>`;
 
   let medicalHTML = '';
@@ -2060,7 +2060,7 @@ function _planAlertHTML(ev) {
     t1Triage:        esc(ev.t1_triage || 'RED'),
   });
   const note = ev.care_breach ? `<span class="plan-alert-note">${t('alert.careBreach')}</span>` : '';
-  return `<span class="plan-alert-text">${text}${note}</span>`
+  return `<span class="plan-alert-text">${text}${note}</span>` +
          `<button type="button" aria-label="${t('alert.dismiss')}" title="${t('alert.dismiss')}">×</button>`;
 }
 
@@ -2289,7 +2289,7 @@ function _routePopup(route, leg) {
     </div>`;
 
   const row = (label, value, big) =>
-    `<div class="med-row"><span class="med-label">${label}</span>`
+    `<div class="med-row"><span class="med-label">${label}</span>` +
     `<span class="med-value${big ? ' big' : ''}">${value}</span></div>`;
 
   return `
@@ -2327,7 +2327,7 @@ function _callsignAliasHTML(id, name) {
 function _routeEntityHTML(id, name) {
   const label = esc(name || '?');
   if (!allEntities.some(e => e.id === id)) return label;
-  return `<span class="route-entity" title="${t('routes.locate')}"`
+  return `<span class="route-entity" title="${t('routes.locate')}"` +
     ` onclick="event.stopPropagation(); selectEntity(${id})">${label}</span>${_callsignAliasHTML(id, name)}`;
 }
 
