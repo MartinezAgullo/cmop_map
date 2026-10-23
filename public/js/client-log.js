@@ -10,13 +10,33 @@
 //   - scripts and stylesheets that fail to load (CDN down, offline network)
 //
 // The same message is sent at most once every THROTTLE_MS, so a retry loop
-// cannot flood the terminal.  Also exposed as window.clientLog.{error,warn,info}.
+// cannot flood the terminal; the next one that goes through carries how many
+// were folded.  Errors also raise a small badge in the page corner (click to
+// dismiss), so a broken page is never silent.
+// Also exposed as window.clientLog.{error,warn,info}.
 // ---------------------------------------------------------------------------
 
 (function () {
   const ENDPOINT    = '/api/client-log';
   const THROTTLE_MS = 10000;
   const lastSent    = new Map();   // message → timestamp
+  const folded      = new Map();   // message → repeats dropped since last send
+  let   errorCount  = 0;
+  let   badge       = null;
+
+  function showBadge() {
+    if (!document.body) { document.addEventListener('DOMContentLoaded', showBadge, { once: true }); return; }
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:99999;padding:6px 10px;' +
+        'border-radius:6px;background:#7f1d1d;color:#fff;font:12px/1.3 system-ui,sans-serif;' +
+        'cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)';
+      badge.title = 'Click to dismiss';
+      badge.addEventListener('click', () => { badge.remove(); badge = null; errorCount = 0; });
+      document.body.appendChild(badge);
+    }
+    badge.textContent = `⚠ ${errorCount} error${errorCount > 1 ? 's' : ''} in this page (see server log)`;
+  }
 
   function describe(value) {
     if (value instanceof Error) return value.stack || `${value.name}: ${value.message}`;
@@ -26,8 +46,15 @@
 
   function send(level, message, context) {
     const now = Date.now();
-    if (now - (lastSent.get(message) || 0) < THROTTLE_MS) return;
+    if (level === 'error') { errorCount++; showBadge(); }
+    if (now - (lastSent.get(message) || 0) < THROTTLE_MS) {
+      folded.set(message, (folded.get(message) || 0) + 1);
+      return;
+    }
     lastSent.set(message, now);
+    const repeats = folded.get(message) || 0;
+    folded.delete(message);
+    if (repeats) context = { ...context, repeats };
     try {
       fetch(ENDPOINT, {
         method:    'POST',
