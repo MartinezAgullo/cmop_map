@@ -1400,6 +1400,7 @@ async function renderMarkers() {
     map.fitBounds(new L.featureGroup(markers).getBounds().pad(0.1));
     _shouldFit = false;
   }
+  _separateCarried();
 }
 
 /** Frame every entity currently on the map. */
@@ -1418,6 +1419,36 @@ function updateMarkerPosition(id, lat, lng) {
     marker.setLatLng([lat, lng]);
     const entity = allEntities.find(e => e.id === id);
     if (entity) { entity.latitud = lat; entity.longitud = lng; }
+    _separateCarried();
+  }
+}
+
+const CARRIED_OFFSET_PX = 24;       // a bit over half an icon, so both stay clickable
+const CARRIED_MAX_GAP_M = 20;       // closer than this to another marker, a carried one rides on it
+const DROPPED_MAX_GAP_M = 150;      // a road leg ends near, not on, the facility it delivers to
+
+/**
+ * Shift the icon of an entity that sits on top of another marker, so the one underneath can
+ * still be clicked: one in transit riding on its vehicle, or a delivered one lying on the
+ * shelter or medical facility it was taken to. Only the drawing moves: the entity keeps its
+ * position. `translate` is a separate CSS property from the `transform` Leaflet positions
+ * icons with, so a move does not undo it.
+ */
+function _separateCarried() {
+  const all = Object.values(markersById);
+  const near = (marker, other, gap) => other !== marker && other &&
+    other.getLatLng().distanceTo(marker.getLatLng()) < gap;
+  for (const marker of all) {
+    const el = marker._icon;
+    if (!el) continue;
+    const medical = marker._cmopEntity?.medical;
+    let stacked = false;
+    if (medical?.evac_stage === 'in_transit') {
+      stacked = all.some(o => near(marker, o, CARRIED_MAX_GAP_M));
+    } else if (medical?.evac_stage === 'delivered') {
+      stacked = near(marker, markersById[medical.destination_facility?.id], DROPPED_MAX_GAP_M);
+    }
+    el.style.translate = stacked ? `${CARRIED_OFFSET_PX}px 0` : '';
   }
 }
 
@@ -1508,6 +1539,7 @@ async function _onEntityChanged(entity) {
   const wasOpen = marker.isPopupOpen();
   marker.setIcon(await makeIcon(entity));
   marker._cmopEntity = entity;
+  _separateCarried();
   marker.setPopupContent(buildPopup(entity));
   if (wasOpen) {
     marker.openPopup();
