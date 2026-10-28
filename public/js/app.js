@@ -343,12 +343,28 @@ async function resolveIconUrl(category, alliance, country, entity) {
   return fallback;
 }
 
+/**
+ * What the simulation says an icon carries: a group's people still waiting ("8 left") or
+ * a vehicle's load while it drives loaded ("10"). Null when no simulation is driving it.
+ */
+function _loadBadgeText(entity) {
+  if (entity.categoria === 'civilian' && entity.people_waiting != null) {
+    return `${entity.people_waiting} ${t('icon.left')}`;
+  }
+  return entity.people_aboard ? String(entity.people_aboard) : null;
+}
+
 async function makeIcon(entity) {
-  return L.icon({
-    iconUrl:     await resolveIconUrl(entity.categoria, entity.alliance, entity.country, entity),
-    iconSize:    [36, 36],
-    iconAnchor:  [18, 36],
-    popupAnchor: [0, -28]
+  const iconUrl = await resolveIconUrl(entity.categoria, entity.alliance, entity.country, entity);
+  const badge = _loadBadgeText(entity);
+  if (!badge) {
+    return L.icon({ iconUrl, iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -28] });
+  }
+  const cls = entity.categoria === 'civilian' ? 'load-badge load-badge--left' : 'load-badge load-badge--aboard';
+  return L.divIcon({
+    className: 'load-icon',
+    html: `<img src="${esc(iconUrl)}" alt=""><span class="${cls}">${esc(badge)}</span>`,
+    iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -28]
   });
 }
 
@@ -550,6 +566,13 @@ function initMap() {
   map.on('movestart', _hideCtxMenu);
   map.on('zoomstart', _hideCtxMenu);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') _hideCtxMenu(); });
+  // An entity card is a Leaflet popup, which closes on Escape only while the map has the
+  // focus; after a click on the list or a route card it does not. A dialog takes Escape first.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.getElementById('formModal').classList.contains('show')) {
+      map.closePopup();
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1209,7 +1232,7 @@ function renderList() {
       right = `<span class="ent-right"><span class="ent-tag">${meta.tag}</span>${clock}</span>`;
     } else if (e.categoria === 'civilian') {
       // How many people, and how far their evacuation has got.
-      right = `<span class="ent-right"><span class="ent-tag">${e.headcount ?? 1}</span>` +
+      right = `<span class="ent-right"><span class="ent-tag">${e.people_waiting != null ? `${e.people_waiting} ${t('icon.left')}` : (e.headcount ?? 1)}</span>` +
               `<span class="ent-clock">${esc(civilianStage(e.medical?.evac_stage))}</span></span>`;
     } else if (e.casevac_eligible) {
       right = `<span class="ent-right"><span class="ent-flag">CASEVAC</span></span>`;
@@ -1616,6 +1639,7 @@ function buildPopup(e) {
       <div class="popup-medical">
         <h4>${t('popup.evacuation')}</h4>
         ${row(t('popup.headcount'), e.headcount ?? 1, true)}
+        ${e.people_waiting != null ? row(t('popup.waiting'), e.people_waiting) : ''}
         ${row(t('popup.stage'), esc(civilianStage(m.evac_stage)))}
         ${m.destination_facility ? row(t('popup.destination'), esc(m.destination_facility.nombre)) : ''}
         ${m.evac_stage === 'delivered' ? '' : _groupVehiclesHTML(e)}
@@ -1641,13 +1665,14 @@ function buildPopup(e) {
   // A shelter or medical facility: people there (derived by the API) over its places.
   const occupancy = e.occupancy == null ? ''
     : `${e.occupancy}${e.max_capacity ? ` / ${e.max_capacity}` : ''}`;
-  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity || occupancy) ? `
+  const infoHTML = (damaged || e.descripcion || e.observaciones || e.casevac_eligible || e.capacity || e.people_aboard || occupancy) ? `
       <div class="popup-info">
         ${damaged ? `<p><span class="damaged-badge">${t('popup.damaged')}</span></p>` : ''}
         ${e.descripcion ? `<p>${esc(e.descripcion)}</p>` : ''}
         ${e.observaciones ? `<p><strong>${t('popup.obs')}:</strong> ${esc(e.observaciones)}</p>` : ''}
         ${e.casevac_eligible ? `<p><span class="casevac-badge">${t('popup.casevac')}</span></p>` : ''}
         ${e.capacity ? `<p><strong>${t('popup.capacity')}:</strong> ${e.capacity}</p>` : ''}
+        ${e.people_aboard ? `<p><strong>${t('popup.aboard')}:</strong> ${e.people_aboard}</p>` : ''}
         ${occupancy ? `<p><strong>${t('popup.occupancy')}:</strong> ${occupancy}</p>` : ''}
       </div>` : '';
 

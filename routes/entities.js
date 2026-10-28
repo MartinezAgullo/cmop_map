@@ -39,6 +39,22 @@ function refusePosition(res, { longitud, latitud }, label = '') {
   return true;
 }
 
+// What the planner's movement simulation writes while it runs: no news for the planner
+// (a civilian PUT would restart its replan debounce), but the map redraws the icon.
+const POSITION_FIELDS   = ['latitud', 'longitud'];
+const SIM_LOAD_FIELDS   = ['people_waiting', 'people_aboard'];
+
+// A people count the simulation may write: a whole number, or null to clear it.
+function loadProblem(body) {
+  for (const field of SIM_LOAD_FIELDS) {
+    const v = body[field];
+    if (v !== undefined && v !== null && !(Number.isInteger(v) && v >= 0)) {
+      return `${field} must be a whole number or null`;
+    }
+  }
+  return null;
+}
+
 // Fields that change what capacityProblem checks on an update.
 const CAPACITY_FIELDS = ['capacity', 'mobility', 'categoria', 'max_capacity', 'occupancy'];
 
@@ -262,6 +278,8 @@ router.put('/:id', async (req, res) => {
       });
     }
     if (longitud != null && refusePosition(res, req.body)) return;
+    const badLoad = loadProblem(req.body);
+    if (badLoad) return res.status(400).json({ success: false, message: badLoad });
     if (req.body.status !== undefined && !ASSET_STATUSES.includes(req.body.status)) {
       return res.status(400).json({
         success: false,
@@ -283,10 +301,11 @@ router.put('/:id', async (req, res) => {
     // A PUT carrying only a position is no news for the planner: the movement
     // simulation sends one per casualty per second while it is carried, and each
     // used to restart the planner's replan debounce until the delivery.
-    const positionOnly = Object.keys(req.body).every(k => k === 'latitud' || k === 'longitud');
+    const simOnly = Object.keys(req.body).every(k => POSITION_FIELDS.includes(k) || SIM_LOAD_FIELDS.includes(k));
+    const loadSent = SIM_LOAD_FIELDS.some(k => req.body[k] !== undefined);
     if (entity.alliance === 'hostile') _notifyThreat(entity);
-    if (entity.categoria === 'casualty' && !positionOnly) notifyCasualty(entity);
-    if (entity.categoria === 'civilian' && !positionOnly) _notifyCivilians(entity);
+    if (entity.categoria === 'casualty' && !simOnly) notifyCasualty(entity);
+    if (entity.categoria === 'civilian' && !simOnly) _notifyCivilians(entity);
     const statusChanged = statusSent && (before?.status ?? 'operational') !== (entity.status ?? 'operational');
     if (statusChanged) _notifyAssetStatus(entity, before?.status);
     sseBroker.broadcast({
@@ -296,7 +315,7 @@ router.put('/:id', async (req, res) => {
       lng:  entity.longitud,
     });
     // A status change also changes the icon and the popup: every open map redraws it.
-    if (statusChanged) sseBroker.broadcast({ type: 'entity_changed', data: entity });
+    if (statusChanged || loadSent) sseBroker.broadcast({ type: 'entity_changed', data: entity });
     res.json({ success: true, data: entity });
   } catch (err) {
     await sendError(res, log, err, 'Failed to update entity');

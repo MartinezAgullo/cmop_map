@@ -825,6 +825,15 @@ body.dark .brand-light { display: none !important; }
 
 .route-summary-item > span:nth-child(3) { min-width: 0; }
 .route-summary-item em { font-style: normal; color: var(--dim); }
+.load-icon { background: none; border: 0; }
+.load-icon img { width: 36px; height: 36px; display: block; }
+.load-badge {
+  position: absolute; top: -6px; right: -10px; padding: 0 5px; border-radius: 9px;
+  font: 700 10px/16px var(--mono, monospace); white-space: nowrap; color: #fff;
+  box-shadow: 0 0 0 1.5px var(--g1, #000);
+}
+.load-badge--left   { background: var(--hot, #d4452f); }
+.load-badge--aboard { background: #2f7d4f; }
 .route-plan { font-size: 10px; letter-spacing: 0.08em; color: var(--hot); }
 .route-share { color: var(--hot); }
 .route-entity { text-decoration: underline dotted var(--dim); text-underline-offset: 3px; }

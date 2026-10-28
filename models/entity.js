@@ -42,6 +42,8 @@ class Entity {
         pi.mobility,
         pi.capacity,
         pi.headcount,
+        pi.people_waiting,
+        pi.people_aboard,
         pi.max_capacity,
         pi.occupancy,
         pi.status,
@@ -349,6 +351,10 @@ class Entity {
          status                 = COALESCE($15::asset_status_enum, status),
          max_capacity           = COALESCE($19, max_capacity),
          occupancy              = COALESCE($20, occupancy),
+         -- These two are cleared with an explicit null, which COALESCE cannot tell from
+         -- "not sent", so the flags say whether the body named them.
+         people_waiting         = CASE WHEN $22::boolean THEN $21::smallint ELSE people_waiting END,
+         people_aboard          = CASE WHEN $24::boolean THEN $23::smallint ELSE people_aboard END,
          geom                   = COALESCE(
                                     ST_SetSRID(ST_MakePoint(
                                       CAST($16 AS DOUBLE PRECISION),
@@ -379,7 +385,11 @@ class Entity {
         data.latitud ?? null,
         id,
         data.max_capacity ?? null,
-        data.occupancy ?? null
+        data.occupancy ?? null,
+        data.people_waiting ?? null,
+        data.people_waiting !== undefined,
+        data.people_aboard ?? null,
+        data.people_aboard !== undefined
       ]
     );
     return rows[0] ?? null;

@@ -133,6 +133,11 @@ const BASE_TABLE = `
     -- People one civilian entity stands for (a family on a roof is one entity). NULL
     -- everywhere else: a casualty is one person, a vehicle carries rather than counts.
     headcount             SMALLINT          CHECK (headcount IS NULL OR headcount >= 1),
+    -- Written by the planner's movement simulation while a civilian group is shared
+    -- between vehicles or shuttled, NULL otherwise (no simulation drives it): the people
+    -- still at the group's place, and the people a vehicle carries while it drives loaded.
+    people_waiting        SMALLINT          CHECK (people_waiting IS NULL OR people_waiting >= 0),
+    people_aboard         SMALLINT          CHECK (people_aboard IS NULL OR people_aboard >= 0),
     -- Places of a shelter or medical facility (NULL: not stated, read as no limit),
     -- and the people there now. An operator or a scenario sets the occupancy; every
     -- delivery adds to it through trg_md_count_delivery (see DELIVERY_TRIGGER).

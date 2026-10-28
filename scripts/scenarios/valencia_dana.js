@@ -76,7 +76,7 @@ const entities = [
   // ── Fire and rescue (Consorcio Provincial de Bomberos) ─────────────────────
   { ...E, nombre: 'SpaFire1',     elemento_identificado: 'SpaFire1',     categoria: 'fire_fighting', alliance: 'friendly', mobility: 'ground', capacity: 6,  descripcion: 'Rescue truck, Torrent station', observaciones: 'Technical rescue kit', lat: 39.4370, lng: -0.4600 },
   { ...E, nombre: 'SpaFire2',     elemento_identificado: 'SpaFire2',     categoria: 'fire_fighting', alliance: 'friendly', mobility: 'ground', capacity: 6,  descripcion: 'Rescue truck, Valencia station', observaciones: 'Technical rescue kit', lat: 39.4600, lng: -0.3900 },
-  { ...E, nombre: 'SpaFireHelo1', elemento_identificado: 'SpaFireHelo1', categoria: 'fire_fighting', alliance: 'friendly', mobility: 'air',    capacity: 10, descripcion: 'Fire and rescue helicopter', observaciones: 'Hoist fitted', lat: 39.4890, lng: -0.4790 },
+  { ...E, nombre: 'SpaFireHelo1', elemento_identificado: 'SpaFireHelo1', categoria: 'fire_fighting', alliance: 'friendly', mobility: 'air',    capacity: 10, descripcion: 'Fire and rescue helicopter', observaciones: 'Hoist fitted', lat: 39.4905, lng: -0.4765 },
 
   // ── Civil protection ───────────────────────────────────────────────────────
   { ...E, nombre: 'SpaCivPro1',     elemento_identificado: 'SpaCivPro1',     categoria: 'civil_protection', alliance: 'friendly', mobility: 'ground', capacity: 20, descripcion: 'Civil protection high-clearance truck', observaciones: 'Staging at Xirivella', lat: 39.4700, lng: -0.4300 },
@@ -85,7 +85,7 @@ const entities = [
 
   // ── Guardia Civil ──────────────────────────────────────────────────────────
   { ...E, nombre: 'SpaPol1',     elemento_identificado: 'SpaPol1',     categoria: 'law_enforcement', alliance: 'friendly', mobility: 'ground', capacity: 4, descripcion: 'Guardia Civil patrol car', observaciones: 'Picanya post', lat: 39.4360, lng: -0.4300 },
-  { ...E, nombre: 'SpaPolHelo1', elemento_identificado: 'SpaPolHelo1', categoria: 'law_enforcement', alliance: 'friendly', mobility: 'air',    capacity: 8, descripcion: 'Guardia Civil helicopter', observaciones: 'Hoist fitted', lat: 39.4880, lng: -0.4830 },
+  { ...E, nombre: 'SpaPolHelo1', elemento_identificado: 'SpaPolHelo1', categoria: 'law_enforcement', alliance: 'friendly', mobility: 'air',    capacity: 8, descripcion: 'Guardia Civil helicopter', observaciones: 'Hoist fitted', lat: 39.4866, lng: -0.4845 },
 
   // ── City bus lent to the evacuation (EMT València) ─────────────────────────
   { ...E, nombre: 'SpaBus1', elemento_identificado: 'SpaBus1', categoria: 'transportation', alliance: 'friendly', mobility: 'ground', casevac_eligible: true, capacity: 22, descripcion: 'EMT city bus', observaciones: 'Seated passengers only', lat: 39.4600, lng: -0.3800 },
