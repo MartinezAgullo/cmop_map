@@ -2295,7 +2295,7 @@ function _routePopup(route, leg) {
   return `
     <div class="popup-content" style="--c:var(--t-yellow)">
       <div class="popup-head">
-        <div class="popup-title">${esc(route.plan_key || '')} — ${esc(route.asset_name || '?')}</div>
+        <div class="popup-title">${esc(_evacLabel(route.plan_key))} — ${esc(route.asset_name || '?')}</div>
         <span class="popup-categoria">${legLabel}</span>
       </div>
       <div class="popup-medical">
@@ -2331,6 +2331,17 @@ function _routeEntityHTML(id, name) {
     ` onclick="event.stopPropagation(); selectEntity(${id})">${label}</span>${_callsignAliasHTML(id, name)}`;
 }
 
+/** PLAN-N names one vehicle's evacuation in the planner's board (EVAC-N); the plan is the task. */
+function _evacLabel(planKey) {
+  return planKey ? String(planKey).replace(/^PLAN-/, 'EVAC-') : '';
+}
+
+/** "10/18" for a civilian share that takes only part of its group, else ''. */
+function _routeShareHTML(r) {
+  return r.kind === 'civilian' && r.people != null && r.headcount != null
+    ? ` <b class="route-share" title="${t('routes.shareTitle')}">${esc(r.people)}/${esc(r.headcount)}</b>` : '';
+}
+
 function _routesSummaryHTML(routes) {
   const items = routes.map((r, i) => {
     const color  = getRouteColors()[i % ROUTE_COLORS_DARK.length];
@@ -2342,8 +2353,8 @@ function _routesSummaryHTML(routes) {
     return `<button type="button" class="route-summary-item${cls}" onclick="selectRoute(${i})">
       <span class="route-edge" style="--c:${meta.fill}" title="${t(meta.key)}"></span>
       <span class="route-color-dot" style="background:${color}"></span>
-      <span>${_routeEntityHTML(r.asset_id, r.asset_name)}<br>
-        <em>&rarr;</em> ${_routeEntityHTML(r.casualty_id, r.casualty_name)}<br>
+      <span>${r.plan_key ? `<b class="route-plan">${esc(_evacLabel(r.plan_key))}</b> ` : ''}${_routeEntityHTML(r.asset_id, r.asset_name)}<br>
+        <em>&rarr;</em> ${_routeEntityHTML(r.casualty_id, r.casualty_name)}${_routeShareHTML(r)}<br>
         <em>&rarr;</em> ${esc(r.destination_name || '?')}${
           r.altitude_advisory ? `<br><b class="route-advisory">⬆ ${t('popup.increaseAltitude')}</b>` : ''}</span>
       <span class="route-eta">${eta}<br><span class="med-label">${t('routes.min')}</span></span>

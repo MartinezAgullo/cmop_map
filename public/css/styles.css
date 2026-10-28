@@ -825,6 +825,8 @@ body.dark .brand-light { display: none !important; }
 
 .route-summary-item > span:nth-child(3) { min-width: 0; }
 .route-summary-item em { font-style: normal; color: var(--dim); }
+.route-plan { font-size: 10px; letter-spacing: 0.08em; color: var(--hot); }
+.route-share { color: var(--hot); }
 .route-entity { text-decoration: underline dotted var(--dim); text-underline-offset: 3px; }
 .route-entity:hover { color: var(--hot); text-decoration-color: currentColor; }
 
