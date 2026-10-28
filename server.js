@@ -183,6 +183,7 @@ app.post('/api/planner/tasks/:taskId/simulate',          (req, res) => _proxyToP
 app.delete('/api/planner/tasks/:taskId/simulate',        (req, res) => _proxyToPlanner('DELETE', _taskPath(req, '/simulate'), res));
 app.post('/api/planner/tasks/:taskId/simulate/resume',   (req, res) => _proxyToPlanner('POST',   _taskPath(req, '/simulate/resume'), res));
 app.post('/api/planner/tasks/:taskId/simulate/restart',  (req, res) => _proxyToPlanner('POST',   _taskPath(req, '/simulate/restart'), res));
+app.post('/api/planner/tasks/:taskId/simulate/reset',    (req, res) => _proxyToPlanner('POST',   _taskPath(req, '/simulate/reset'), res));
 
 // ---------------------------------------------------------------------------
 // Planner config (surface selected settings to the frontend)

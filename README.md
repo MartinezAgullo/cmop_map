@@ -217,6 +217,7 @@ Once a MEDEVAC plan has been computed by `medevac_planner` and its routes loaded
 | **Stop** | running | Pause simulation; vehicles freeze at current position |
 | **Resume** | paused | Resume from current position (works on updated routes after threat reroute) |
 | **Restart** | paused | Stop, restore original positions, restart from scratch |
+| **Reset scenario** | any | Stop, restore original positions and `at_poi` stages (and clear the people counts), and do not run again |
 
 The "Restart" button is only visible while paused. Labels follow the language toggle, so in Spanish these read Simular, Detener, Reanudar and Reiniciar.
 
@@ -571,6 +572,10 @@ Resume a paused simulation from vehicles' current DB positions.
 #### **POST** `/api/planner/tasks/:taskId/simulate/restart`
 
 Cancel simulation, restore original positions, restart from the beginning.
+
+#### **POST** `/api/planner/tasks/:taskId/simulate/reset`
+
+Cancel simulation and restore original positions and stages, without running again. A delivered group or casualty leaves its shelter's occupancy again (the database trigger undoes it), and the map gets `simulation_stopped` with reason `reset`.
 
 ---
 

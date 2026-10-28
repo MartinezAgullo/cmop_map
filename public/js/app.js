@@ -1609,6 +1609,29 @@ async function restartSimulation() {
   }
 }
 
+/** Stop the simulation and put the plan's vehicles, casualties and groups back as they were. */
+async function resetScenario() {
+  if (!_currentTaskId) {
+    showMessage(t('sim.needPlan'), 'error');
+    return;
+  }
+  try {
+    const res = await fetch(
+      `/api/planner/tasks/${encodeURIComponent(_currentTaskId)}/simulate/reset`,
+      { method: 'POST' }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      _setSimState('idle');
+      showMessage(t('sim.resetDone'), 'success');
+    } else {
+      showMessage(data.detail || data.message || t('sim.failReset'), 'error');
+    }
+  } catch (err) {
+    showMessage(`${t('msg.connError')}: ${err.message}`, 'error');
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Popup
 // ---------------------------------------------------------------------------

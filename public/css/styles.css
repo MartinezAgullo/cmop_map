@@ -832,7 +832,7 @@ body.dark .brand-light { display: none !important; }
   font: 700 10px/16px var(--mono, monospace); white-space: nowrap; color: #fff;
   box-shadow: 0 0 0 1.5px var(--g1, #000);
 }
-.load-badge--left   { background: var(--hot, #d4452f); }
+.load-badge--left   { background: #c8402b; }
 .load-badge--aboard { background: #2f7d4f; }
 .route-plan { font-size: 10px; letter-spacing: 0.08em; color: var(--hot); }
 .route-share { color: var(--hot); }

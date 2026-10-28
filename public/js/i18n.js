@@ -6,6 +6,7 @@
 //   data-i18n="key"        → textContent
 //   data-i18n-ph="key"     → placeholder
 //   data-i18n-label="key"  → label   (used on <optgroup>)
+//   data-i18n-title="key"  → title (tooltip)
 //
 // Strings built at runtime (messages, popups, the roster) call t('key', vars)
 // directly. Interpolation is {name}.
@@ -165,6 +166,10 @@ const I18N = {
     'sim.stop':        'Stop',
     'sim.resume':      'Resume',
     'sim.restart':     'Restart',
+    'sim.reset':       'Reset scenario',
+    'sim.resetTitle':  'Stop the simulation and put vehicles, casualties and groups back where they were before it',
+    'sim.resetDone':   'Scenario reset to before the simulation',
+    'sim.failReset':   'Could not reset the scenario',
     'sim.needPlan':    'Load a route plan first',
     'sim.started':     'Simulation running',
     'sim.resumed':     'Simulation resumed',
@@ -432,6 +437,10 @@ const I18N = {
     'sim.stop':        'Detener',
     'sim.resume':      'Reanudar',
     'sim.restart':     'Reiniciar',
+    'sim.reset':       'Restablecer escenario',
+    'sim.resetTitle':  'Detiene la simulación y devuelve vehículos, bajas y grupos a donde estaban antes de ella',
+    'sim.resetDone':   'Escenario restablecido al estado previo a la simulación',
+    'sim.failReset':   'No se pudo restablecer el escenario',
     'sim.needPlan':    'Carga primero un plan de rutas',
     'sim.started':     'Simulación en marcha',
     'sim.resumed':     'Simulación reanudada',
@@ -573,6 +582,9 @@ function applyI18n(root = document) {
   });
   root.querySelectorAll('[data-i18n-label]').forEach(el => {
     el.label = t(el.dataset.i18nLabel);
+  });
+  root.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
   });
   document.documentElement.lang = _lang;
 }
