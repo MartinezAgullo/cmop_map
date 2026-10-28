@@ -26,6 +26,7 @@ let threatRadiusM    = 500;    // populated from /api/config at startup
 let _currentTaskId  = null;   // last successfully loaded task ID (for refresh)
 let _simState       = 'idle'; // 'idle' | 'running' | 'paused'
 let _lastRoutes     = null;   // last rendered route list (for language switching)
+let _showDelivered  = false;  // MEDEVAC tab: list (and draw) the delivered assignments too
 let _routeDrawings  = [];     // per route, in _lastRoutes order: { layers: [{ layer, kind }], bounds }
 let _selectedPlanKey = null;  // plan picked in the MEDEVAC tab; kept across route reloads
 let _lastEventAt    = null;   // Date of the last SSE message — drives the LIVE dot
@@ -2276,7 +2277,7 @@ async function loadMedevacRoutes(taskId) {
           style: { color, dashArray: '8 6', ..._routeLegStyle('pickup', 'normal') }
         }).bindPopup(_routePopup(route, 'pickup'), { className: 'custom-popup' }).addTo(routeLayer);
         drawing.layers.push({ layer, kind: 'pickup' });
-        _collectBounds(pickupGeo, bounds);
+        if (_showDelivered || !_isDelivered(route)) _collectBounds(pickupGeo, bounds);
         _collectBounds(pickupGeo, drawing.bounds);
       }
 
@@ -2287,7 +2288,7 @@ async function loadMedevacRoutes(taskId) {
           style: { color, ..._routeLegStyle('delivery', 'normal') }
         }).bindPopup(_routePopup(route, 'delivery'), { className: 'custom-popup' }).addTo(routeLayer);
         drawing.layers.push({ layer, kind: 'delivery' });
-        _collectBounds(deliveryGeo, bounds);
+        if (_showDelivered || !_isDelivered(route)) _collectBounds(deliveryGeo, bounds);
         _collectBounds(deliveryGeo, drawing.bounds);
       }
 
@@ -2304,6 +2305,7 @@ async function loadMedevacRoutes(taskId) {
     _currentTaskId = taskId;
     _lastRoutes    = routes;
     _selectedPlanKey = routes.some(r => r.plan_key === keepPlanKey) ? keepPlanKey : null;
+    _applyDeliveredVisibility();
     _applyRouteSelection();
 
     // Fit map to routes, unless a plan is picked: then the view stays where the operator is.
@@ -2344,8 +2346,30 @@ function _applyRouteSelection() {
     drawing.layers.forEach(({ layer, kind }) => layer.setStyle(_routeLegStyle(kind, state)));
   });
   if (picked >= 0) _routeDrawings[picked].layers.forEach(({ layer }) => layer.bringToFront());
-  document.querySelectorAll('.route-summary-item').forEach((card, idx) =>
-    card.classList.toggle('active', idx === picked));
+  document.querySelectorAll('.route-summary-item').forEach(card =>
+    card.classList.toggle('active', Number(card.dataset.idx) === picked));
+}
+
+const _isDelivered = route => route.stage === 'delivered';
+
+/** Draw the delivered routes only while the operator asked to see them. */
+function _applyDeliveredVisibility() {
+  (_lastRoutes || []).forEach((route, idx) => {
+    const show = _showDelivered || !_isDelivered(route);
+    for (const { layer } of _routeDrawings[idx]?.layers || []) {
+      if (show) routeLayer.addLayer(layer); else routeLayer.removeLayer(layer);
+    }
+  });
+}
+
+function _toggleDelivered(show) {
+  _showDelivered = show;
+  if (!show && _isDelivered((_lastRoutes || []).find(r => r.plan_key === _selectedPlanKey) || {})) {
+    _selectedPlanKey = null;         // its card is going away
+  }
+  document.getElementById('routesStatus').innerHTML = _routesSummaryHTML(_lastRoutes);
+  _applyDeliveredVisibility();
+  _applyRouteSelection();
 }
 
 // Card click in the MEDEVAC tab: pick that plan and zoom to it; a second click drops it.
@@ -2474,14 +2498,15 @@ function _routeShareHTML(r) {
 }
 
 function _routesSummaryHTML(routes) {
-  const items = routes.map((r, i) => {
+  const card = (r, i) => {
     const color  = getRouteColors()[i % ROUTE_COLORS_DARK.length];
     const eta    = r.total_eta_minutes != null ? r.total_eta_minutes : '—';
     const triage = _routeTriage(r);
     const meta   = TRIAGE_META[triage] || TRIAGE_META.UNKNOWN;
     let cls = r.plan_key != null && r.plan_key === _selectedPlanKey ? ' active' : '';
-    if (triage === 'RED') cls += ' t1';
-    return `<button type="button" class="route-summary-item${cls}" onclick="selectRoute(${i})">
+    if (triage === 'RED' && !_isDelivered(r)) cls += ' t1';
+    if (_isDelivered(r)) cls += ' delivered';
+    return `<button type="button" class="route-summary-item${cls}" data-idx="${i}" onclick="selectRoute(${i})">
       <span class="route-edge" style="--c:${meta.fill}" title="${t(meta.key)}"></span>
       <span class="route-color-dot" style="background:${color}"></span>
       <span>${r.plan_key ? `<b class="route-plan">${esc(_evacLabel(r.plan_key))}</b> ` : ''}${_routeEntityHTML(r.asset_id, r.asset_name)}<br>
@@ -2490,8 +2515,21 @@ function _routesSummaryHTML(routes) {
           r.altitude_advisory ? `<br><b class="route-advisory">⬆ ${t('popup.increaseAltitude')}</b>` : ''}</span>
       <span class="route-eta">${eta}<br><span class="med-label">${t('routes.min')}</span></span>
     </button>`;
-  }).join('');
-  return `<div class="routes-summary">${items}</div>`;
+  };
+  const cards = routes.map((r, i) => ({ r, i }));
+  const active    = cards.filter(({ r }) => !_isDelivered(r)).map(({ r, i }) => card(r, i)).join('');
+  const delivered = cards.filter(({ r }) =>  _isDelivered(r));
+
+  let html = `<div class="routes-summary">${active}`;
+  if (delivered.length && !_showDelivered) {
+    html += `<button type="button" class="route-toggle" onclick="_toggleDelivered(true)">
+      ${t('routes.showDelivered', { n: delivered.length })}</button>`;
+  } else if (delivered.length) {
+    html += delivered.map(({ r, i }) => card(r, i)).join('');
+    html += `<button type="button" class="route-toggle" onclick="_toggleDelivered(false)">
+      ${t('routes.hideDelivered')}</button>`;
+  }
+  return html + '</div>';
 }
 
 function _straightLine(from, to) {

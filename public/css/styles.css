@@ -810,7 +810,24 @@ body.dark .brand-light { display: none !important; }
 
 .route-summary-item:hover,
 .route-summary-item.active { background: var(--g2); }
-.route-summary-item.active .route-color-dot { box-shadow: 0 0 0 2px var(--g2), 0 0 0 3px var(--hot); }
+.route-summary-item.active .route-toggle {
+  width: 100%;
+  padding: 5px 6px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--dim);
+  cursor: pointer;
+}
+.route-toggle:hover { background: var(--g2); color: var(--ink); }
+.route-summary-item.delivered { opacity: .6; }
+
+.route-color-dot { box-shadow: 0 0 0 2px var(--g2), 0 0 0 3px var(--hot); }
 
 .route-color-dot {
   width: 9px;
