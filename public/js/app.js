@@ -1386,7 +1386,7 @@ async function renderMarkers() {
       .bindPopup(buildPopup(e), { className: 'custom-popup' });
 
     marker._cmopEntity = e;          // so a language switch can rebuild the popup
-    marker.on('click', () => selectEntity(e.id));
+    marker.on('click', () => _onMarkerClick(marker, e.id));
     marker.on('popupopen', () => _refreshAssignmentPopup(marker));
     markers.push(marker);
     markersById[e.id] = marker;
@@ -1401,6 +1401,57 @@ async function renderMarkers() {
     _shouldFit = false;
   }
   _separateCarried();
+}
+
+const STACK_RADIUS_PX = 20;         // icons closer than this on screen count as one pile
+
+/** Every marker whose icon overlaps `marker` on screen, itself included, nearest first. */
+function _markersUnder(marker) {
+  const at = map.latLngToContainerPoint(marker.getLatLng());
+  return Object.values(markersById)
+    .map(o => ({ o, d: map.latLngToContainerPoint(o.getLatLng()).distanceTo(at) }))
+    .filter(x => x.d < STACK_RADIUS_PX)
+    .sort((a, b) => a.d - b.d)
+    .map(x => x.o);
+}
+
+/** A click on an icon: its own popup, or a list to choose from when icons are piled up. */
+function _onMarkerClick(marker, id) {
+  const pile = _markersUnder(marker);
+  if (pile.length < 2) { selectEntity(id); return; }
+  marker.closePopup();               // Leaflet opened the popup of the one on top
+  _openPilePicker(marker.getLatLng(), pile);
+}
+
+function _openPilePicker(latlng, pile) {
+  const root = document.createElement('div');
+  root.className = 'pile-picker';
+  const head = document.createElement('div');
+  head.className = 'pile-head';
+  head.textContent = t('pile.title', { n: pile.length });
+  root.appendChild(head);
+
+  for (const m of pile) {
+    const e = m._cmopEntity;
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'pile-row';
+    const img = document.createElement('img');
+    img.src = m._icon?.querySelector('img')?.src || m._icon?.src || '';
+    img.alt = '';
+    const label = document.createElement('span');
+    label.className = 'pile-label';
+    label.textContent = e.elemento_identificado || e.nombre || e.categoria;
+    const kind = document.createElement('span');
+    kind.className = 'pile-kind';
+    kind.textContent = e.categoria;
+    row.append(img, label, kind);
+    row.addEventListener('click', () => { map.closePopup(); selectEntity(e.id); });
+    root.appendChild(row);
+  }
+
+  L.popup({ className: 'custom-popup pile-popup', offset: [0, -28] })
+    .setLatLng(latlng).setContent(root).openOn(map);
 }
 
 /** Frame every entity currently on the map. */

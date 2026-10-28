@@ -41,6 +41,7 @@ const I18N = {
     'roster.filtered':   '{label} only',
     'roster.clear':      'Clear filters',
     'roster.empty':      'No entities match',
+    'pile.title':        '{n} entities here, pick one',
     'routes.locate':     'Show on the map',
     'roster.elapsed':    'Since report',
 
@@ -312,6 +313,7 @@ const I18N = {
     'roster.filtered': 'Solo {label}',
     'roster.clear':    'Quitar filtros',
     'roster.empty':    'Ninguna entidad coincide',
+    'pile.title':      '{n} entidades aquí, elige una',
     'routes.locate':   'Ver en el mapa',
     'roster.elapsed':  'Desde el parte',
 
