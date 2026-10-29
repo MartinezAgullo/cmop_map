@@ -345,12 +345,15 @@ async function resolveIconUrl(category, alliance, country, entity) {
 }
 
 /**
- * What the simulation says an icon carries: a group's people still waiting ("8 left") or
- * a vehicle's load while it drives loaded ("10"). Null when no simulation is driving it.
+ * What the simulation says an icon carries: a group's people still waiting ("8 left", its whole
+ * headcount before a simulation runs) or a vehicle's load while it drives loaded ("10").
  */
 function _loadBadgeText(entity) {
-  if (entity.categoria === 'civilian' && entity.people_waiting != null) {
-    return `${entity.people_waiting} ${t('icon.left')}`;
+  if (entity.categoria === 'civilian') {
+    // Before any simulation has run, everyone of a group not yet evacuated is still waiting.
+    const waiting = entity.people_waiting
+      ?? (entity.medical?.evac_stage === 'delivered' ? null : (entity.headcount ?? 1));
+    if (waiting != null) return `${waiting} ${t('icon.left')}`;
   }
   return entity.people_aboard ? String(entity.people_aboard) : null;
 }
