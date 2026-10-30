@@ -852,7 +852,7 @@ function updateTipoElementoOptions(categoria) {
     select.innerHTML = '<option value="">— Selecciona tipo —</option>';
   } else {
     group.style.display = 'block';
-    select.innerHTML = '<option value="">— Selecciona tipo —</option>'
+    select.innerHTML = '<option value="">— Selecciona tipo —</option>' +
       TIPO_ELEMENTO_OPTIONS[categoria]
         .map(opt => `<option value="${opt.value}">${opt.label}</option>`)
         .join('');
