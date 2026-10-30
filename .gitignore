@@ -31,3 +31,5 @@ Thumbs.db
 *.bak
 docs_backup/
 .playwright-mcp/
+# sed -i backups on macOS
+*-E
